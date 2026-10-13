@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14313B">
+<title>GFD - Game for Dads</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GFD">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E4EBE7; --surface:#FFFFFF; --surface-2:#F1F5F2; --ink:#14313B; --muted:#56696E; --line:#CBD6D1;
+  --primary:#2C6E7F; --primary-ink:#FFFFFF; --energy:#3E9B4F; --hp:#D9483A; --gold:#B9810B; --gold-bg:#F2B533;
+  --track:#D5DED9;
+  --font-ui:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num:"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1B20; --surface:#152830; --surface-2:#1B323A; --ink:#E3EDE9; --muted:#93AAA6; --line:#264149;
+    --primary:#62B4C6; --primary-ink:#0E1B20; --energy:#5BC06B; --hp:#F06A57; --gold:#F2B533; --gold-bg:#F2B533;
+    --track:#22393F; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1B20; --surface:#152830; --surface-2:#1B323A; --ink:#E3EDE9; --muted:#93AAA6; --line:#264149;
+  --primary:#62B4C6; --primary-ink:#0E1B20; --energy:#5BC06B; --hp:#F06A57; --gold:#F2B533; --gold-bg:#F2B533;
+  --track:#22393F; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--gold-bg);outline-offset:2px}
+#app{height:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+@media (min-width:480px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+
+/* header */
+#top{padding:10px 14px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+#top:empty{display:none}
+.who{display:flex;align-items:center;gap:10px}
+.who .av{width:42px;height:42px;border-radius:10px;overflow:hidden;flex:none}
+.who .av svg,.bigav svg,.preview svg{display:block;width:100%;height:100%}
+.who .name{font-weight:700;line-height:1.15;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .title{font-size:13px;color:var(--muted)}
+.coins{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--font-num);font-size:22px;font-weight:700;color:var(--gold)}
+.coins svg{width:20px;height:20px}
+.bars{margin-top:10px;display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:8px}
+.bicon svg{width:18px;height:18px;display:block}
+.bar.energy .bicon{color:var(--energy)} .bar.hp .bicon{color:var(--hp)}
+.track{height:11px;background:var(--track);border-radius:3px;overflow:hidden}
+.fill{height:100%;transition:width .25s}
+.bar.energy .fill{background:var(--energy)} .bar.hp .fill{background:var(--hp)}
+.idleline{margin-top:7px;padding-left:28px;font-size:13px;font-weight:700;color:var(--primary)}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.barnum{font-variant-numeric:tabular-nums;font-family:var(--font-num);font-size:18px;font-weight:700;min-width:86px;text-align:right;align-self:start;line-height:1.1}
+.barnum small{font-size:13px;color:var(--muted);font-weight:500}
+
+/* main */
+main{flex:1;overflow-y:auto;padding:16px 14px 28px;-webkit-overflow-scrolling:touch}
+.skill{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end}
+.skill h2{margin:0;font-size:22px;line-height:1.1}
+.xpline{font-size:13px;color:var(--muted)}
+.lvl{font-family:var(--font-num);font-size:46px;line-height:.85;font-weight:700;color:var(--primary)}
+.xpbar{grid-column:1/-1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;margin-top:8px}
+.xpbar div{height:100%;background:var(--primary)}
+.skill.compact h2{font-size:17px}
+.skill.compact .lvl{font-size:32px}
+.skill.compact .xpline{font-size:12px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.duo.quad{gap:12px 18px}
+.duo.quad .lvl{font-size:28px}
+.duo.quad h2{font-size:16px}
+.styles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 8px}
+.chip.style{min-height:50px;border-radius:12px;padding:4px 6px;font-weight:700;line-height:1.15}
+.chip.style small{display:block;font-weight:400;font-size:12px;opacity:.85}
+
+.stage{margin:20px 0 26px}
+.stage-title{margin:0;font-size:19px;font-weight:700}
+.stage-meta{margin:2px 0 0;color:var(--muted);font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{min-height:58px;border-radius:12px;border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:18px;line-height:1.1;padding:6px 10px}
+.btn small{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.btn.alt{background:transparent;color:var(--primary)}
+.btn.wide{grid-column:1/-1}
+.btn.idle{background:transparent;color:var(--ink);border-style:dashed}
+.btn.idle.on{border-style:solid;background:var(--surface-2);color:var(--primary)}
+.sbtn.idle{border-style:dashed}
+.sbtn.idle.on{border-style:solid;background:var(--surface-2)}
+.arena{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;margin:18px 0 6px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fighter{min-width:0}
+.portrait{position:relative;aspect-ratio:1;width:100%;max-width:120px;margin:0 auto;border-radius:16px;overflow:visible;transition:opacity .3s,filter .3s}
+.portrait>svg{display:block;width:100%;height:100%;border-radius:16px}
+.portrait.foe{display:flex;align-items:center;justify-content:center}
+.emo{font-size:58px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.portrait.down{opacity:.35;filter:grayscale(1)}
+.portrait.hurt{animation:hurt .18s}
+@keyframes hurt{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px)}70%{transform:translateX(4px)}}
+.vs{align-self:center;font-family:var(--font-num);font-weight:700;color:var(--muted);font-size:18px;padding-bottom:30px}
+.hpbar{height:9px;margin:9px auto 0;max-width:120px;background:#C62A1E;border-radius:3px;overflow:hidden}
+.hpbar div{height:100%;background:#3FAE49;transition:width .15s}
+.fname{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:5px;font-size:14px;line-height:1.2}
+.fname span{font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fname b{font-family:var(--font-num);font-size:16px;color:var(--muted)}
+.arena-msg{grid-column:1/-1;margin:4px 0 0;text-align:center;font-weight:700;min-height:21px;font-size:15px}
+.k-muted{color:var(--muted);font-weight:400}
+.splat{position:absolute;width:42px;height:42px;transform:translate(-50%,-50%);pointer-events:none;z-index:2;animation:splat .75s ease-out forwards}
+.splat svg{position:absolute;inset:0;width:100%;height:100%}
+.splat.hit polygon{fill:#C62A1E;stroke:#6E1209;stroke-width:1.6}
+.splat.miss polygon{fill:#2F6FD6;stroke:#173E85;stroke-width:1.6}
+.splat span{position:relative;display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--font-num);font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.5)}
+@keyframes splat{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}28%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%)}}
+.stage.tight{margin-top:8px}
+.rate{font-family:var(--font-num);font-weight:700;font-size:17px;white-space:nowrap}
+.rare{color:var(--gold)}
+.small.note{margin:-4px 0 10px}
+.odds{margin:10px 0 0;padding:10px 12px;background:var(--surface-2);border-radius:10px;font-size:14px}
+.odds p{margin:0}
+.odds.sep{margin:0 0 22px}
+.odds p+p{margin-top:3px}
+.odds .why{color:var(--muted);font-size:13px;margin-top:6px}
+.small.kc{margin:-12px 0 24px}
+.btn.red{border-color:var(--hp);color:var(--hp);background:transparent}
+.btn:disabled,.sbtn:disabled{opacity:.4}
+.btn:not(:disabled):active,.sbtn:not(:disabled):active{transform:translateY(1px)}
+.hint{font-size:14px;color:var(--muted);margin:10px 0 0}
+.hint+.sect{margin-top:16px}
+
+.sect{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:22px}
+.pick{display:block;width:100%;text-align:left;background:none;border:0;padding:12px 14px 12px 18px;position:relative}
+.pick+.pick{border-top:1px solid var(--line)}
+.pick .pn{font-weight:700;display:block}
+.pick .pm{font-size:13px;color:var(--muted);display:block}
+.pick[aria-pressed="true"]{background:var(--surface-2)}
+.pick[aria-pressed="true"]::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:5px;border-radius:0 4px 4px 0;background:var(--primary)}
+.pick:disabled .pn{color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;padding:11px 12px 11px 14px}
+.row+.row{border-top:1px solid var(--line)}
+.row-main{flex:1;min-width:0}
+.row-name{font-weight:700}
+.row-meta{font-size:13px;color:var(--muted)}
+.count{font-family:var(--font-num);font-size:20px;font-weight:700;min-width:34px;text-align:right}
+.row-btns{display:flex;gap:6px}
+.sbtn{min-height:40px;min-width:52px;padding:0 10px;border-radius:9px;border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-weight:700;font-size:14px}
+.sbtn.solid{background:var(--primary);color:var(--primary-ink)}
+.empty{padding:16px 14px;color:var(--muted);font-size:15px}
+.empty button{margin-top:8px}
+
+/* shop */
+.upgrade{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:22px}
+.upgrade .big{font-family:var(--font-num);font-size:36px;font-weight:700;line-height:1;margin:6px 0 2px}
+.upgrade .big span{color:var(--energy)}
+.costline{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin:12px 0 6px}
+.costline b{color:var(--gold);font-family:var(--font-num);font-size:18px}
+.upgrade .track .fill{background:var(--gold-bg)}
+.upgrade .btn{width:100%;margin-top:14px}
+
+/* dad card */
+.dcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.dhero{display:flex;align-items:center;gap:14px;padding:16px;color:#14313B}
+.bigav{width:96px;height:96px;border-radius:16px;overflow:hidden;border:3px solid #fff;flex:none}
+.dname{font-family:var(--font-num);font-size:30px;line-height:1;font-weight:700;word-break:break-word}
+.dtitle{font-weight:700;margin-top:6px}
+.dtotal{font-size:14px}
+.dskills{padding:2px 16px;display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+.dskill{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:10px 0}
+.dskill:nth-child(n+3){border-top:1px solid var(--line)}
+.dskill .lv{font-family:var(--font-num);font-size:26px;font-weight:700;color:var(--primary);line-height:1}
+.dskill .mini{grid-column:1/-1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+.dskill .mini div{height:100%;background:var(--primary)}
+.dstats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.dstats div{padding:12px 6px;text-align:center}
+.dstats div+div{border-left:1px solid var(--line)}
+.dstats b{display:block;font-family:var(--font-num);font-size:20px}
+.dstats span{font-size:12px;color:var(--muted)}
+.dfoot{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+.dfoot b{font-family:var(--font-num);font-size:16px;color:var(--ink)}
+.stack{display:grid;gap:10px}
+details.tools{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 14px;margin-top:16px}
+details.tools summary{padding:14px 0;font-weight:700;cursor:pointer}
+details.tools .inner{padding-bottom:16px;display:grid;gap:10px}
+textarea{width:100%;min-height:84px;font:13px/1.3 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);resize:vertical}
+.small{font-size:13px;color:var(--muted);margin:0}
+
+/* editor / setup */
+.brand{text-align:center;margin:8px 0 18px}
+.brand h1{font-family:var(--font-num);font-size:88px;line-height:.9;margin:0;color:var(--primary);letter-spacing:1px}
+.brand p{margin:6px 0 0;font-size:17px;color:var(--muted)}
+.preview{width:128px;height:128px;border-radius:20px;overflow:hidden;margin:0 auto 6px;border:3px solid var(--surface)}
+.field{margin:16px 0}
+.field .lab{display:block;font-weight:700;margin-bottom:7px}
+input[type=text]{width:100%;min-height:48px;font:inherit;font-size:17px;padding:0 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.sw{display:flex;flex-wrap:wrap;gap:9px}
+.dot{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);padding:0}
+.dot[aria-pressed="true"]{outline:3px solid var(--primary);outline-offset:2px}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--line);background:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+
+/* ticker + nav */
+#ticker{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:var(--surface-2);font-size:14px;padding:8px 14px;min-height:40px}
+#ticker[hidden]{display:none}
+#ticker p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ticker ul{list-style:none;margin:0;padding:0;max-height:38vh;overflow:auto}
+#ticker li{padding:5px 0}
+#ticker li+li{border-top:1px dashed var(--line);color:var(--muted)}
+.k-lvl{color:var(--gold);font-weight:700}
+.k-warn{color:var(--hp)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line)}
+nav:empty{display:none}
+nav button{background:none;border:0;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);position:relative}
+nav button svg{width:24px;height:24px}
+nav button[aria-current="page"]{color:var(--primary);font-weight:700}
+nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--primary)}
+
+/* feedback */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+.pop{position:absolute;transform:translate(-50%,0);font-family:var(--font-num);font-weight:700;font-size:20px;color:var(--primary);white-space:nowrap;animation:rise .9s ease-out forwards;text-shadow:0 1px 0 var(--surface),0 -1px 0 var(--surface)}
+.pop.gold{color:var(--gold)} .pop.green{color:var(--energy)} .pop.red{color:var(--hp)}
+@keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-46px)}}
+.toast{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);background:var(--gold-bg);color:#231804;font-family:var(--font-num);font-weight:700;font-size:21px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.2);z-index:50;white-space:nowrap;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.6);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.sheet{position:absolute;inset:0;z-index:70;background:rgba(8,18,22,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px}
+.sheet img{display:block;max-width:100%;max-height:64vh;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.sheet p{margin:0;color:#fff;font-size:14px;text-align:center}
+.sheet .stack{width:100%;max-width:340px}
+.sheet .btn.alt{background:var(--surface)}
+.idlecard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:16px 0 0}
+.idlecard+.idlecard{margin-top:10px}
+.prog{display:flex;align-items:center;gap:10px;margin-top:10px}
+.prog-track{flex:1;height:10px;background:var(--track);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;width:0;background:var(--primary);transition:width 1s linear}
+.prog-t{font-size:13px;color:var(--muted);white-space:nowrap}
+.prog-t b{font-family:var(--font-num);font-size:15px;color:var(--ink)}
+.idlecard + .small.note{margin:10px 0 20px}
+.taskline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;width:100%;margin:12px 0 0;padding:10px 14px;border:1.5px solid var(--gold-bg);border-radius:12px;background:transparent;text-align:left}
+.taskline span{font-size:13px;color:var(--muted)}
+.taskline b{font-family:var(--font-num);font-size:17px}
+.foe-row{display:flex;gap:12px;padding:12px 14px;align-items:flex-start}
+.foe-row+.foe-row{border-top:1px solid var(--line)}
+.foe-row.task{box-shadow:inset 4px 0 0 var(--gold-bg)}
+.foe-row .row-meta+.row-meta{margin-top:3px}
+.foe-ic{flex:none;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.foe-ic.big{width:64px;height:64px;font-size:38px;border-radius:14px}
+.lvtag{font-size:12px;font-weight:400;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap}
+.lvtag.task{color:var(--gold);border-color:var(--gold-bg)}
+.hpbar.empty{background:var(--track)}
+.hpbar.empty div{background:var(--track)}
+.taskhead{display:flex;align-items:center;gap:14px;margin:8px 0 12px}
+.taskhead .big{margin:0}
+.big .of{font-size:22px;color:var(--muted)}
+.pts{font-family:var(--font-num);font-size:18px;color:var(--gold)}
+.upgrade .track .fill{background:var(--gold-bg)}
+.st{display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 7px;border-radius:999px;background:var(--surface-2);font-family:var(--font-num);font-weight:600;font-size:15px;line-height:1.3;white-space:nowrap;vertical-align:middle}
+.st svg{width:14px;height:14px;flex:none}
+.st.hp svg{color:var(--hp)}
+.st.gold svg{color:var(--gold)}
+.stats-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:7px 0 5px}
+.kc-tag{font-size:12px;color:var(--muted);margin-left:auto}
+.legend .st{padding:2px 6px;margin:0 2px}
+.fstats{display:flex;justify-content:center;gap:5px;margin-top:6px}
+.fstats .st{font-size:14px;padding:1px 7px 1px 6px}
+.odds .st{padding:1px 5px;font-size:13px}
+.wbadge{position:absolute;right:-6px;bottom:-6px;width:36px;height:36px;border-radius:50%;background:var(--surface);border:2px solid var(--gold-bg);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.wname{display:block;font-style:normal;font-size:12px;color:var(--gold);font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dweapon{margin-top:6px;font-size:14px;font-weight:700;background:rgba(255,255,255,.55);border-radius:8px;padding:3px 8px;display:inline-block}
+.foe-ic.dim{background:var(--surface-2);opacity:.6}
+.row-name.muted{color:var(--muted)}
+.warnbox{border-color:var(--gold-bg);border-width:1.5px}
+.warnbox textarea{margin-top:8px}
+.hs-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;scrollbar-width:none}
+.chip.hs{flex:none;min-height:34px;padding:0 12px;font-size:14px}
+.hs-row{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.hs-row+.hs-row{border-top:1px solid var(--line)}
+.hs-row.me{background:var(--surface-2)}
+.hs-rank{font-family:var(--font-num);font-weight:700;font-size:18px;width:22px;text-align:center;color:var(--muted)}
+.hs-row:nth-child(1) .hs-rank{color:var(--gold)}
+.hs-av{width:40px;height:40px;border-radius:10px;overflow:hidden;flex:none}
+.hs-av svg{display:block;width:100%;height:100%}
+.hs-val{font-family:var(--font-num);font-weight:700;font-size:22px;color:var(--primary)}
+.idlecard.active{border-color:var(--primary);box-shadow:inset 4px 0 0 var(--primary)}
+.small.note.doing{margin:14px 0 0;font-size:14px}
+.idleline b{font-family:var(--font-num)}
+.cloudbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.linkbtn{display:inline-flex;align-items:center;text-decoration:none}
+#cloudLine b{font-weight:700;color:var(--ink)}
+.linkbtn.dl{display:flex;align-items:center;justify-content:center;text-decoration:none}
+#rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
+#rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
+@media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top"></header>
+  <main id="main"></main>
+  <button id="ticker" type="button" aria-expanded="false" hidden></button>
+  <nav id="nav" aria-label="Game sections"></nav>
+</div>
+<div id="fx" aria-hidden="true"></div>
+<div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
+
+<script>
+/* ============================================================
+   GFD - Game for Dads. v0.8
+   Everything below CONFIG is game code. All balance lives in CONFIG,
+   so tweaking numbers after friend feedback = edit this block only.
+   ============================================================ */
+const CONFIG = {
+  version: '0.13',
+  homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
+  regenMs: 60000,             // +1 health every minute
+  // idle: fishing and cooking always run by themselves. Fight idle is optional.
+  fishSeconds: 60,            // one fishing attempt every 60 seconds
+  cookSeconds: 60,            // one cooking attempt every 60 seconds (always cooks your best raw fish)
+  fightIdleMinutes: 5,        // Fight idle: one fight every 5 minutes
+  idleBaseMinutes: 100,       // after you close the game, idle keeps going this long (1h 40m)...
+  idleStepMinutes: 50,        // ...plus 50 minutes per Idle time upgrade (16h 40m when maxed)
+  idleCosts: [500,780,1200,1900,3000,4700,7300,11000,18000,28000,44000,68000,110000,170000,260000,410000,640000,1000000],
+  xpDivisor: 4,               // RuneScape xp curve divided by this. Lower = slower leveling
+  // catch / cook success: base chance at the unlock level, +perLvl for each level above it
+  catchBase: 0.55, catchPerLvl: 0.05, catchMax: 0.95,
+  cookBase: 0.60,  cookPerLvl: 0.05,  cookMax: 0.98,
+  // req = level needed, xp per catch/cook, heal = health per cooked fish eaten, raw/cooked = sell price
+  fish: [
+    {name:'Shrimp',     req:1,  xp:10,  heal:1,  raw:1,  cooked:2},
+    {name:'Sardine',    req:11, xp:15,  heal:2,  raw:2,  cooked:4},
+    {name:'Herring',    req:21, xp:22,  heal:4,  raw:4,  cooked:8},
+    {name:'Trout',      req:31, xp:30,  heal:6,  raw:6,  cooked:12},
+    {name:'Salmon',     req:41, xp:40,  heal:8,  raw:10, cooked:20},
+    {name:'Tuna',       req:51, xp:52,  heal:10, raw:15, cooked:30},
+    {name:'Lobster',    req:61, xp:66,  heal:12, raw:22, cooked:45},
+    {name:'Swordfish',  req:71, xp:82,  heal:14, raw:32, cooked:65},
+    {name:'Shark',      req:81, xp:100, heal:16, raw:45, cooked:90},
+    {name:'Anglerfish', req:91, xp:120, heal:18, raw:60, cooked:120},
+  ],
+  // 10 areas, 5 enemies each. Each fight picks one of the 5 at random.
+  // area: potion = [name, health healed] dropped here,
+  //       weapon = the rare drop any enemy here can drop: dmg = bonus damage when equipped, price = sell price
+  // enemy: lvl (your hit chance compares Attack to this), hp, acc = its hit chance, maxHit before your Defence,
+  //        coins = average drop, xp per kill, potion = chance to drop this area's potion, junk = [name, sell price]
+  areas: [
+    {place:"The Backyard", req:1, tint:'#DCEBD5', potion:["Juice Box", 5], weapon:{name:"Rolled-Up Newspaper", icon:"🗞️", dmg:0.1, price:180, desc:"The original dad weapon. Wasps have feared it for generations."}, enemies:[
+      {name:"Picnic Wasp", icon:"🐝", lvl:1, hp:5, acc:0.49, maxHit:1, coins:5, xp:21, potion:0.1, junk:["Half a Sausage", 2], blurb:"Uninvited. Undefeated. Wants your sausage."},
+      {name:"Neighbour's Cat", icon:"🐈", lvl:3, hp:7, acc:0.5, maxHit:1, coins:5, xp:23, potion:0.12, junk:["Hairball", 2], blurb:"Uses your lawn as a toilet. Feels no shame."},
+      {name:"Angry Goose", icon:"🪿", lvl:5, hp:9, acc:0.5, maxHit:1, coins:6, xp:24, potion:0.14, junk:["Goose Feather", 2], blurb:"Honks first, asks questions never."},
+      {name:"Compost Rat", icon:"🐀", lvl:7, hp:10, acc:0.5, maxHit:1, coins:7, xp:25, potion:0.16, junk:["Banana Peel", 3], blurb:"Has seen things in that bin."},
+      {name:"Rogue Sprinkler", icon:"💦", lvl:9, hp:11, acc:0.51, maxHit:1, coins:7, xp:27, potion:0.18, junk:["Soggy Sock", 3], blurb:"Only turns on when you walk past."},
+    ]},
+    {place:"The Garage", req:11, tint:'#E2E5E7', potion:["Sports Drink", 13], weapon:{name:"Trusty Wrench", icon:"🔧", dmg:0.15, price:420, desc:"Fixes everything, mostly by hitting it."}, enemies:[
+      {name:"Garage Spider", icon:"🕷️", lvl:11, hp:11, acc:0.51, maxHit:1, coins:8, xp:29, potion:0.1, junk:["Cobweb", 3], blurb:"Lives in the box you swore you'd sort out."},
+      {name:"Tangled Extension Cord", icon:"🔌", lvl:13, hp:13, acc:0.51, maxHit:1, coins:9, xp:30, potion:0.12, junk:["Mystery Plug", 4], blurb:"Nobody tangled it. It tangled itself."},
+      {name:"Rogue Lawnmower", icon:"🚜", lvl:15, hp:13, acc:0.52, maxHit:2, coins:10, xp:32, potion:0.14, junk:["Spark Plug", 4], blurb:"Started itself. Nobody knows how."},
+      {name:"Paint Tin Mimic", icon:"🪣", lvl:17, hp:15, acc:0.52, maxHit:2, coins:12, xp:34, potion:0.16, junk:["Dried Brush", 5], blurb:"Labelled magnolia. It is not magnolia."},
+      {name:"Leaf Blower", icon:"💨", lvl:19, hp:15, acc:0.52, maxHit:3, coins:13, xp:36, potion:0.18, junk:["Bag of Leaves", 5], blurb:"Just moves the problem to your neighbour's yard."},
+    ]},
+    {place:"The Supermarket", req:21, tint:'#F7EBC8', potion:["Protein Shake", 21], weapon:{name:"Baguette of Justice", icon:"🥖", dmg:0.2, price:840, desc:"Crusty on the outside, deadly on the inside."}, enemies:[
+      {name:"Reduced Banana", icon:"🍌", lvl:21, hp:15, acc:0.52, maxHit:3, coins:14, xp:38, potion:0.1, junk:["Banana Sticker", 6], blurb:"Brown, bruised and bitter about it."},
+      {name:"Free Sample Swarm", icon:"🧀", lvl:23, hp:16, acc:0.53, maxHit:3, coins:16, xp:40, potion:0.12, junk:["Toothpick", 6], blurb:"Just one more. Okay, one more."},
+      {name:"Runaway Trolley", icon:"🛒", lvl:25, hp:16, acc:0.53, maxHit:4, coins:18, xp:43, potion:0.14, junk:["Trolley Coin", 7], blurb:"One wonky wheel, zero mercy."},
+      {name:"Self-Checkout", icon:"🖥️", lvl:27, hp:18, acc:0.53, maxHit:4, coins:20, xp:45, potion:0.16, junk:["Long Receipt", 8], blurb:"Unexpected item in the bagging area."},
+      {name:"Escaped Lobster", icon:"🦞", lvl:29, hp:18, acc:0.54, maxHit:4, coins:22, xp:48, potion:0.18, junk:["Rubber Band", 9], blurb:"Broke out of the tank. Wants revenge."},
+    ]},
+    {place:"The Furniture Store", req:31, tint:'#D7E4F2', potion:["Meatball Plate", 29], weapon:{name:"The Hex Blade", icon:"🔩", dmg:0.25, price:1500, desc:"A legendary Allen key, sharpened by pure frustration."}, enemies:[
+      {name:"Pencil Thief", icon:"✏️", lvl:31, hp:18, acc:0.54, maxHit:5, coins:25, xp:51, potion:0.1, junk:["Tiny Pencil", 10], blurb:"Steals every tiny pencil it can find."},
+      {name:"Store Maze", icon:"🌀", lvl:33, hp:20, acc:0.54, maxHit:5, coins:27, xp:54, potion:0.12, junk:["Store Map", 11], blurb:"The exit is always one more room away."},
+      {name:"Flatpack Golem", icon:"📦", lvl:35, hp:20, acc:0.55, maxHit:6, coins:31, xp:57, potion:0.14, junk:["Spare Allen Key", 12], blurb:"214 parts. One screw missing. Furious."},
+      {name:"Haunted Sofa", icon:"🛋️", lvl:37, hp:22, acc:0.55, maxHit:6, coins:34, xp:60, potion:0.16, junk:["Lost Remote", 14], blurb:"Too comfy. You may never leave."},
+      {name:"Meatball Blob", icon:"🍝", lvl:39, hp:22, acc:0.55, maxHit:7, coins:38, xp:64, potion:0.18, junk:["Lingonberry Jam", 15], blurb:"You came for one plate."},
+    ]},
+    {place:"The School Gate", req:41, tint:'#F2DDD3', potion:["Lunchbox Sandwich", 37], weapon:{name:"Lunchbox Flail", icon:"🍱", dmg:0.3, price:2550, desc:"Swung by the strap. Still contains Tuesday's banana."}, enemies:[
+      {name:"Glitter Craft", icon:"🌟", lvl:41, hp:22, acc:0.55, maxHit:7, coins:42, xp:68, potion:0.1, junk:["Loose Glitter", 17], blurb:"You'll be finding glitter for years."},
+      {name:"Parking Ticket", icon:"🎫", lvl:43, hp:24, acc:0.56, maxHit:7, coins:47, xp:72, potion:0.12, junk:["Fine Print", 19], blurb:"Already stuck to your windscreen."},
+      {name:"Lost Property Mimic", icon:"🎒", lvl:45, hp:24, acc:0.56, maxHit:8, coins:53, xp:76, potion:0.14, junk:["Odd Sock", 21], blurb:"Smells like forty forgotten gym kits."},
+      {name:"Head Lice Swarm", icon:"🐜", lvl:47, hp:25, acc:0.56, maxHit:8, coins:59, xp:80, potion:0.16, junk:["Nit Comb", 24], blurb:"Itchy just reading this."},
+      {name:"School Run Jam", icon:"🚗", lvl:49, hp:25, acc:0.57, maxHit:9, coins:66, xp:85, potion:0.18, junk:["Cold Coffee Cup", 26], blurb:"Bumper to bumper, every single morning."},
+    ]},
+    {place:"The Office", req:51, tint:'#E4E0EE', potion:["Office Donut", 45], weapon:{name:"Keyboard Warhammer", icon:"⌨️", dmg:0.35, price:4200, desc:"Every key is the Caps Lock key."}, enemies:[
+      {name:"Printer Jam", icon:"🖨️", lvl:51, hp:25, acc:0.57, maxHit:9, coins:73, xp:90, potion:0.1, junk:["Crumpled Page", 29], blurb:"Out of paper. Also full of paper."},
+      {name:"Reply-All Storm", icon:"📧", lvl:53, hp:27, acc:0.57, maxHit:10, coins:82, xp:96, potion:0.12, junk:["Out-of-Office Reply", 33], blurb:"Please remove me from this list."},
+      {name:"Meeting Goblin", icon:"👺", lvl:55, hp:27, acc:0.57, maxHit:10, coins:91, xp:101, potion:0.14, junk:["Unread Agenda", 36], blurb:"This one could have been an email."},
+      {name:"Coffee Machine Golem", icon:"☕", lvl:57, hp:29, acc:0.58, maxHit:11, coins:101, xp:107, potion:0.16, junk:["Used Coffee Pod", 40], blurb:"Descale me or perish."},
+      {name:"Endless Spreadsheet", icon:"📊", lvl:59, hp:29, acc:0.58, maxHit:11, coins:113, xp:114, potion:0.18, junk:["Broken Formula", 45], blurb:"Row 48,213 of infinity."},
+    ]},
+    {place:"Soft Play", req:61, tint:'#F6D6E4', potion:["Slushie", 53], weapon:{name:"Squeaky Hammer", icon:"🔨", dmg:0.4, price:6600, desc:"Inflatable. Squeaks on every hit. Every single one."}, enemies:[
+      {name:"Lost Shoe", icon:"👟", lvl:61, hp:29, acc:0.58, maxHit:12, coins:126, xp:120, potion:0.1, junk:["Other Lost Shoe", 50], blurb:"Last seen near the ball pit."},
+      {name:"Sticky Table", icon:"🍯", lvl:63, hp:31, acc:0.59, maxHit:12, coins:140, xp:127, potion:0.12, junk:["Mystery Crumbs", 56], blurb:"Nobody knows what's on it. Nobody asks."},
+      {name:"Ball Pit Kraken", icon:"🐙", lvl:65, hp:31, acc:0.59, maxHit:13, coins:157, xp:135, potion:0.14, junk:["Suspiciously Sticky Ball", 63], blurb:"Lurks under ten thousand plastic balls."},
+      {name:"Static Slide", icon:"⚡", lvl:67, hp:33, acc:0.59, maxHit:13, coins:175, xp:143, potion:0.16, junk:["Static Shock", 70], blurb:"Every hair on your head stands up."},
+      {name:"Sugar Rush Tornado", icon:"🍭", lvl:69, hp:33, acc:0.6, maxHit:14, coins:195, xp:151, potion:0.18, junk:["Lollipop Stick", 78], blurb:"Had three slushies. Will not stop spinning."},
+    ]},
+    {place:"The Birthday Party", req:71, tint:'#FBE0C4', potion:["Sausage Roll", 61], weapon:{name:"Cake Knife", icon:"🔪", dmg:0.45, price:10200, desc:"Cuts cake and arguments short."}, enemies:[
+      {name:"Trick Candle", icon:"🕯️", lvl:71, hp:33, acc:0.6, maxHit:14, coins:217, xp:160, potion:0.1, junk:["Melted Wax", 87], blurb:"You blew it out. It came back."},
+      {name:"Party Popper Swarm", icon:"🎉", lvl:73, hp:35, acc:0.6, maxHit:15, coins:242, xp:170, potion:0.12, junk:["Confetti", 97], blurb:"Bang. Bang. Confetti in your tea."},
+      {name:"Bouncy Castle Beast", icon:"🏰", lvl:75, hp:35, acc:0.6, maxHit:16, coins:270, xp:180, potion:0.14, junk:["Party Bag", 108], blurb:"Fully inflated. Fully furious."},
+      {name:"Balloon Hound", icon:"🎈", lvl:77, hp:36, acc:0.61, maxHit:16, coins:301, xp:191, potion:0.16, junk:["Popped Balloon", 120], blurb:"Squeaks menacingly."},
+      {name:"Pass-the-Parcel Mimic", icon:"🎁", lvl:79, hp:36, acc:0.61, maxHit:17, coins:335, xp:202, potion:0.18, junk:["Wrapping Paper", 134], blurb:"Forty layers of paper and a rubber."},
+    ]},
+    {place:"The Theme Park", req:81, tint:'#D5EEEA', potion:["Churro", 69], weapon:{name:"Selfie Stick Spear", icon:"🤳", dmg:0.5, price:15600, desc:"Extends to full length. Ruins every photo."}, enemies:[
+      {name:"Photo Booth", icon:"📸", lvl:81, hp:36, acc:0.61, maxHit:18, coins:374, xp:214, potion:0.1, junk:["Blurry Photo", 150], blurb:"25 coins for a picture of your worst face."},
+      {name:"Spinning Teacup", icon:"🫖", lvl:83, hp:38, acc:0.62, maxHit:18, coins:417, xp:227, potion:0.12, junk:["Paper Map", 167], blurb:"Round and round until lunch comes back."},
+      {name:"Queue Hydra", icon:"🐍", lvl:85, hp:38, acc:0.62, maxHit:19, coins:464, xp:240, potion:0.14, junk:["Expired Fast Pass", 186], blurb:"Cut one line and two more appear."},
+      {name:"Giant Mascot", icon:"🧸", lvl:87, hp:40, acc:0.62, maxHit:20, coins:518, xp:254, potion:0.16, junk:["Foam Glove", 207], blurb:"Can't see where it's going. Doesn't care."},
+      {name:"Rollercoaster Lunch", icon:"🤢", lvl:89, hp:40, acc:0.63, maxHit:20, coins:577, xp:269, potion:0.18, junk:["Sick Bag", 231], blurb:"It's coming back up."},
+    ]},
+    {place:"The Dark Hallway", req:91, tint:'#D8D9E3', potion:["Midnight Snack", 77], weapon:{name:"The Slipper", icon:"🩴", dmg:0.6, price:24000, desc:"Every dad's final form. Even dragons fear it."}, enemies:[
+      {name:"Creaky Floorboard", icon:"🪵", lvl:91, hp:40, acc:0.63, maxHit:21, coins:644, xp:285, potion:0.1, junk:["Squeaky Nail", 258], blurb:"Wakes the whole house, every time."},
+      {name:"Lurking Toy Car", icon:"🚙", lvl:93, hp:42, acc:0.63, maxHit:22, coins:718, xp:302, potion:0.12, junk:["Tiny Wheel", 287], blurb:"Parked exactly where you'll step."},
+      {name:"Brick Dragon", icon:"🐉", lvl:95, hp:42, acc:0.64, maxHit:23, coins:800, xp:320, potion:0.14, junk:["Loose Brick", 320], blurb:"Waits on the floor for bare feet at 3am."},
+      {name:"Doorframe", icon:"🚪", lvl:97, hp:44, acc:0.64, maxHit:24, coins:892, xp:339, potion:0.16, junk:["Door Wedge", 357], blurb:"It moved. You're sure it moved."},
+      {name:"Monster Under the Bed", icon:"👹", lvl:99, hp:44, acc:0.64, maxHit:25, coins:994, xp:359, potion:0.18, junk:["Dust Bunny", 398], blurb:"Grabs ankles. Mostly yours."},
+    ]},
+  ],
+  junkChance: 0.25,           // every enemy drops its junk item this often
+  rareChance: 1 / 250,        // any enemy in an area can drop that area's weapon
+  // trading: sells your monster junk by itself, most valuable first
+  tradeSeconds: 60,           // one sale every 60 seconds
+  tradeBase: 0.75, tradePerLvl: 0.01,   // you get 75% of an item's value, +1% per Trading level (175% at 100)
+  tradeXpBase: 4, tradeXpPerCoin: 0.5,  // Trading xp per sale = 4 + half the item's value
+  // combat formulas, all percentages. Skills cap at 100.
+  hitBase: 0.60, hitPerLvl: 0.02, hitMin: 0.10, hitMax: 0.95,  // Attack: hit chance = 60% + 2% per level above the enemy's level
+  dmgBase: 4, dmgPerLvl: 0.05,                                  // Strength: max hit = 4 x (1 + 5% per level). Strength 100 = +500%
+  defPerLvl: 0.005,                                             // Defence: 0.5% less damage per level. Defence 100 = 50% less
+  hpXpRatio: 1/3,             // Hitpoints xp per kill = a third of the xp your combat style gets
+  hpBase: 10, hpPerLvl: 2,    // max health = 10 + 2 x Hitpoints level
+  restBelow: 0.35,            // Fight idle skips a turn to rest when health is below this share
+  // slayer
+  slayerEncounter: 0.40,      // in your task's area, the task enemy shows up this often
+  slayerTaskMin: 10, slayerTaskMax: 20,
+  slayerXpPerKill: 1.5,       // task done: Slayer xp = kills x enemy xp x this
+  slayerDmgPerLvl: 0.005,     // +0.5% damage per Slayer level against your task enemy
+  extendMult: 1.5,            // extended tasks: 50% more kills, 50% more xp, 2 points instead of 1
+  slayerCancelCost: 1, slayerExtendCost: 10, slayerPotionCost: 1, slayerPotionPack: 3,
+};
+
+/* ---------- helpers ---------- */
+const FISH = CONFIG.fish, AREAS = CONFIG.areas;
+// flat list of all 50 enemies; enemy id g = area * 5 + slot
+const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e)));
+const SKILLS = {fishing:'Fishing', cooking:'Cooking', attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', trading:'Trading'};
+const STYLES = [['attack', 'Accurate'], ['strength', 'Aggressive'], ['defence', 'Defensive']];
+const $ = s => document.querySelector(s);
+const now = () => Date.now();
+const fmt = n => Math.floor(n).toLocaleString('en-US');
+const pct = x => Math.round(x * 100) + '%';
+const pct1 = x => (Math.round(x * 1000) / 10) + '%';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plural = (name, n) => n === 1 || /s$/.test(name) ? name : name + 's';
+const dur = ms => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
+const clock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const rate = p => p >= 1 ? 'Always' : p >= 0.1 ? pct(p) : `1 in ${Math.round(1 / p)}`;
+
+// xp needed for each level: RuneScape formula / xpDivisor. XP_FOR[1] = 0 ... XP_FOR[100]
+const XP_FOR = (() => { const t = [0, 0]; let pts = 0;
+  for (let l = 1; l < 100; l++) { pts += Math.floor(l + 300 * Math.pow(2, l / 7)); t[l + 1] = Math.floor(Math.floor(pts / 4) / CONFIG.xpDivisor); }
+  return t; })();
+const levelOf = xp => { let l = 1; while (l < 100 && xp >= XP_FOR[l + 1]) l++; return l; };
+
+/* ---------- avatar ---------- */
+const LOOKS = {
+  skin: ['#F7D7BC','#EBBE96','#CF9468','#9C6644','#6B442C'],
+  hairColor: ['#2A1D17','#6B4527','#C8963E','#A8452A','#8E8E8E','#DADADA'],
+  shirt: ['#2C6E7F','#D9483A','#3E9B4F','#E0A21E','#6C4FA3','#33393B'],
+  bg: ['#BFE0E6','#F6D6A8','#CFE8C4','#F2C2BA','#D8CFEE','#DCE1E3'],
+  hair: ['short','messy','thinning','cap','bald'],
+  beard: ['none','stubble','full','mustache'],
+};
+const LOOK_NAMES = {
+  hair: {short:'Short', messy:'Messy', thinning:'Thinning', cap:'Cap', bald:'Bald'},
+  beard: {none:'None', stubble:'Stubble', full:'Full beard', mustache:'Mustache'},
+};
+const DEFAULT_LOOK = {skin:1, hair:'short', hairColor:1, beard:'stubble', glasses:false, shirt:0, bg:0};
+
+function shade(hex, a) { const n = parseInt(hex.slice(1), 16);
+  const f = v => Math.round(v * (1 - a)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+function isDark(hex) { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11) < 120; }
+
+function avatarSVG(L) {
+  const skin = LOOKS.skin[L.skin] || LOOKS.skin[0], hair = LOOKS.hairColor[L.hairColor] || LOOKS.hairColor[0];
+  const shirt = LOOKS.shirt[L.shirt] || LOOKS.shirt[0], bg = LOOKS.bg[L.bg] || LOOKS.bg[0], sd = shade(skin, .16);
+  const sides = `<path d="M19.3 28 C18.8 22 19.6 19 21 17.5 L22 28Z" fill="${hair}"/><path d="M44.7 28 C45.2 22 44.4 19 43 17.5 L42 28Z" fill="${hair}"/>`;
+  let top = '', cap = '';
+  if (L.hair === 'short') top = `<path d="M19.3 27 C18.5 16 23.5 11.5 32 11.5 C40.5 11.5 45.5 16 44.7 27 C43.6 21.5 41 19 37 18.6 C33 18.2 29 19.4 25 18.8 C22 19.6 20.2 22.5 19.3 27Z" fill="${hair}"/>`;
+  if (L.hair === 'messy') top = `<path d="M19 27 C17.5 18 21 12.5 26 11 L27 7.5 L30 10.5 L33 7 L35.2 10.6 L39.5 8.2 L39.8 12.4 C44.2 14.6 46.5 20 45 27 C43.5 22 40 19.5 35 20.5 L33 18 L30 20.5 C26 19 21.5 21 19 27Z" fill="${hair}"/>`;
+  if (L.hair === 'thinning') top = sides + `<path d="M29 13.4 C31 12.6 33 12.6 35 13.4 C33 14.4 31 14.4 29 13.4Z" fill="${hair}"/>`;
+  if (L.hair === 'bald') top = `<ellipse cx="26.5" cy="17" rx="3.6" ry="2" fill="#fff" opacity=".35"/>`;
+  if (L.hair === 'cap') { top = sides; const cd = shade(shirt, .28);
+    cap = `<path d="M18.8 22 C18.8 13.5 24.5 9.5 32 9.5 C39.5 9.5 45.2 13.5 45.2 22Z" fill="${shirt}"/><path d="M18.3 21.2 L46 21.2 C49 21.2 51.5 22.2 51.5 23.6 L18.3 23.6Z" fill="${cd}"/><circle cx="32" cy="9.8" r="1.4" fill="${cd}"/>`; }
+  let beard = '';
+  const jaw = 'M19.6 29 C19.8 40 25 44.5 32 44.5 C39 44.5 44.2 40 44.4 29 C42.8 34.5 40 36.3 36.5 35.6 C34.5 35.2 33 34.6 32 34.6 C31 34.6 29.5 35.2 27.5 35.6 C24 36.3 21.2 34.5 19.6 29Z';
+  if (L.beard === 'full') beard = `<path d="${jaw}" fill="${hair}"/>`;
+  if (L.beard === 'stubble') beard = `<path d="${jaw}" fill="${hair}" opacity=".32"/>`;
+  if (L.beard === 'mustache') beard = `<path d="M26.5 35.4 C28.5 33.2 31 33.4 32 34.3 C33 33.4 35.5 33.2 37.5 35.4 C35.2 36 33.5 35.6 32 35.2 C30.5 35.6 28.8 36 26.5 35.4Z" fill="${hair}"/>`;
+  const mouth = (L.beard === 'full' && isDark(hair)) ? '#F1D3C4' : '#6E3528';
+  const glasses = L.glasses ? `<g fill="#fff" fill-opacity=".18" stroke="#1E2427" stroke-width="1.3"><rect x="23" y="25" width="8" height="6" rx="2"/><rect x="33" y="25" width="8" height="6" rx="2"/><path d="M31 27.5 H33 M23 27 L19.8 26 M41 27 L44.2 26" fill="none"/></g>` : '';
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar">
+<rect width="64" height="64" fill="${bg}"/>
+<path d="M10 64 C10 51 19 45 32 45 C45 45 54 51 54 64Z" fill="${shirt}"/>
+<rect x="27" y="36" width="10" height="11" rx="3" fill="${sd}"/>
+<path d="M27.5 45 L32 50.5 L36.5 45Z" fill="${sd}"/>
+<circle cx="19.5" cy="29" r="3.2" fill="${skin}"/><circle cx="44.5" cy="29" r="3.2" fill="${skin}"/>
+<ellipse cx="32" cy="27" rx="12.5" ry="14" fill="${skin}"/>
+${top}
+<path d="M24.6 24.4 Q27 23.2 29.4 24.4 M34.6 24.4 Q37 23.2 39.4 24.4" stroke="${hair}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<circle cx="27" cy="28" r="1.7" fill="#1D1D1D"/><circle cx="37" cy="28" r="1.7" fill="#1D1D1D"/>
+<path d="M32 29 Q30.6 32.5 32.6 33" stroke="${sd}" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+${beard}
+<path d="M29.2 37.8 Q32 39.8 34.8 37.8" stroke="${mouth}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+${glasses}${cap}
+</svg>`;
+}
+
+/* ---------- icons ---------- */
+const ICON = {
+  coin: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/></svg>`,
+  bolt: `<svg viewBox="0 0 24 24"><path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="currentColor"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24"><path d="M12 21s-8.5-5.2-8.5-11.2A4.6 4.6 0 0 1 12 7.2a4.6 4.6 0 0 1 8.5 2.6C20.5 15.8 12 21 12 21z" fill="currentColor"/></svg>`,
+  dad: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg>`,
+  fish: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2.5 12c3.2-5 9.5-6.2 14.5-2l4.5-3.2v10.4L17 14c-5 4.2-11.3 3-14.5-2z"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>`,
+  pan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="13.5" r="6.5"/><path d="M15.6 9.8 22 5.5"/></svg>`,
+  sword: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5 9 15M20.5 3.5h-4.2M20.5 3.5v4.2M6.5 12.5l5 5M4 20l3.5-3.5"/></svg>`,
+  target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>`,
+  shop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 9h16l-1.2 11H5.2z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke-linecap="round"/></svg>`,
+};
+
+
+/* ---------- state ---------- */
+const KEY = 'gfd_save_v1';
+let S = null;                 // the whole game state (null until a dad is made)
+let draft = null;             // look being edited
+let editing = false, tickerOpen = false, resetArmed = 0, ioMsg = '';
+
+function freshState(name, look) {
+  const t = now();
+  return {
+    v: 2, name: name || 'Dad', look: Object.assign({}, DEFAULT_LOOK, look || {}),
+    coins: 0, capLevel: 0,
+    hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
+    xp: {fishing: 0, cooking: 0, attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, trading: 0}, style: 'attack',
+    raw: Array(10).fill(0), cooked: Array(10).fill(0), pots: Array(10).fill(0),
+    spot: 0, area: 0, tab: 'fish', lastFoe: null,
+    activity: 'fish', actAt: t, paused: false,   // your dad does ONE idle thing at a time: fish, cook, trade or fight
+    weapons: Array(10).fill(0), equipped: -1,
+    task: null, slayerPts: 0, extendOwned: false, extendOn: false,
+    started: t, lastSeen: t, activeAt: t,
+    stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0},
+    loot: {}, kc: Array(50).fill(0),
+    log: [{text: 'Welcome, dad. Your fishing rod is already in the water.', kind: ''}],
+  };
+}
+const intArr = (a, n) => { const o = Array(n).fill(0); (Array.isArray(a) ? a : []).forEach((v, i) => { if (i < n) o[i] = Math.max(0, Math.floor(+v || 0)); }); return o; };
+// fills in anything missing so older saves keep working after updates
+function migrate(s) {
+  if (!s || typeof s !== 'object' || !s.xp) return null;
+  const t = now(), f = freshState(), old = !s.v || s.v < 2;
+  const m = Object.assign(f, s);
+  m.look = Object.assign({}, DEFAULT_LOOK, s.look || {});
+  m.xp = Object.assign(freshState().xp, s.xp);
+  m.stats = Object.assign(freshState().stats, s.stats || {});
+  m.raw = intArr(s.raw, 10); m.cooked = intArr(s.cooked, 10);
+  if (!Array.isArray(m.log)) m.log = [];
+  m.capLevel = clamp(Math.floor(+m.capLevel || 0), 0, CONFIG.idleCosts.length);
+  if (!['attack', 'strength', 'defence'].includes(m.style)) m.style = 'attack';
+  if (m.tab === 'shop') m.tab = 'trade';
+  if (s.xp.strength == null) { m.xp.strength = m.xp.attack; m.xp.defence = m.xp.attack; }   // v0.7 combat update
+  if (old) {
+    // v0.8: one enemy per area became five. Old enemies sit in the middle slot of their area.
+    m.kc = Array(50).fill(0); intArr(s.kc, 10).forEach((v, ri) => { m.kc[ri * 5 + 2] = v; });
+    m.loot = {}; for (const k in (s.loot || {})) { const n = Math.floor(+s.loot[k] || 0), ri = parseInt(k); if (!(n > 0) || !(ri >= 0 && ri < 10)) continue;
+      const nk = k.endsWith('r') ? 'r' + ri : 'e' + (ri * 5 + 2); m.loot[nk] = (m.loot[nk] || 0) + n; }
+    m.area = clamp(+s.region || 0, 0, 9);
+    m.pots = Array(10).fill(0);
+    m.fightIdle = !!(s.idle && s.idle.act === 'fight'); m.paused = false;
+    delete m.energy; delete m.energyAt; delete m.idle; delete m.region; delete m.potions;
+    m.v = 2;
+    m.log.unshift({text: 'Big update! Energy is gone: fishing and cooking now run by themselves, and cooked fish heal you. Areas have 5 enemies each, and Slayer is here.', kind: 'lvl'});
+  }
+  m.kc = intArr(m.kc, 50); m.pots = intArr(m.pots, 10);
+  const loot = {}; for (const k in (m.loot || {})) if (/^(e\d+|r\d)$/.test(k)) loot[k] = Math.max(0, Math.floor(+m.loot[k] || 0)); m.loot = loot;
+  if (m.task && !(m.task.e >= 0 && m.task.e < 50 && m.task.n > 0)) m.task = null;
+  m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
+  // v0.10: rare items became weapons. Any old rare in your bag is now that area's weapon.
+  m.weapons = intArr(m.weapons, 10); let found = 0;
+  for (const k of Object.keys(m.loot)) if (k[0] === 'r') { m.weapons[+k.slice(1)] += m.loot[k]; found += m.loot[k]; delete m.loot[k]; }
+  if (!(m.equipped >= 0 && m.equipped < 10 && m.weapons[m.equipped] > 0)) m.equipped = -1;
+  if (found) { const best = m.weapons.reduce((b, n, i) => n ? i : b, -1); if (m.equipped < 0) m.equipped = best;
+    m.log.unshift({text: `Rare drops are weapons now! Your old rare finds turned into ${found} weapon${found > 1 ? 's' : ''}. Check the Dad tab.`, kind: 'lvl'}); }
+  // v0.12: one idle activity at a time instead of everything at once
+  if (!['fish', 'cook', 'trade', 'fight'].includes(s.activity)) { m.activity = m.fightIdle ? 'fight' : 'fish'; m.actAt = now(); }
+  if (!Number.isFinite(m.actAt)) m.actAt = now();
+  delete m.fishAt; delete m.cookAt; delete m.tradeAt; delete m.fightAt; delete m.fightIdle;
+  return m;
+}
+// safety net: an automatic second copy of the save, refreshed every 10 minutes of play
+const BACKUP_KEY = 'gfd_save_backup';
+let lastBackupAt = 0, brokenSave = null;   // brokenSave = text of a save we couldn't read, never overwritten
+function save() { if (!S) return; try { S.lastSeen = S.savedAt = now(); const j = JSON.stringify(S); localStorage.setItem(KEY, j);
+  if (now() - lastBackupAt > 600000) { localStorage.setItem(BACKUP_KEY, j); lastBackupAt = now(); } } catch (e) {}
+  cloudSync(false); }
+const parseSave = r => { try { return r ? migrate(JSON.parse(r)) : null; } catch (e) { return null; } };
+function load() {
+  let raw = null; try { raw = localStorage.getItem(KEY); } catch (e) {}
+  const s = parseSave(raw);
+  // a save exists but can't be read: park it under its own key so starting over can never overwrite it
+  if (raw && !s) { brokenSave = raw; try { localStorage.setItem('gfd_save_broken_' + now(), raw); } catch (e) {} }
+  return s;
+}
+function backupSave() { try { return parseSave(localStorage.getItem(BACKUP_KEY)); } catch (e) { return null; } }
+const ago = t => { const d = Math.floor((now() - t) / 86400000); return d < 1 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`; };
+
+const lvl = k => levelOf(S.xp[k]);
+const maxHP = () => CONFIG.hpBase + CONFIG.hpPerLvl * lvl('hitpoints');
+const totalLevel = () => Object.keys(SKILLS).reduce((a, k) => a + lvl(k), 0);
+const combatLevel = () => Math.floor((lvl('attack') + lvl('strength') + lvl('defence') + lvl('hitpoints')) / 4);
+const idleWindowMs = () => (CONFIG.idleBaseMinutes + CONFIG.idleStepMinutes * S.capLevel) * 60000;
+const unlockedAreas = () => AREAS.filter(a => a.req <= combatLevel()).length;
+function dadTitle() { return titleFor(totalLevel()); }
+function titleFor(t) {
+  return t >= 800 ? 'Ultimate Dad' : t >= 680 ? 'Legendary Dad' : t >= 520 ? 'Veteran Dad' : t >= 360 ? 'Seasoned Dad' : t >= 200 ? 'Grill Master' : t >= 80 ? 'Weekend Warrior' : 'Rookie Dad'; }
+const weapon = () => S.equipped >= 0 ? AREAS[S.equipped].weapon : null;
+const weaponBonus = () => weapon() ? weapon().dmg : 0;
+const tradeMult = () => CONFIG.tradeBase + CONFIG.tradePerLvl * lvl('trading');
+// trading sells your most valuable junk first
+const tradePick = () => { let best = null; for (const k in S.loot) if (S.loot[k] > 0 && (!best || lootInfo(k).price > lootInfo(best).price)) best = k; return best; };
+const catchChance = i => Math.min(CONFIG.catchMax, CONFIG.catchBase + CONFIG.catchPerLvl * (lvl('fishing') - FISH[i].req));
+const cookChance = i => Math.min(CONFIG.cookMax, CONFIG.cookBase + CONFIG.cookPerLvl * (lvl('cooking') - FISH[i].req));
+const bestSpot = L => FISH.filter(f => f.req <= L).length - 1;
+// cooking always picks the best raw fish you're allowed to cook
+const cookPick = () => { for (let i = 9; i >= 0; i--) if (S.raw[i] > 0 && lvl('cooking') >= FISH[i].req) return i; return -1; };
+
+function addLog(text, kind = '') { S.log.unshift({text, kind}); S.log.length = Math.min(S.log.length, 30); }
+
+// health: +1 per minute, also while the game is closed
+function regenTo(T) {
+  const max = maxHP();
+  if (S.hp >= max) { S.hpAt = T; return 0; }
+  const n = Math.floor((T - S.hpAt) / CONFIG.regenMs); if (n <= 0) return 0;
+  const add = Math.min(n, max - S.hp); S.hp += add; S.hpAt += n * CONFIG.regenMs;
+  if (S.hp >= max) S.hpAt = T; return add;
+}
+
+/* ---------- feedback ---------- */
+const toastQ = []; let toastBusy = false;
+function toast(text) { toastQ.push(text); if (!toastBusy) nextToast(); }
+function nextToast() { const t = toastQ.shift(); if (!t) { toastBusy = false; return; } toastBusy = true;
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
+  $('#app').appendChild(el); setTimeout(() => { el.remove(); nextToast(); }, toastQ.length > 1 ? 1100 : 1800); }
+function pop(text, btn, color = '') {
+  if (!btn || !btn.isConnected) return; const r = btn.getBoundingClientRect();
+  const el = document.createElement('div'); el.className = 'pop ' + color; el.textContent = text;
+  el.style.left = (r.left + r.width / 2) + 'px'; el.style.top = (r.top - 8) + 'px';
+  $('#fx').appendChild(el); setTimeout(() => el.remove(), 950);
+}
+
+
+/* ---------- idle: fishing, cooking and (optional) fighting, processed in time order ---------- */
+function fishTry(r) {
+  const i = S.spot, f = FISH[i]; r.fishTries++;
+  if (Math.random() < catchChance(i)) { S.raw[i]++; S.xp.fishing += f.xp; S.stats.caught++; r.caught[f.name] = (r.caught[f.name] || 0) + 1; r.fishXp += f.xp; }
+}
+function cookTry(r) {
+  const i = cookPick(); if (i < 0) return;      // nothing to cook: the pan waits
+  const f = FISH[i]; S.raw[i]--; r.cookTries++;
+  if (Math.random() < cookChance(i)) { S.cooked[i]++; S.xp.cooking += f.xp; S.stats.cooked++; r.cooked[f.name] = (r.cooked[f.name] || 0) + 1; r.cookXp += f.xp; }
+  else { S.stats.burnt++; r.burnt++; }
+}
+function tradeTry(r) {
+  const k = tradePick(); if (!k) return;        // nothing to sell: the stall waits
+  const it = lootInfo(k), coins = Math.max(1, Math.round(it.price * tradeMult())), xp = Math.round(CONFIG.tradeXpBase + it.price * CONFIG.tradeXpPerCoin);
+  S.loot[k]--; S.coins += coins; S.xp.trading += xp; S.stats.sold++; S.stats.tradeCoins += coins;
+  r.tradeTries++; r.sold[it.name] = (r.sold[it.name] || 0) + 1; r.tradeCoins += coins; r.tradeXp += xp;
+}
+const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting'};
+const actMs = a => a === 'fish' ? CONFIG.fishSeconds * 1000 : a === 'cook' ? CONFIG.cookSeconds * 1000 : a === 'trade' ? CONFIG.tradeSeconds * 1000 : CONFIG.fightIdleMinutes * 60000;
+const canDo = a => a === 'cook' ? cookPick() >= 0 : a === 'trade' ? !!tradePick() : true;
+function runIdle(t) {
+  const end = Math.min(t, (S.activeAt || t) + idleWindowMs());
+  const before = snapLevels(), fr = newFightTally();
+  const r = {fishTries: 0, caught: {}, fishXp: 0, cookTries: 0, cooked: {}, cookXp: 0, burnt: 0, tradeTries: 0, sold: {}, tradeCoins: 0, tradeXp: 0, events: 0};
+  for (let guard = 0; guard < 50000; guard++) {
+    const T = S.actAt + actMs(S.activity); if (T > end) break;
+    S.actAt = T; r.events++;
+    // ran out of raw fish or things to sell: your dad goes back to fishing instead of standing around
+    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
+    if (S.activity === 'fish') fishTry(r);
+    else if (S.activity === 'cook') cookTry(r);
+    else if (S.activity === 'trade') tradeTry(r);
+    else { regenTo(T); idleFight(fr); }
+  }
+  if (t > end) {   // past the idle window: pause, and pick up again when the game is opened
+    S.actAt = t;
+    if (!S.paused) { S.paused = true; addLog(`Idle paused after ${dur(idleWindowMs())} away. Everything picks up again when you open the game.`, 'warn'); }
+  } else S.paused = false;
+  // one quiet catch every 30 seconds isn't news, a pile of them after being away is
+  if (r.fishTries > 2) addLog(`Fishing: ${r.fishTries} casts, caught ${itemsText(r.caught) || 'nothing'}. +${fmt(r.fishXp)} xp`);
+  if (r.tradeTries > 2) addLog(`Trading: sold ${itemsText(r.sold)} for ${fmt(r.tradeCoins)} coins. +${fmt(r.tradeXp)} xp`);
+  if (r.cookTries > 2) addLog(`Cooking: cooked ${itemsText(r.cooked) || 'nothing'}${r.burnt ? `, burnt ${r.burnt}` : ''}. +${fmt(r.cookXp)} xp`);
+  if (fr.n) addLog(fightTallyText(fr, 'Fight idle'), fr.ko ? 'warn' : '');
+  fr.rares.forEach(rareAlert); fr.tasksDone.forEach(taskDoneAlert);
+  checkLevelUps(before);
+  return r.events;
+}
+function tick() {
+  const t = now(); const events = runIdle(t);
+  const gH = regenTo(t);
+  return {gH, events};
+}
+
+/* ---------- combat ---------- */
+// Attack -> hit chance, Strength -> max hit, Defence -> % less damage taken, Slayer -> bonus damage on task enemy
+const pHit = (A, L) => clamp(CONFIG.hitBase + CONFIG.hitPerLvl * (A - L), CONFIG.hitMin, CONFIG.hitMax);
+const pMaxHit = St => Math.round(CONFIG.dmgBase * (1 + CONFIG.dmgPerLvl * St));
+const defRed = D => Math.min(0.9, CONFIG.defPerLvl * D);
+const slayerBonus = () => CONFIG.slayerDmgPerLvl * lvl('slayer');
+const onTask = g => !!(S.task && S.task.e === g);
+// random encounter: on a Slayer task, your task enemy shows up more often in its own area
+function pickEnemy(ri) {
+  if (S.task && ENEMIES[S.task.e].area === ri && Math.random() < CONFIG.slayerEncounter) return S.task.e;
+  return ri * 5 + Math.floor(Math.random() * 5);
+}
+const addLoot = k => { S.loot[k] = (S.loot[k] || 0) + 1; };
+const lootInfo = k => ({name: ENEMIES[+k.slice(1)].junk[0], price: ENEMIES[+k.slice(1)].junk[1]});
+const itemsText = map => Object.entries(map).map(([n, c]) => c > 1 ? `${c} ${n}` : n).join(', ');
+// a weapon drop: auto-equip it if it beats what you're holding
+function rareAlert(ri) {
+  const w = AREAS[ri].weapon; toast(`Rare drop: ${w.icon} ${w.name}!`);
+  let t = `Rare drop! You found the ${w.name} (+${pct(w.dmg)} damage).`;
+  if (w.dmg > weaponBonus()) { S.equipped = ri; t += ' Equipped it.'; }
+  addLog(t, 'lvl');
+}
+
+// decides a whole fight against enemy g without changing anything yet. ev = every hit as ['p'|'e', damage]
+function simFight(g) {
+  const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence'));
+  const mult = (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0));   // weapon and Slayer bonuses stack
+  let ehp = E.hp, hp = S.hp, taken = 0; const ev = [];
+  for (let round = 0; round < 200; round++) {
+    const d = Math.random() < pHit(A, E.lvl) ? Math.round((1 + Math.floor(Math.random() * pMaxHit(St))) * mult) : 0;
+    ehp -= d; ev.push(['p', d]);
+    if (ehp <= 0) break;
+    const e = Math.random() < E.acc ? Math.round((1 + Math.floor(Math.random() * E.maxHit)) * (1 - red)) : 0;  // 0 = missed or fully blocked
+    if (e) { hp = Math.max(0, hp - e); taken += e; }
+    ev.push(['e', e]);
+    if (hp <= 0) break;
+  }
+  return {g, ev, taken, ko: hp <= 0, win: ehp <= 0 && hp > 0};
+}
+const fightOnce = g => applyFight(simFight(g));
+// applies a decided fight: damage, then (on a win) coins, xp, drops and Slayer progress
+function applyFight(sim) {
+  const g = sim.g, E = ENEMIES[g], taken = sim.taken;
+  S.hp = Math.max(0, S.hp - taken);
+  if (!sim.win) { if (sim.ko) { S.hp = 0; S.stats.knockouts++; } return {g, win: false, taken, items: []}; }
+  const coins = Math.max(1, Math.round(E.coins * (0.6 + Math.random() * 0.8)));
+  const hx = Math.round(E.xp * CONFIG.hpXpRatio);
+  S.coins += coins; S.xp[S.style] += E.xp; S.xp.hitpoints += hx;   // xp goes to the chosen combat style
+  const items = []; let rare = null, potion = false;
+  if (Math.random() < E.potion) { S.pots[E.area]++; potion = true; items.push(AREAS[E.area].potion[0]); }
+  if (Math.random() < CONFIG.junkChance) { addLoot('e' + g); items.push(E.junk[0]); }
+  if (Math.random() < CONFIG.rareChance) { S.weapons[E.area]++; items.push(AREAS[E.area].weapon.name); rare = E.area; }
+  S.stats.kills++; S.kc[g]++;
+  let taskDone = null;
+  if (onTask(g)) { S.task.done++; if (S.task.done >= S.task.n) taskDone = completeTask(); }
+  return {g, win: true, taken, coins, xp: E.xp, hx, items, rare, potion, taskDone};
+}
+const newFightTally = () => ({n: 0, w: 0, coins: 0, xp: 0, hx: 0, taken: 0, ko: 0, rest: 0, items: {}, foes: {}, rares: [], tasksDone: []});
+function tally(fr, r) {
+  fr.n++; fr.taken += r.taken; const E = ENEMIES[r.g];
+  if (!r.win) { fr.ko++; return; }
+  fr.w++; fr.coins += r.coins; fr.xp += r.xp; fr.hx += r.hx; fr.foes[E.name] = (fr.foes[E.name] || 0) + 1;
+  r.items.forEach(x => { fr.items[x] = (fr.items[x] || 0) + 1; });
+  if (r.rare != null) fr.rares.push(r.rare); if (r.taskDone) fr.tasksDone.push(r.taskDone);
+}
+function fightTallyText(fr, label) {
+  let t = `${label}: won ${fr.w} of ${fr.n}${fr.w ? ` (${itemsText(fr.foes)})` : ''}. +${fmt(fr.coins)} coins, +${fmt(fr.xp)} ${SKILLS[S.style]} xp, +${fmt(fr.hx)} Hitpoints xp, -${fmt(fr.taken)} health.`;
+  if (Object.keys(fr.items).length) t += ` Loot: ${itemsText(fr.items)}.`;
+  if (fr.rest) t += ` Rested ${fr.rest} time${fr.rest > 1 ? 's' : ''} on low health.`;
+  if (fr.ko) t += ` Knocked out ${fr.ko} time${fr.ko > 1 ? 's' : ''}.`;
+  return t;
+}
+function idleFight(fr) {
+  if (S.area >= unlockedAreas()) return;
+  if (S.hp < Math.ceil(maxHP() * CONFIG.restBelow)) { fr.rest++; return; }   // too hurt: rest this turn, health keeps coming back
+  tally(fr, fightOnce(pickEnemy(S.area)));
+}
+let anim = null, arenaMsg = null;   // anim = single fight being replayed; arenaMsg = last result shown under the arena
+// the Fight button: the fight is decided up front, replayed hit by hit, and only counts once the replay ends
+function beginFight() {
+  if (S.area >= unlockedAreas()) return null;
+  if (S.hp <= 0) { addLog('You have no health left. Eat some fish, drink a potion or rest.', 'warn'); return null; }
+  const g = pickEnemy(S.area); S.lastFoe = g;
+  return simFight(g);
+}
+function endFight(sim) {
+  const g = sim.g, E = ENEMIES[g], r = applyFight(sim);
+  const loot = itemsText(r.items.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {}));
+  if (!r.win) {
+    addLog(`The ${E.name} knocked you out. Eat, drink a potion or rest to heal.`, 'warn');
+    arenaMsg = {area: S.area, kind: 'warn', text: `Knocked out! The ${E.name} wins this one.`};
+  } else {
+    addLog(`You beat the ${E.name}. +${r.coins} coins, +${r.xp} ${SKILLS[S.style]} xp, +${r.hx} Hitpoints xp, -${r.taken} health.${loot ? ` Loot: ${loot}.` : ''}`);
+    arenaMsg = {area: S.area, kind: '', text: `Victory! +${r.coins} coins${loot ? `, ${loot}` : ''}`};
+  }
+  if (r.rare != null) rareAlert(r.rare);
+  if (r.taskDone) taskDoneAlert(r.taskDone);
+  return r.win ? [`+${fmt(r.coins)} coins`, 'gold'] : ['KO', 'red'];
+}
+// eating or drinking mid-fight ends it: you keep the damage taken so far, the enemy gets away, no rewards
+function stopFight() {
+  const a = anim; if (!a) return;
+  if (a.php <= 0 || a.ehp <= 0) { finishAnim(); return; }   // already decided on screen, just finish it
+  clearInterval(a.timer); anim = null;
+  const lost = a.hp0 - a.php, E = ENEMIES[a.g];
+  S.hp = Math.max(0, S.hp - lost);
+  addLog(`You stopped to heal. The ${E.name} got away. -${lost} health.`, 'warn');
+  arenaMsg = {area: S.area, kind: 'warn', text: `Fight stopped. The ${E.name} got away.`};
+}
+
+/* ---------- healing ---------- */
+// picks the biggest heal that doesn't overheal; if every option overheals, the smallest one
+function smartPick(list, heals, hp = S.hp) {
+  const missing = maxHP() - hp; let best = -1, small = -1;
+  list.forEach((n, i) => { if (!n) return;
+    if (heals[i] <= missing && (best < 0 || heals[i] > heals[best])) best = i;
+    if (small < 0 || heals[i] < heals[small]) small = i; });
+  return best >= 0 ? best : small;
+}
+function eat(i, all) {
+  const mh = maxHP(); if (S.hp >= mh) { addLog('Your health is already full.', 'warn'); return; }
+  const f = FISH[i]; let n = 0, gained = 0;
+  while (S.cooked[i] > 0 && S.hp < mh && (all || n < 1)) { const g = Math.min(f.heal, mh - S.hp); S.hp += g; gained += g; S.cooked[i]--; n++; }
+  if (!n) return; S.stats.eaten += n;
+  addLog(n === 1 ? `You ate a ${f.name}. +${gained} health` : `Ate ${n} ${f.name}. +${fmt(gained)} health`);
+  return [`+${fmt(gained)} health`, 'red'];
+}
+const eatBest = () => { const i = smartPick(S.cooked, FISH.map(f => f.heal)); return i >= 0 ? eat(i, false) : undefined; };
+function drink(ri) {
+  const mh = maxHP(); if (!S.pots[ri]) return; if (S.hp >= mh) { addLog('Your health is already full.', 'warn'); return; }
+  const before = S.hp; S.hp = Math.min(mh, S.hp + AREAS[ri].potion[1]); S.pots[ri]--;
+  addLog(`You have a ${AREAS[ri].potion[0]}. +${S.hp - before} health`);
+  return [`+${S.hp - before} health`, 'red'];
+}
+const drinkBest = () => { const i = smartPick(S.pots, AREAS.map(a => a.potion[1])); return i >= 0 ? drink(i) : undefined; };
+
+function setActivity(a) {
+  if (S.activity === a || !canDo(a)) return;
+  S.activity = a; S.actAt = now();
+  addLog(a === 'fight' ? `Your dad is now fight idling in ${AREAS[S.area].place}: one fight every ${CONFIG.fightIdleMinutes} min.` : `Your dad is now ${ACT[a]}. Everything else is on hold.`);
+}
+/* ---------- slayer ---------- */
+function newTask() {
+  if (S.task) return;
+  const top = unlockedAreas() - 1, areas = [top, top - 1].filter(a => a >= 0);   // your best area and the one below
+  const ri = areas[Math.floor(Math.random() * areas.length)], g = ri * 5 + Math.floor(Math.random() * 5);
+  const base = CONFIG.slayerTaskMin + Math.floor(Math.random() * (CONFIG.slayerTaskMax - CONFIG.slayerTaskMin + 1));
+  const ext = S.extendOwned && S.extendOn, n = Math.round(base * (ext ? CONFIG.extendMult : 1));
+  S.task = {e: g, n, done: 0, ext};
+  addLog(`New Slayer task: beat ${n} ${plural(ENEMIES[g].name, n)} in ${AREAS[ri].place}.${ext ? ' (extended)' : ''}`, 'lvl');
+}
+function completeTask() {
+  const T = S.task, E = ENEMIES[T.e];
+  const xp = Math.round(T.n * E.xp * CONFIG.slayerXpPerKill), pts = T.ext ? 2 : 1;
+  S.xp.slayer += xp; S.slayerPts += pts; S.stats.tasks++; S.task = null;
+  return {name: E.name, n: T.n, xp, pts};
+}
+function taskDoneAlert(d) {
+  toast('Slayer task done!');
+  addLog(`Slayer task done: ${d.n} ${plural(d.name, d.n)} beaten. +${fmt(d.xp)} Slayer xp, +${d.pts} Slayer point${d.pts > 1 ? 's' : ''}.`, 'lvl');
+}
+function cancelTask() {
+  if (!S.task || S.slayerPts < CONFIG.slayerCancelCost) return;
+  S.slayerPts -= CONFIG.slayerCancelCost; addLog(`Task cancelled. -${CONFIG.slayerCancelCost} Slayer point.`); S.task = null;
+}
+function buyExtend() {
+  if (S.extendOwned || S.slayerPts < CONFIG.slayerExtendCost) return;
+  S.slayerPts -= CONFIG.slayerExtendCost; S.extendOwned = true; S.extendOn = true;
+  addLog('Task extension unlocked. Your next tasks are 50% bigger.', 'lvl'); toast('Task extension unlocked');
+}
+function buyPotions() {
+  if (S.slayerPts < CONFIG.slayerPotionCost) return;
+  const ri = Math.max(0, unlockedAreas() - 1); S.slayerPts -= CONFIG.slayerPotionCost; S.pots[ri] += CONFIG.slayerPotionPack;
+  addLog(`Bought ${CONFIG.slayerPotionPack} ${AREAS[ri].potion[0]} for ${CONFIG.slayerPotionCost} Slayer point.`);
+  return [`+${CONFIG.slayerPotionPack} ${AREAS[ri].potion[0]}`, 'red'];
+}
+
+/* ---------- shop ---------- */
+function equip(i) {
+  if (!S.weapons[i]) return;
+  S.equipped = S.equipped === i ? -1 : i;
+  addLog(S.equipped === i ? `Equipped the ${AREAS[i].weapon.name}. +${pct(AREAS[i].weapon.dmg)} damage.` : `Put away the ${AREAS[i].weapon.name}. Bare hands it is.`);
+}
+function sellWeapon(i) {
+  const w = AREAS[i].weapon, spare = S.weapons[i] - (S.equipped === i ? 1 : 0); if (spare < 1) return;
+  S.weapons[i]--; S.coins += w.price; addLog(`Sold a ${w.name} for ${fmt(w.price)} coins.`);
+  return [`+${fmt(w.price)} coins`, 'gold'];
+}
+function buyIdle() {
+  const c = CONFIG.idleCosts[S.capLevel]; if (c == null || S.coins < c) return;
+  S.coins -= c; S.capLevel++;
+  addLog(`Idle time upgraded: idle now keeps going ${dur(idleWindowMs())} after you close the game.`, 'lvl'); toast(`Idle time ${dur(idleWindowMs())}!`);
+  return [`-${fmt(c)} coins`, 'gold'];
+}
+
+/* ---------- level ups ---------- */
+function snapLevels() { const o = {combat: combatLevel()}; for (const k in SKILLS) o[k] = lvl(k); return o; }
+function checkLevelUps(before) {
+  for (const k in SKILLS) { const l = lvl(k); if (l <= before[k]) continue;
+    let extra = ''; const unlocks = [];
+    const opened = r => r.req > before[k] && r.req <= l;
+    if (k === 'fishing') {
+      FISH.filter(opened).forEach(f => { extra += ` You can now catch ${f.name}.`; unlocks.push(`New fish: ${f.name}`); });
+      // if you were at your best spot, move up to the new best one automatically
+      if (S.spot === bestSpot(before[k]) && bestSpot(l) > S.spot) { S.spot = bestSpot(l); extra += ` Moved to the ${FISH[S.spot].name} spot.`; }
+    }
+    if (k === 'cooking') FISH.filter(opened).forEach(f => { extra += ` You can now cook ${f.name}.`; unlocks.push(`Can cook ${f.name}`); });
+    if (k === 'hitpoints') extra = ` Max health is now ${maxHP()}.`;
+    if (k === 'slayer') extra = ` +${pct1(slayerBonus())} damage against your task enemy.`;
+    toast(`${SKILLS[k]} level ${l}!`); unlocks.forEach(toast);
+    addLog(`${SKILLS[k]} is now level ${l}.${extra}`, 'lvl');
+  }
+  const c = combatLevel();
+  if (before.combat != null && c > before.combat) {
+    const opened = AREAS.filter(a => a.req > before.combat && a.req <= c);
+    addLog(`Combat level is now ${c}.${opened.map(a => ` ${a.place} is open.`).join('')}`, 'lvl');
+    opened.forEach(a => toast(`New area: ${a.place}`));
+  }
+}
+
+/* ---------- rendering ---------- */
+function regenText(v, max, at) {
+  if (v >= max) return 'Full';
+  const next = Math.max(0, at + CONFIG.regenMs - now()), full = (max - v - 1) * CONFIG.regenMs + next;
+  return `+1 in ${clock(next)}, full in ${dur(full)}`;
+}
+function barHTML(kind, icon, v, max, sub, label) {
+  return `<div class="bar ${kind}" aria-label="${label} ${v} of ${max}"><span class="bicon">${icon}</span>
+  <div><div class="track"><div class="fill" style="width:${Math.min(100, v / max * 100)}%"></div></div><div class="sub">${sub}</div></div>
+  <div class="barnum">${fmt(v)}<small>/${fmt(max)}</small></div></div>`;
+}
+function idleLine() {
+  const a = S.activity, c = cookPick(), tk = tradePick();
+  const what = a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
+  return `Idle: ${what}, next in <b id="actBarH"></b>`;
+}
+function renderTop() {
+  if (!S || editing === 'setup') { $('#top').innerHTML = ''; return; }
+  const mh = anim ? anim.mh : maxHP(), hpNow = anim ? anim.php : S.hp, coinsNow = anim ? anim.coins0 : S.coins;
+  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(S.look)}</div>
+    <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
+    <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
+    <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
+    <div class="idleline">${idleLine()}</div>`;
+  updateProgress();
+}
+// progress bars for the next fishing cast / cooking attempt / idle fight, updated every second
+function updateProgress() {
+  const set = (id, at, ms) => { const el = document.getElementById(id); if (!el) return;
+    el.style.width = clamp((now() - at) / ms * 100, 0, 100) + '%';
+    const lab = document.getElementById(id + 'T'); if (lab) lab.textContent = clock(at + ms - now()); };
+  set('actBar', S.actAt, actMs(S.activity));
+  const h = document.getElementById('actBarH'); if (h) h.textContent = clock(S.actAt + actMs(S.activity) - now());
+}
+function skillHTML(k, compact) {
+  const x = S.xp[k], l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo;
+  const w = l < 100 ? (x - lo) / (hi - lo) * 100 : 100;
+  return `<section class="skill${compact ? ' compact' : ''}"><div><h2>${SKILLS[k]}</h2>
+    <div class="xpline">${l < 100 ? `${fmt(hi - x)} xp to level ${l + 1}` : 'Max level'}</div></div>
+    <div class="lvl" aria-label="Level ${l}">${l}</div><div class="xpbar"><div style="width:${w}%"></div></div></section>`;
+}
+// show what's unlocked plus the next locked thing as a goal, nothing more
+const visibleCount = (list, level) => Math.min(list.length, list.filter(x => x.req <= level).length + 1);
+const progHTML = (id, label) => `<div class="prog"><div class="prog-track"><div class="prog-fill" id="${id}"></div></div><span class="prog-t">${label} <b id="${id}T"></b></span></div>`;
+
+// a "switch to this" button for an idle activity that isn't running
+const actBtn = (a, label, why) => `<button class="btn alt" style="width:100%;margin-top:10px" data-act="activity" data-a="${a}" ${why ? 'disabled' : ''}>${label}<small>${why || `Stops ${ACT[S.activity]}`}</small></button>`;
+const doingNow = () => `<p class="small note doing">Right now your dad is <b>${ACT[S.activity]}</b>.</p>`;
+function fishTab() {
+  const i = S.spot, f = FISH[i], L = lvl('fishing'), c = cookPick(), mh = maxHP();
+  const spots = FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
+    return `<button class="pick" data-act="spot" data-i="${j}" aria-pressed="${j === i}" ${locked ? 'disabled' : ''}>
+      <span class="pn">${x.name}</span><span class="pm">${locked ? `Opens at Fishing ${x.req}` : `${pct(catchChance(j))} catch, ${x.xp} xp, heals ${x.heal} when cooked`}</span></button>`; }).join('');
+  const food = FISH.map((x, j) => [x, j]).filter(([x, j]) => S.cooked[j] > 0).map(([x, j]) =>
+    `<div class="row"><span class="count">${S.cooked[j]}</span><div class="row-main"><div class="row-name">${x.name}</div><div class="row-meta">Heals ${x.heal} health each</div></div>
+      <div class="row-btns"><button class="sbtn" data-act="eat" data-i="${j}" ${S.hp >= mh ? 'disabled' : ''}>Eat</button>
+      <button class="sbtn solid" data-act="eatAll" data-i="${j}" ${S.hp >= mh ? 'disabled' : ''}>Eat all</button></div></div>`).join('');
+  const raw = FISH.map((x, j) => S.raw[j] ? `${S.raw[j]} ${x.name}${lvl('cooking') < x.req ? ` (needs Cooking ${x.req})` : ''}` : '').filter(Boolean).join(', ');
+  return `<div class="duo">${skillHTML('fishing', true)}${skillHTML('cooking', true)}</div>
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'fish' ? ' active' : ''}"><p class="stage-title">${S.activity === 'fish' ? 'Fishing' : 'Fish'} at the ${f.name} spot</p>
+    <p class="stage-meta">${pct(catchChance(i))} catch chance, one cast every ${CONFIG.fishSeconds} seconds.</p>
+    ${S.activity === 'fish' ? progHTML('actBar', 'Next cast in') : actBtn('fish', 'Go fishing', '')}</section>
+  <section class="idlecard${S.activity === 'cook' ? ' active' : ''}"><p class="stage-title">${c >= 0 ? `${S.activity === 'cook' ? 'Cooking' : 'Cook'} ${FISH[c].name}` : 'Nothing to cook'}</p>
+    <p class="stage-meta">${c >= 0 ? `${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds. Always cooks your best raw fish, then goes back to fishing when it runs out.` : 'Catch some fish first.'}</p>
+    ${S.activity === 'cook' ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
+    ${raw ? `<p class="small" style="margin-top:8px">Raw fish waiting: ${raw}.</p>` : ''}</section>
+  <p class="small note">Your dad does one thing at a time. It keeps going while the game is closed, for up to ${dur(idleWindowMs())}. Buy more idle time in the Trade tab.</p>
+  <h3 class="sect">Food</h3><div class="panel">${food || '<div class="empty">Nothing cooked yet. Cooked fish heals you.</div>'}</div>
+  <h3 class="sect">Fishing spots</h3><p class="small note">A better fish every 10 Fishing levels. Better fish give more xp and heal more.</p><div class="panel">${spots}</div>`;
+}
+
+function arenaHTML() {
+  const A = AREAS[S.area], mh = anim ? anim.mh : maxHP(), php = anim ? anim.php : S.hp;
+  const g = anim ? anim.g : (S.lastFoe != null && ENEMIES[S.lastFoe].area === S.area ? S.lastFoe : null), E = g != null ? ENEMIES[g] : null;
+  const ehp = anim ? anim.ehp : (E ? E.hp : 0);
+  const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0))) : 0, eMax = E ? Math.round(E.maxHit * (1 - defRed(lvl('defence')))) : 0;
+  const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
+  const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
+  return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
+    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(S.look)}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
+      <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
+      <div class="fname"><span>${esc(S.name)}</span>${weapon() ? `<em class="wname">${weapon().name}</em>` : ''}<b id="youHpNum">${php}/${mh}</b></div>${E ? fst(pHit(lvl('attack'), E.lvl), youMax) : ''}</div>
+    <div class="vs">vs</div>
+    <div class="fighter"><div class="portrait foe${E && ehp <= 0 ? ' down' : ''}" id="foeBox" style="background:${A.tint}"><span class="emo" aria-hidden="true">${E ? E.icon : '❔'}</span></div>
+      <div class="hpbar${E ? '' : ' empty'}"><div id="foeHp" style="width:${E ? ehp / E.hp * 100 : 100}%"></div></div>
+      <div class="fname"><span>${E ? E.name : 'Who knows?'}</span><b id="foeHpNum">${E ? `${ehp}/${E.hp}` : '?'}</b></div>${E ? fst(E.acc, eMax) : ''}</div>
+    <p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p></section>`;
+}
+function healBtnsHTML(hp) {
+  const mh = maxHP(), food = S.cooked.reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
+  const fi = smartPick(S.cooked, FISH.map(f => f.heal), hp), pi = smartPick(S.pots, AREAS.map(a => a.potion[1]), hp);
+  return `<button class="btn alt" data-act="eatBest" ${fi < 0 || hp >= mh ? 'disabled' : ''}>Eat (${food})<small>${fi >= 0 ? `${FISH[fi].name}, heals ${FISH[fi].heal}` : 'No cooked fish'}</small></button>
+    <button class="btn red" data-act="drinkBest" ${pi < 0 || hp >= mh ? 'disabled' : ''}>Potion (${pots})<small>${pi >= 0 ? `${AREAS[pi].potion[0]}, heals ${AREAS[pi].potion[1]}` : 'None yet'}</small></button>`;
+}
+function taskBanner() {
+  if (!S.task) return '';
+  const E = ENEMIES[S.task.e];
+  return `<button class="taskline" data-act="tab" data-t="slayer"><span>Slayer task</span><b>${S.task.done}/${S.task.n} ${plural(E.name, S.task.n)}</b><span>${AREAS[E.area].place}</span></button>`;
+}
+function fightTab() {
+  const A0 = AREAS[S.area], C = combatLevel(), A = lvl('attack'), St = lvl('strength'), D = lvl('defence'), mh = maxHP();
+  const areas = AREAS.slice(0, visibleCount(AREAS, C)).map((a, j) => { const locked = C < a.req;
+    return `<button class="pick" data-act="area" data-i="${j}" aria-pressed="${j === S.area}" ${locked ? 'disabled' : ''}>
+      <span class="pn">${a.place}</span><span class="pm">${locked ? `Opens at combat level ${a.req}` : `${a.enemies.map(e => e.icon).join(' ')} Made for combat level ${a.req} to ${a.req + 9}`}</span></button>`; }).join('');
+  const styles = STYLES.map(([k, name]) => `<button class="chip style" data-act="style" data-s="${k}" aria-pressed="${S.style === k}">${name}<small>Trains ${SKILLS[k]}</small></button>`).join('');
+  const foes = A0.enemies.map((e, k) => { const g = S.area * 5 + k, eMax = Math.round(e.maxHit * (1 - defRed(D)));
+    return `<div class="foe-row${onTask(g) ? ' task' : ''}"><span class="foe-ic" style="background:${A0.tint}">${e.icon}</span><div class="row-main">
+      <div class="row-name">${e.name} <span class="lvtag">level ${e.lvl}</span>${onTask(g) ? ' <span class="lvtag task">task</span>' : ''}</div>
+      <div class="row-meta">${e.blurb}</div>
+      <div class="stats-row"><span class="st hp" title="Health">${ICON.heart}${e.hp}</span><span class="st" title="Max hit after your Defence">${ICON.sword}${eMax}</span>
+        <span class="st gold" title="Coins">${ICON.coin}${fmt(Math.max(1, Math.round(e.coins * 0.6)))}-${fmt(Math.round(e.coins * 1.4))}</span><span class="kc-tag">Beaten ${fmt(S.kc[g])}</span></div>
+      <div class="row-meta">Drops ${e.junk[0]} ${rate(CONFIG.junkChance)}, ${A0.potion[0]} ${rate(e.potion)}</div></div></div>`; }).join('');
+  let hint = '';
+  if (S.hp <= 0) hint = 'Knocked out. Eat, drink a potion or rest. Health comes back 1 per minute.';
+  else if (S.hp < Math.ceil(mh * CONFIG.restBelow)) hint = 'Health is low. One bad fight could knock you out.';
+  return `<div class="duo quad">${skillHTML('attack', true)}${skillHTML('strength', true)}${skillHTML('defence', true)}${skillHTML('hitpoints', true)}</div>
+  <div class="styles" role="group" aria-label="Combat style">${styles}</div>
+  <p class="small note">Combat level ${C}. Fight xp goes to the skill your style trains, Hitpoints gets a third as much on top.</p>
+  ${taskBanner()}
+  ${arenaHTML()}
+  <section class="stage tight"><div class="actions">
+    <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
+    <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? anim.php : S.hp)}</div>
+    <button class="btn idle wide${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Goes back to fishing' : `1 fight every ${CONFIG.fightIdleMinutes} min, hands free. Stops ${ACT[S.activity]}.`}</small></button></div>
+    ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
+    ${hint ? `<p class="hint">${hint}</p>` : ''}
+    <p class="small" style="margin-top:8px">Eat and Potion pick the biggest heal that won't go over your max health. Healing mid-fight stops the fight: the enemy gets away and you keep the damage.</p></section>
+  <h3 class="sect">Enemies in ${A0.place}</h3><p class="small note">Each fight is a random one of these five${S.task && ENEMIES[S.task.e].area === S.area ? `. Your task enemy shows up ${pct(CONFIG.slayerEncounter)} of the time while on task` : ''}. Any of them can drop the ${A0.weapon.icon} ${A0.weapon.name}, a weapon with +${pct(A0.weapon.dmg)} damage (${rate(CONFIG.rareChance)}).</p>
+  <p class="small note legend"><span class="st hp">${ICON.heart}</span> health <span class="st">${ICON.sword}</span> max hit, after your Defence <span class="st gold">${ICON.coin}</span> coins</p>
+  <div class="panel">${foes}</div>
+  <h3 class="sect">How fights work</h3><div class="odds sep">
+    <p><b>Attack ${A}:</b> 60% hit chance against an enemy your level, plus 2% per level above it, minus 2% per level below.</p>
+    <p><b>Strength ${St}:</b> +${Math.round(CONFIG.dmgPerLvl * St * 100)}% damage, you hit 1 to ${pMaxHit(St)} with bare hands.</p>
+    <p><b>Weapon:</b> ${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage, so you hit up to ${Math.round(pMaxHit(St) * (1 + weaponBonus()))}.` : 'none yet. Every area has a rare weapon drop.'}</p>
+    <p><b>Defence ${D}:</b> you take ${pct1(defRed(D))} less damage.</p>
+    <p><b>Hitpoints ${lvl('hitpoints')}:</b> ${mh} max health, +1 every minute.</p>
+    <p><b>Slayer ${lvl('slayer')}:</b> +${pct1(slayerBonus())} damage against your task enemy.</p>
+    <p class="why">In the fight screen, <span class="st">${ICON.target}</span> is the chance to hit and <span class="st">${ICON.sword}</span> is the max hit, for you and the enemy. A blue 0 is a miss or a hit fully blocked by your Defence.</p></div>
+  <h3 class="sect">Areas</h3><p class="small note">A new area opens every 10 combat levels. Combat level is the average of Attack, Strength, Defence and Hitpoints.</p><div class="panel">${areas}</div>`;
+}
+
+function slayerTab() {
+  const T = S.task, E = T ? ENEMIES[T.e] : null;
+  const task = T
+    ? `<div class="upgrade"><h3 class="sect">Current task${T.ext ? ' (extended)' : ''}</h3>
+        <div class="taskhead"><span class="foe-ic big" style="background:${AREAS[E.area].tint}">${E.icon}</span><div>
+          <div class="big">${T.done}<span class="of">/${T.n}</span></div><div class="row-name">${plural(E.name, T.n)}</div></div></div>
+        <div class="track"><div class="fill" style="width:${T.done / T.n * 100}%"></div></div>
+        <p class="small" style="margin-top:8px">Found in ${AREAS[E.area].place}, level ${E.lvl}. While on this task it shows up ${pct(CONFIG.slayerEncounter)} of the time there, and you deal +${pct1(slayerBonus())} damage to it.</p>
+        <p class="small">When done: +${fmt(Math.round(T.n * E.xp * CONFIG.slayerXpPerKill))} Slayer xp and ${T.ext ? 2 : 1} Slayer point${T.ext ? 's' : ''}.</p>
+        <button class="btn" data-act="goTask">Go to ${AREAS[E.area].place}</button></div>`
+    : `<div class="upgrade"><h3 class="sect">No task</h3><p class="small">The Slayer master picks an enemy from your best area or the one below it. Beat enough of them for Slayer xp and a point.</p>
+        <button class="btn" data-act="newTask">Get a task</button></div>`;
+  const best = Math.max(0, unlockedAreas() - 1), p = S.slayerPts;
+  const item = (name, meta, cost, act, label, ok) => `<div class="row"><div class="row-main"><div class="row-name">${name}</div><div class="row-meta">${meta}</div></div>
+      <button class="sbtn solid" data-act="${act}" ${ok ? '' : 'disabled'}>${label}</button></div>`;
+  const store = item('Cancel task', `${CONFIG.slayerCancelCost} point. Drop your current task and get a new one.`, CONFIG.slayerCancelCost, 'cancelTask', 'Cancel', T && p >= CONFIG.slayerCancelCost)
+    + (S.extendOwned
+      ? `<div class="row"><div class="row-main"><div class="row-name">Task extension</div><div class="row-meta">Owned. New tasks are 50% bigger, give 50% more xp and 2 points.</div></div>
+         <button class="sbtn${S.extendOn ? ' solid' : ''}" data-act="toggleExtend">${S.extendOn ? 'On' : 'Off'}</button></div>`
+      : item('Task extension', `${CONFIG.slayerExtendCost} points, unlock once. New tasks get 50% more kills, 50% more xp and 2 points.`, CONFIG.slayerExtendCost, 'buyExtend', 'Buy', p >= CONFIG.slayerExtendCost))
+    + item(`${CONFIG.slayerPotionPack} ${AREAS[best].potion[0]}`, `${CONFIG.slayerPotionCost} point. Potions from your best area, heal ${AREAS[best].potion[1]} each.`, CONFIG.slayerPotionCost, 'buyPotions', 'Buy', p >= CONFIG.slayerPotionCost);
+  return `${skillHTML('slayer')}
+  <p class="small note" style="margin-top:10px">Slayer level gives +0.5% damage per level against your task enemy.</p>
+  ${task}
+  <h3 class="sect">Slayer store</h3><p class="small note">You have <b class="pts">${p}</b> Slayer point${p === 1 ? '' : 's'}. Tasks done: ${S.stats.tasks}.</p>
+  <div class="panel">${store}</div>`;
+}
+
+function tradeTab() {
+  const next = CONFIG.idleCosts[S.capLevel], total = CONFIG.idleCosts.length, w = idleWindowMs(), w2 = w + CONFIG.idleStepMinutes * 60000;
+  const up = next == null
+    ? `<div class="upgrade"><h3 class="sect">Idle time</h3><div class="big"><span>${dur(w)}</span></div><p class="small">Maxed out. Respect.</p></div>`
+    : `<div class="upgrade"><h3 class="sect">Idle time upgrade ${S.capLevel + 1} of ${total}</h3>
+      <div class="big">${dur(w)} &#8594; <span>${dur(w2)}</span></div>
+      <p class="small">How long fishing, cooking, trading and fight idle keep going after you close the game.</p>
+      <div class="costline"><span>${fmt(Math.min(S.coins, next))} of ${fmt(next)}</span><b>${fmt(next)} coins</b></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
+      <button class="btn" data-act="buyIdle" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy upgrade'}</button></div>`;
+  const k = tradePick(), m = tradeMult();
+  const stock = Object.keys(S.loot).filter(x => S.loot[x] > 0).sort((a, b) => lootInfo(b).price - lootInfo(a).price).map(x => {
+    const it = lootInfo(x), n = S.loot[x], get = Math.max(1, Math.round(it.price * m));
+    return `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${it.name}</div>
+      <div class="row-meta">Worth ${fmt(it.price)}, you get ${fmt(get)} each, ${fmt(get * n)} for all</div></div></div>`; }).join('');
+  return `${skillHTML('trading')}
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'trade' ? ' active' : ''}"><p class="stage-title">${k ? `${S.activity === 'trade' ? 'Selling' : 'Sell'} ${lootInfo(k).name}` : 'Nothing to sell'}</p>
+    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first. Goes back to fishing when the stall is empty.` : 'Monster drops land here. Weapons are never sold for you.'}</p>
+    ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
+  <p class="small note" style="margin-top:10px">You get ${pct(m)} of an item's value: ${pct(CONFIG.tradeBase)} plus 1% per Trading level. Sold so far: ${fmt(S.stats.sold)} items for ${fmt(S.stats.tradeCoins)} coins.</p>
+  <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
+  ${up}`;
+}
+function dadTab() {
+  const days = Math.floor((now() - S.started) / 86400000) + 1;
+  const sk = Object.keys(SKILLS).map(k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
+    return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; }).join('');
+  return `<article class="dcard"><div class="dhero" style="background:${LOOKS.bg[S.look.bg] || LOOKS.bg[0]}">
+      <div class="bigav">${avatarSVG(S.look)}</div>
+      <div><div class="dname">${esc(S.name)}</div><div class="dtitle">${dadTitle()}</div><div class="dtotal">Total level ${totalLevel()}, combat ${combatLevel()}</div>
+      <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div></div></div>
+    <div class="dskills">${sk}</div>
+    <div class="dstats"><div><b>${fmt(S.coins)}</b><span>Coins</span></div><div><b>${fmt(S.stats.kills)}</b><span>Kills</span></div><div><b>${fmt(S.stats.tasks)}</b><span>Slayer tasks</span></div></div>
+    <div class="dfoot"><b>GFD</b><span>Fighting in ${AREAS[Math.max(0, unlockedAreas() - 1)].place}, day ${days}</span></div></article>
+  <div class="stack"><button class="btn" data-act="share">Share card<small>Makes an image of your dad and skills</small></button>
+  <button class="btn alt" data-act="edit">Change name and look</button></div>
+  <p class="small note" id="cloudLine" style="margin-top:12px">${cloudLine()}</p>
+  ${installHTML()}
+  <h3 class="sect" style="margin-top:22px">Highscores</h3><div id="hsBox">${highscoresHTML()}</div>
+  <h3 class="sect" style="margin-top:22px">Weapons</h3><p class="small note">Every area hides one rare weapon (${rate(CONFIG.rareChance)} per kill). Equip one for bonus damage, sell spares.</p>
+  <div class="panel">${AREAS.map((a, i) => { const w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
+    if (!n) return `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown weapon</div><div class="row-meta">Drops in ${a.place}.</div></div></div>`;
+    return `<div class="foe-row${on ? ' task' : ''}"><span class="foe-ic" style="background:${a.tint}">${w.icon}</span><div class="row-main">
+      <div class="row-name">${w.name} <span class="lvtag">+${pct(w.dmg)} damage</span>${n > 1 ? ` <span class="lvtag">x${n}</span>` : ''}</div>
+      <div class="row-meta">${w.desc}</div>
+      <div class="row-btns" style="margin-top:8px"><button class="sbtn${on ? '' : ' solid'}" data-act="equip" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
+      <button class="sbtn" data-act="sellWeapon" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell ${fmt(w.price)}</button></div></div></div>`; }).join('')}</div>
+  ${cloud.state !== 'on' && (!S.lastExport || now() - S.lastExport > 7 * 86400000) ? `<div class="upgrade warnbox" style="margin-top:16px"><p class="small"><b>Back up your dad.</b> Your progress only lives in this browser. If it gets cleared, the save code is the only way back. Copy it and paste it in a Discord DM to yourself.</p>
+    <button class="btn" style="margin-top:10px;width:100%" data-act="copy">Copy save code<small>Last copied: ${S.lastExport ? ago(S.lastExport) : 'never'}</small></button></div>` : ''}
+  <details class="tools"><summary>Backup and move your save</summary><div class="inner">
+    <p class="small">Your progress lives in this browser only. Copy this code to back it up or move to another phone.</p>
+    <textarea id="exportBox" readonly>${exportCode()}</textarea>
+    <button class="sbtn" data-act="copy">Copy save code</button>
+    <p class="small">Paste a save code here to load it. This replaces your current dad.</p>
+    <textarea id="importBox" placeholder="Paste save code"></textarea>
+    <button class="sbtn" data-act="import">Load save code</button>
+    ${ioMsg ? `<p class="small k-warn">${esc(ioMsg)}</p>` : ''}
+    <button class="sbtn" style="border-color:var(--hp);color:var(--hp)" data-act="reset">${resetArmed > now() ? 'Tap again to erase everything' : 'Start over'}</button>
+    <p class="small">GFD v${CONFIG.version}</p></div></details>`;
+}
+
+function editorHTML(setup) {
+  const sw = (key, list) => list.map((c, i) => `<button class="dot" style="background:${c}" data-act="look" data-k="${key}" data-v="${i}" aria-pressed="${draft.look[key] === i}" aria-label="${key} ${i + 1}"></button>`).join('');
+  const ch = key => LOOKS[key].map(v => `<button class="chip" data-act="look" data-k="${key}" data-v="${v}" aria-pressed="${draft.look[key] === v}">${LOOK_NAMES[key][v]}</button>`).join('');
+  return `${setup ? '<div class="brand"><h1>GFD</h1><p>Game for Dads</p></div>' : ''}
+  <div class="preview" id="preview">${avatarSVG(draft.look)}</div>
+  <div class="field"><label class="lab" for="nameInput">Dad name</label><input type="text" id="nameInput" maxlength="16" value="${esc(draft.name)}" autocomplete="off"></div>
+  <div class="field"><span class="lab">Skin</span><div class="sw">${sw('skin', LOOKS.skin)}</div></div>
+  <div class="field"><span class="lab">Hair</span><div class="sw">${ch('hair')}</div></div>
+  <div class="field"><span class="lab">Hair color</span><div class="sw">${sw('hairColor', LOOKS.hairColor)}</div></div>
+  <div class="field"><span class="lab">Face fuzz</span><div class="sw">${ch('beard')}</div></div>
+  <div class="field"><span class="lab">Glasses</span><div class="sw">
+    <button class="chip" data-act="look" data-k="glasses" data-v="0" aria-pressed="${!draft.look.glasses}">No</button>
+    <button class="chip" data-act="look" data-k="glasses" data-v="1" aria-pressed="${!!draft.look.glasses}">Yes</button></div></div>
+  <div class="field"><span class="lab">Shirt${draft.look.hair === 'cap' ? ' and cap' : ''}</span><div class="sw">${sw('shirt', LOOKS.shirt)}</div></div>
+  <div class="field"><span class="lab">Card background</span><div class="sw">${sw('bg', LOOKS.bg)}</div></div>
+  <div class="stack" style="margin-top:22px">${setup
+    ? '<button class="btn" data-act="start">Start playing</button>'
+    : '<button class="btn" data-act="saveLook">Save look</button><button class="btn alt" data-act="cancelLook">Cancel</button>'}</div>
+  ${setup ? setupRescue() : ''}`;
+}
+// on the "make your dad" screen: ways back in for anyone whose dad went missing
+function setupRescue() {
+  const b = backupSave();
+  return `<p class="small" id="setupCloud" style="margin-top:14px">${cloud.checked ? '' : 'Checking your claude.ai account for a saved dad...'}</p>
+  <h3 class="sect" style="margin-top:26px">Lost your dad?</h3>
+  ${brokenSave ? `<div class="upgrade warnbox"><p class="small"><b>We found a save but couldn't read it.</b> It's kept safe and won't be overwritten. Copy this and send it to whoever runs the game:</p>
+    <textarea readonly>${esc(brokenSave)}</textarea></div>` : ''}
+  ${b ? `<button class="btn alt" style="width:100%;margin-bottom:10px" data-act="restoreBackup">Restore backup<small>${esc(b.name)}, total level ${levelSum(b)}, saved ${ago(b.lastSeen || now())}</small></button>` : ''}
+  <details class="tools" ${ioMsg ? 'open' : ''}><summary>Load a save code</summary><div class="inner">
+    <p class="small">Paste the save code you copied from the Dad tab.</p>
+    <textarea id="importBox" placeholder="Paste save code"></textarea>
+    <button class="sbtn" data-act="import">Load save code</button>
+    ${ioMsg ? `<p class="small k-warn">${esc(ioMsg)}</p>` : ''}</div></details>
+  <p class="small" style="margin-top:12px">Saves live inside the browser you play in. If you used another browser or app before (Discord's built-in browser, Chrome, Safari), your dad is still there. Open the link the same way as before.</p>`;
+}
+const levelSum = st => Object.keys(SKILLS).reduce((a, k) => a + levelOf((st.xp || {})[k] || 0), 0);
+/* ---------- share card ----------
+   Draws the dad card onto a canvas (1080x1350, fits Discord nicely) instead of screenshotting the page,
+   so the image is always cropped to just the card and looks the same on every phone. */
+let downloadsApi = null, shareBlob = null;
+if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { downloadsApi = d; }).catch(() => {});
+
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function svgImage(svg, size) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+  i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', `<svg width="${size}" height="${size}" `)); }); }
+function fitFont(g, text, weight, size, family, maxW) { let s = size; do { g.font = `${weight} ${s}px ${family}`; s -= 2; } while (g.measureText(text).width > maxW && s > 20); }
+
+async function makeShareCard() {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const NUM = 'Fredoka, "Atkinson Hyperlegible", system-ui, sans-serif', UI = '"Atkinson Hyperlegible", system-ui, sans-serif';
+  try { await Promise.all(['700 80px Fredoka', '600 56px Fredoka', '700 40px "Atkinson Hyperlegible"', '400 34px "Atkinson Hyperlegible"'].map(f => document.fonts.load(f))); } catch (e) {}
+  const ink = '#14313B', muted = '#56696E', line = '#D5DED9', prim = '#2C6E7F', track = '#E1E8E4';
+  const X = 40, CW = W - 80, PAD = 70;
+  g.fillStyle = '#E4EBE7'; g.fillRect(0, 0, W, H);
+  rr(g, X, 40, CW, H - 80, 44); g.fillStyle = '#fff'; g.fill();
+  // hero band in the dad's chosen background color
+  g.save(); rr(g, X, 40, CW, H - 80, 44); g.clip(); g.fillStyle = LOOKS.bg[S.look.bg] || LOOKS.bg[0]; g.fillRect(X, 40, CW, 370); g.restore();
+  const img = await svgImage(avatarSVG(S.look), 520);
+  rr(g, 90, 85, 280, 280, 44); g.fillStyle = '#fff'; g.fill();
+  g.save(); rr(g, 100, 95, 260, 260, 36); g.clip(); g.drawImage(img, 100, 95, 260, 260); g.restore();
+  g.fillStyle = ink; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  fitFont(g, S.name, 700, 80, NUM, CW - 400); g.fillText(S.name, 410, 210);
+  g.font = `700 40px ${UI}`; g.fillText(dadTitle(), 410, 272);
+  g.font = `400 34px ${UI}`; g.fillText(`Total level ${totalLevel()}, combat ${combatLevel()}`, 410, 318);
+  fitFont(g, weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 700, 34, UI, CW - 400); g.fillText(weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 410, 368);
+  // skills
+  // skills in two columns, four rows
+  const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2;
+  Object.keys(SKILLS).forEach((k, i) => {
+    const col = i % 2, row = Math.floor(i / 2), x0 = X + PAD + col * (cellW + GAP), top = 445 + row * 146;
+    const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) : 1;
+    if (row) { g.fillStyle = line; g.fillRect(x0, top - 16, cellW, 2); }
+    g.fillStyle = ink; g.textAlign = 'left'; g.font = `400 36px ${UI}`; g.fillText(SKILLS[k], x0, top + 52);
+    g.fillStyle = prim; g.textAlign = 'right'; g.font = `700 72px ${NUM}`; g.fillText(String(l), x0 + cellW, top + 58);
+    rr(g, x0, top + 80, cellW, 16, 8); g.fillStyle = track; g.fill();
+    if (w > 0) { rr(g, x0, top + 80, Math.max(16, cellW * w), 16, 8); g.fillStyle = prim; g.fill(); }
+  });
+  // stats row
+  const sy = 1030, colW = CW / 3;
+  g.fillStyle = line; g.fillRect(X, sy, CW, 2); g.fillRect(X + colW, sy, 2, 160); g.fillRect(X + colW * 2, sy, 2, 160); g.fillRect(X, sy + 160, CW, 2);
+  [[fmt(S.coins), 'Coins'], [fmt(S.stats.kills), 'Kills'], [fmt(S.stats.tasks), 'Slayer tasks']].forEach(([v, lab], i) => {
+    const cx = X + colW * i + colW / 2; g.textAlign = 'center';
+    g.fillStyle = ink; fitFont(g, v, 600, 56, NUM, colW - 30); g.fillText(v, cx, sy + 85);
+    g.fillStyle = muted; g.font = `400 30px ${UI}`; g.fillText(lab, cx, sy + 132);
+  });
+  // footer
+  const days = Math.floor((now() - S.started) / 86400000) + 1;
+  g.textAlign = 'left'; g.fillStyle = prim; g.font = `700 52px ${NUM}`; g.fillText('GFD', X + PAD, sy + 252);
+  g.textAlign = 'right'; g.fillStyle = muted; g.font = `400 30px ${UI}`; g.fillText(`Game for Dads, day ${days}`, W - X - PAD, sy + 248);
+  return c;
+}
+async function openShare(btn) {
+  btn.disabled = true;
+  try {
+    const c = await makeShareCard();
+    shareBlob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const file = shareBlob && new File([shareBlob], 'gfd-dad-card.png', {type: 'image/png'});
+    const canShare = !!(file && navigator.canShare && navigator.canShare({files: [file]}));
+    const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Share your dad card');
+    el.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="Your dad card">
+      <p>Long-press the image to save or share it.</p>
+      <div class="stack">${canShare ? '<button class="btn" data-act="shareNative">Share</button>' : ''}
+      ${downloadsApi ? '<button class="btn' + (canShare ? ' alt' : '') + '" data-act="saveImg">Save image</button>' : `<a class="btn${canShare ? ' alt' : ''} linkbtn dl" href="${c.toDataURL('image/png')}" download="gfd-dad-card.png">Save image</a>`}
+      <button class="btn alt" data-act="closeShare">Close</button></div>`;
+    $('#app').appendChild(el);
+  } catch (e) { toast("Couldn't make the image"); }
+  btn.disabled = false;
+}
+const closeShare = () => { const s = document.querySelector('.sheet'); if (s) s.remove(); };
+
+/* ---------- save codes ---------- */
+function exportCode() { try { return 'GFD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(Object.assign({}, S, {log: []}))))); } catch (e) { return ''; } }
+function importCode(code) {
+  try { const c = code.trim().replace(/^GFD1\./, ''); const s = migrate(JSON.parse(decodeURIComponent(escape(atob(c)))));
+    if (!s) throw 0; S = s; S.log = [{text: 'Save loaded. Welcome back.', kind: 'lvl'}]; ioMsg = ''; tick(); save(); return true;
+  } catch (e) { ioMsg = "That save code didn't load. Copy the whole code, including GFD1 at the start, and try again."; return false; }
+}
+
+
+/* ---------- fight replay ---------- */
+const SPLAT_PTS = (() => { const p = []; for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2 - Math.PI / 2, r = k % 2 ? 13 : 19;
+  p.push((20 + Math.cos(a) * r).toFixed(1) + ',' + (20 + Math.sin(a) * r).toFixed(1)); } return p.join(' '); })();
+function splat(sel, d) {   // red splat with the damage, blue 0 for a miss
+  const box = document.querySelector(sel); if (!box) return;
+  const el = document.createElement('div'); el.className = 'splat ' + (d ? 'hit' : 'miss');
+  el.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><polygon points="${SPLAT_PTS}"/></svg><span>${d}</span>`;
+  el.style.left = (50 + Math.random() * 30 - 15) + '%'; el.style.top = (48 + Math.random() * 24 - 12) + '%';
+  box.appendChild(el); setTimeout(() => el.remove(), 750);
+  if (d) { box.classList.remove('hurt'); void box.offsetWidth; box.classList.add('hurt'); }
+}
+function startAnim(a) {
+  anim = Object.assign(a, {i: 0, php: a.hp0, ehp: ENEMIES[a.g].hp});
+  renderTop(); renderMain();
+  anim.timer = setInterval(stepAnim, clamp(Math.round(5200 / a.ev.length), 150, 320));
+}
+function stepAnim() {
+  const a = anim; if (!a) return;
+  if (a.i >= a.ev.length + 2) { finishAnim(); return; }   // two beats of pause on the final hit
+  if (a.i < a.ev.length) {
+    const [who, d] = a.ev[a.i], E = ENEMIES[a.g];
+    if (who === 'p') { a.ehp = Math.max(0, a.ehp - d); splat('#foeBox', d); }
+    else { a.php = Math.max(0, a.php - d); splat('#youBox', d); const hb = document.getElementById('healBtns'); if (hb && d) hb.innerHTML = healBtnsHTML(a.php); }
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = v + '%'; };
+    const txt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('youHp', a.php / a.mh * 100); set('foeHp', a.ehp / E.hp * 100);
+    txt('youHpNum', `${a.php}/${a.mh}`); txt('foeHpNum', `${a.ehp}/${E.hp}`);
+    if (a.ehp <= 0) document.getElementById('foeBox')?.classList.add('down');
+    if (a.php <= 0) document.getElementById('youBox')?.classList.add('down');
+    renderTop();
+  }
+  a.i++;
+}
+function finishAnim() {   // replay done (or skipped): now the fight counts
+  const a = anim; if (!a) return; clearInterval(a.timer); anim = null;
+  const before = snapLevels(), res = endFight(a.sim);
+  checkLevelUps(before); save(); render();
+  const b = document.querySelector('[data-act="fight"]');
+  if (res && b) pop(res[0], b, res[1] || '');
+}
+
+function renderMain() {
+  const m = $('#main');
+  if (editing) { m.innerHTML = editorHTML(editing === 'setup'); return; }
+  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: slayerTab, trade: tradeTab, dad: dadTab}[S.tab] || fishTab)();
+  updateProgress();
+}
+function renderNav() {
+  const nav = $('#nav'), tk = $('#ticker');
+  if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Fishing', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop]]
+    .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
+  tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
+  const L = S.log.length ? S.log : [{text: 'Nothing happened yet.', kind: ''}];
+  tk.innerHTML = tickerOpen ? `<ul>${L.slice(0, 15).map(e => `<li class="k-${e.kind}">${esc(e.text)}</li>`).join('')}</ul>`
+    : `<p class="k-${L[0].kind}">${esc(L[0].text)}</p>`;
+}
+function render() { renderTop(); renderMain(); renderNav(); }
+
+/* ---------- input ---------- */
+// every game action: catch up idle first, run it, check level-ups, save, redraw, float a number over the button
+function run(fn, btn) {
+  tick(); const before = snapLevels(); const res = fn(); checkLevelUps(before); save(); render();
+  if (res) pop(res[0], btn, res[1] || '');
+}
+const handlers = {
+  spot: b => { tick(); S.spot = +b.dataset.i; addLog(`Now fishing at the ${FISH[S.spot].name} spot.`); save(); render(); },
+  eat: b => run(() => eat(+b.dataset.i, false), b),
+  eatAll: b => run(() => eat(+b.dataset.i, true), b),
+  eatBest: b => run(eatBest, b),
+  drinkBest: b => run(drinkBest, b),
+  fight: () => {   // single fight: decided now, replayed hit by hit, counted when the replay ends
+    if (anim) return;
+    tick(); const sim = beginFight(); save();
+    if (!sim) { render(); return; }
+    startAnim({sim, ev: sim.ev, g: sim.g, hp0: S.hp, mh: maxHP(), coins0: S.coins});
+  },
+  fightIdle: () => { tick(); setActivity(S.activity === 'fight' ? 'fish' : 'fight'); save(); render(); },
+  activity: b => { tick(); setActivity(b.dataset.a); save(); render(); },
+  area: b => { S.area = +b.dataset.i; arenaMsg = null; save(); render(); },
+  style: b => { S.style = b.dataset.s; addLog(`Combat style: ${STYLES.find(x => x[0] === S.style)[1]}. Fight xp now trains ${SKILLS[S.style]}.`); save(); render(); },
+  newTask: b => run(newTask, b),
+  goTask: () => { if (S.task) { S.area = ENEMIES[S.task.e].area; S.tab = 'fight'; arenaMsg = null; save(); render(); $('#main').scrollTop = 0; } },
+  cancelTask: b => run(cancelTask, b),
+  buyExtend: b => run(buyExtend, b),
+  toggleExtend: () => { S.extendOn = !S.extendOn; addLog(`Task extension ${S.extendOn ? 'on' : 'off'} for your next tasks.`); save(); render(); },
+  buyPotions: b => run(buyPotions, b),
+  equip: b => run(() => equip(+b.dataset.i), b),
+  sellWeapon: b => run(() => sellWeapon(+b.dataset.i), b),
+  buyIdle: b => run(buyIdle, b),
+  tab: b => { S.tab = b.dataset.t; if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; save(); render(); $('#main').scrollTop = 0; },
+  edit: () => { draft = {name: S.name, look: Object.assign({}, S.look)}; editing = 'edit'; render(); $('#main').scrollTop = 0; },
+  look: b => { const k = b.dataset.k, v = b.dataset.v;
+    draft.look[k] = k === 'glasses' ? v === '1' : (k === 'hair' || k === 'beard') ? v : +v; renderMain(); },
+  saveLook: () => { S.name = draft.name.trim() || 'Dad'; S.look = draft.look; editing = false; save(); render(); },
+  cancelLook: () => { editing = false; render(); },
+  start: () => { S = freshState(draft.name.trim() || 'Dad', draft.look); editing = false; save(); render(); },
+  share: b => openShare(b),
+  closeShare: () => closeShare(),
+  shareNative: () => { if (!shareBlob) return;
+    navigator.share({files: [new File([shareBlob], 'gfd-dad-card.png', {type: 'image/png'})], title: 'My GFD dad'})
+      .catch(e => { if (e && e.name !== 'AbortError') toast('Long-press the image instead'); }); },
+  saveImg: () => { if (!downloadsApi || !shareBlob) return;
+    downloadsApi.save({filename: 'gfd-dad-card.png', data: shareBlob}).then(() => toast('Image saved'))
+      .catch(e => { if (e && e.code !== 'declined') toast('Long-press the image instead'); }); },
+  copy: () => { S.lastExport = now(); save(); const code = exportCode(), box = $('#exportBox'); if (box) { box.value = code; box.select(); }
+    const done = () => { toast('Save code copied'); render(); };
+    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(done)
+      .catch(() => { try { document.execCommand('copy'); done(); } catch (e) { render(); } }); },
+  import: () => { const ok = importCode($('#importBox').value); if (ok) editing = false; render(); if (ok) toast('Save loaded'); },
+  hsSort: b => { hsSort = b.dataset.s; renderCloudBits(); },
+  cloudRetry: () => { cloudInit(); },
+  install: () => { if (!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); },
+  restoreBackup: () => { const b = backupSave(); if (!b) return; S = b; editing = false; tick(); S.activeAt = now();
+    addLog('Restored your automatic backup. Welcome back.', 'lvl'); save(); render(); toast('Backup restored'); },
+  reset: () => { if (resetArmed > now()) { try { localStorage.removeItem(KEY); } catch (e) {}
+      S = null; resetArmed = 0; draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); return; }
+    resetArmed = now() + 4000; renderMain(); setTimeout(() => { if (S && S.tab === 'dad' && !editing) renderMain(); }, 4100); },
+};
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('sheet')) { closeShare(); return; }
+  if (e.target.closest('#ticker')) { tickerOpen = !tickerOpen; renderNav(); return; }
+  const b0 = e.target.closest('[data-act]');
+  if (anim) {
+    if (e.target.closest('#arena')) { finishAnim(); return; }             // tap the fight: skip to the end
+    if (!b0 || b0.disabled || b0.dataset.act === 'fight') return;         // Fight is locked while fighting
+    if (['eatBest', 'drinkBest', 'eat', 'eatAll'].includes(b0.dataset.act)) stopFight(); else finishAnim();
+  }
+  if (!b0 || b0.disabled) return;
+  // the skip re-rendered the page, so act on the fresh copy of the tapped button
+  const sel = ['act', 'i', 'k', 't', 's'].filter(x => b0.dataset[x] != null).map(x => `[data-${x}="${b0.dataset[x]}"]`).join('');
+  const b = b0.isConnected ? b0 : document.querySelector(sel) || b0;
+  if (b.disabled) return;
+  const h = handlers[b.dataset.act]; if (h) h(b);
+});
+document.addEventListener('input', e => { if (e.target.id === 'nameInput' && draft) draft.name = e.target.value; });
+
+/* ---------- cloud save + highscores (needs a claude.ai sign-in) ----------
+   Your save goes to a private slot under your claude.ai account: data/users/<you>/save (nobody else can read it).
+   The highscore board is scores/<you>: everyone signed in reads it, each dad only writes his own row.
+   Not signed in? The game just keeps saving on this device like before. */
+const cloud = {checked: false, state: 'off', reason: 'checking', err: '', db: null, uid: null, unsub: null, busy: false, lastSync: 0, lastJson: '', lastScoreJson: '', scores: []};
+let hsSort = 'total', bootSavedAt = 0;   // bootSavedAt: when this device's save was really made, before startup re-saves it
+const progressOf = st => Object.values(st.xp || {}).reduce((a, b) => a + (+b || 0), 0);
+function parseRemote(d) { try { return d && typeof d.data === 'string' ? migrate(JSON.parse(d.data)) : null; } catch (e) { return null; } }
+function stash(st, why) { try { localStorage.setItem('gfd_save_other_' + now(), JSON.stringify(st)); } catch (e) {} addLog(why, 'warn'); }
+// phone save vs cloud save: same dad -> newest wins. Two different dads -> keep the one with more progress, park the other.
+function resolveSaves(remote) {
+  if (!remote) return;
+  if (anim) finishAnim();
+  const take = msg => { S = remote; editing = editing === 'setup' ? false : editing; tick(); S.activeAt = now(); addLog(msg, 'lvl'); lastBackupAt = 0; save(); render(); };
+  if (!S) { take(`Loaded ${remote.name} from your claude.ai account.`); toast('Cloud save loaded'); return; }
+  if (remote.started === S.started) { if ((remote.savedAt || remote.lastSeen || 0) > bootSavedAt + 1000) { take('Loaded your newer save from your claude.ai account.'); toast('Cloud save loaded'); } return; }
+  if (progressOf(remote) > progressOf(S)) { stash(S, `This device had a different dad (${S.name}) with less progress. He's parked on this device; your account's dad is back.`); take(`Loaded ${remote.name} from your claude.ai account.`); }
+  else stash(remote, `Your account had a different dad (${remote.name}) with less progress. This dad now goes to the cloud; the other one is parked on this device.`);
+}
+// reason = why the cloud is or isn't working, shown on the Dad tab so players can tell us
+async function cloudInit() {
+  cloud.checked = false; cloud.reason = 'checking'; cloud.err = ''; renderCloudBits();
+  try {
+    const C = window.claude;
+    if (!C || typeof C.use !== 'function') { cloud.reason = 'local'; return; }        // normal website (GitHub Pages): saves on this device
+    const [db, user] = await Promise.all([C.use('db'), C.use('user')]);
+    if (!db) { cloud.reason = 'no-db'; return; }                                       // not signed in here
+    cloud.db = db; cloud.state = 'readonly';
+    if (!cloud.unsub) cloud.unsub = db.collection('scores').onSnapshot(snap => { cloud.scores = snap.docs.map(d => cleanScore(d.id, d.data())).filter(Boolean); renderCloudBits(); },
+      e => { cloud.err = (e && e.code) || 'read failed'; renderCloudBits(); });
+    const uid = user ? await user.id() : null;
+    if (!uid) { cloud.reason = 'no-id'; return; }                                      // can look, has no private save slot
+    cloud.uid = uid;
+    const snap = await db.doc(`data/users/${uid}/save`).get();
+    resolveSaves(snap.exists ? parseRemote(snap.data()) : null);
+    cloud.state = 'on'; cloud.reason = 'on'; cloud.lastJson = ''; cloud.lastScoreJson = '';
+    await cloudSync(true);
+  } catch (e) { cloud.reason = 'error'; cloud.err = (e && (e.code || e.message)) || String(e); }
+  finally { cloud.checked = true; renderCloudBits(); }
+}
+// writes at most once a minute, only what changed. force = right now (closing the game, first sync)
+async function cloudSync(force) {
+  if (cloud.state !== 'on' || !S || cloud.busy) return;
+  if (!force && now() - cloud.lastSync < 60000) return;
+  const json = JSON.stringify(S), score = scoreDoc(), sj = JSON.stringify(score);
+  if (json === cloud.lastJson && sj === cloud.lastScoreJson) return;
+  cloud.busy = true;
+  try {
+    if (json !== cloud.lastJson) { await cloud.db.doc(`data/users/${cloud.uid}/save`).set({savedAt: S.savedAt || now(), started: S.started, data: json}); cloud.lastJson = json; }
+    if (sj !== cloud.lastScoreJson) { await cloud.db.doc(`scores/${cloud.uid}`).set(Object.assign({at: now()}, score)); cloud.lastScoreJson = sj; }
+    cloud.lastSync = now();
+  } catch (e) { cloud.err = (e && (e.code || e.message)) || String(e);
+    if (e && ['invalid_argument', 'not_granted', 'revoked', 'capability_disabled'].includes(e.code)) { cloud.state = 'readonly'; cloud.reason = 'refused'; } }
+  cloud.busy = false; renderCloudBits();
+}
+function scoreDoc() {
+  const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
+  return {name: S.name, look: S.look, total: totalLevel(), combat: combatLevel(), lv, kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped};
+}
+// other dads' rows are their input: clean every field before showing it
+function cleanScore(id, d) {
+  if (!d || typeof d !== 'object') return null;
+  const n = (v, max) => clamp(Math.floor(+v || 0), 0, max), lv = {};
+  for (const k in SKILLS) lv[k] = n((d.lv || {})[k], 100) || 1;
+  const L = d.look || {}, look = {skin: n(L.skin, 4), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, 5),
+    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, 5), bg: n(L.bg, 5)};
+  const w = Math.floor(+d.weapon); 
+  return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
+    combat: n(d.combat, 100), kills: n(d.kills, 1e9), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, at: +d.at || 0};
+}
+const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];
+const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
+function highscoresHTML() {
+  if (!cloud.checked) return '<p class="small">Checking claude.ai for the highscores...</p>';
+  if (!cloud.db && cloud.reason === 'local') return '<div class="upgrade"><p class="small">The highscore board is moving with the game and will be back soon.</p></div>';
+  if (!cloud.db) return '<div class="upgrade"><p class="small">Highscores and cloud saves need the game open inside claude.ai while you\'re signed in. Until then, your dad saves on this device like before. See the cloud save line above for what\'s missing.</p></div>';
+  const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
+  const chips = HS_SORTS.map(([k, label]) => `<button class="chip hs" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
+  const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.uid ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
+      <span class="hs-av">${avatarSVG(r.look)}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.uid ? ' <span class="lvtag">you</span>' : ''}</div>
+      <div class="row-meta">${titleFor(r.total)}, combat ${r.combat}${r.at ? `, updated ${ago(r.at)}` : ''}</div></div>
+      <span class="hs-val">${fmt(hsValue(r, hsSort))}</span></div>`).join('');
+  const note = cloud.state === 'on' ? '' : '<p class="small note" style="margin-top:10px">You can see the board, but you\'re not on it and your save isn\'t in the cloud. Ask the dad who shared the game to invite you by email as an Editor.</p>';
+  return `<div class="hs-chips">${chips}</div><div class="panel">${list || '<div class="empty">No dads on the board yet.</div>'}</div>${note}`;
+}
+function installHTML() {
+  if (standalone() || window.claude) return '';
+  if (installEvt) return '<button class="btn alt" style="width:100%;margin-top:12px" data-act="install">Install GFD as an app<small>Own icon, full screen, no browser bars</small></button>';
+  if (/iphone|ipad/i.test(navigator.userAgent)) return '<p class="small note" style="margin-top:12px">Want GFD as an app? In Safari tap the Share button, then "Add to Home Screen".</p>';
+  return '';
+}
+const openBtn = label => `<a class="sbtn solid linkbtn" href="${CONFIG.homeUrl}" target="_blank" rel="noopener">${label}</a>`;
+function cloudLine() {
+  const R = cloud.reason, err = cloud.err ? ` (claude.ai said: ${esc(cloud.err)})` : '';
+  const retry = '<button class="sbtn" data-act="cloudRetry">Try again</button>';
+  if (!cloud.checked && R === 'checking') return 'Cloud save: checking...';
+  if (R === 'local') return '<b>Saved on this device.</b> Copy your save code now and then (Backup, below) so a cleared browser can never cost you your dad.';
+  if (R === 'on') return `Cloud save: on, synced ${cloud.lastSync ? (now() - cloud.lastSync < 90000 ? 'just now' : now() - cloud.lastSync < 3600000 ? Math.round((now() - cloud.lastSync) / 60000) + ' min ago' : ago(cloud.lastSync)) : 'soon'}. Your dad is safe in your claude.ai account and follows you to any device.${err}`;
+  const why = {
+    'no-claude': 'This copy of the game is not running inside claude.ai, so it can only save on this device. Open it from the claude.ai link, signed in.',
+    'no-db': "You're not signed in to claude.ai in this browser (or this view doesn't allow saving). Sign in on claude.ai, then open the game from the claude.ai link.",
+    'no-id': "You're signed in, but claude.ai gives this page no save slot for you. Usually that means you only have view access: ask for an Editor invite by email.",
+    'refused': 'claude.ai refused to save. Usually that means you only have view access: ask for an Editor invite by email, and the game must not also be shared by public link.',
+    'error': 'Something went wrong talking to claude.ai.',
+  }[R] || 'Cloud save is off.';
+  return `<b>Cloud save: off.</b> ${why}${err}<span class="cloudbtns">${R === 'no-claude' || R === 'no-db' ? openBtn('Open in claude.ai') : ''}${retry}</span>`;
+}
+function renderCloudBits() {
+  const hs = document.getElementById('hsBox'); if (hs) hs.innerHTML = highscoresHTML();
+  const cl = document.getElementById('cloudLine'); if (cl) cl.innerHTML = cloudLine();
+  const sc = document.getElementById('setupCloud'); if (sc) sc.textContent = cloud.checked ? (cloud.uid ? 'No dad found in your claude.ai account yet. Make one!' : '') : 'Checking your claude.ai account for a saved dad...';
+}
+
+/* ---------- boot ---------- */
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}   // ask the browser not to clear our save
+S = load();
+if (!S) { draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; }
+else {
+  bootSavedAt = S.savedAt || S.lastSeen || 0;
+  const h0 = S.hp, away = now() - (S.lastSeen || now());
+  tick(); S.activeAt = now();
+  if (away > 120000) { if (S.hp > h0) addLog(`While you were away: +${fmt(S.hp - h0)} health.`); toast('Welcome back, ' + S.name); }
+  save();
+}
+render();
+cloudInit();
+var installEvt = null;   // var, not let: the Dad tab can render before this line runs
+function standalone() { return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (S && S.tab === 'dad' && !editing) renderMain(); });
+if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {});
+setInterval(() => {
+  if (!S || editing === 'setup') return;
+  const g = tick(); if (!document.hidden) S.activeAt = now(); renderTop();
+  if (g.events || g.gH) {
+    save(); renderNav();
+    const a = document.activeElement, busy = editing || anim || S.tab === 'dad' || (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'));
+    if (!busy) renderMain();
+  }
+  if (!editing) updateProgress();
+}, 1000);
+document.addEventListener('visibilitychange', () => {
+  if (!S) return;
+  if (document.hidden) { lastBackupAt = 0; save(); cloudSync(true); return; }   // closing the game also refreshes the backup and the cloud copy
+  tick(); S.activeAt = now(); save(); if (!editing && !anim) render(); else renderTop();
+});
+</script>
+</body>
+</html>
