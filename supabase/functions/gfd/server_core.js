@@ -49,10 +49,10 @@ export async function handle(body, sql, createEngine) {
     await tx`insert into public.gfd_state (player_id, state, legacy, updated_at) values (${p.id}, ${tx.json(S)}, false, now())
       on conflict (player_id) do update set state = excluded.state, legacy = false, version = public.gfd_state.version + 1, updated_at = now()`;
     const sc = E.scoreRow();
-    await tx`insert into public.gfd_scores (player_id, name, look, lv, total, combat, kills, tasks, weapon, updated_at)
-      values (${p.id}, ${sc.name}, ${tx.json(sc.look)}, ${tx.json(sc.lv)}, ${sc.total}, ${sc.combat}, ${sc.kills}, ${sc.tasks}, ${sc.weapon}, now())
+    await tx`insert into public.gfd_scores (player_id, name, look, lv, total, combat, kills, tasks, weapon, pet, updated_at)
+      values (${p.id}, ${sc.name}, ${tx.json(sc.look)}, ${tx.json(sc.lv)}, ${sc.total}, ${sc.combat}, ${sc.kills}, ${sc.tasks}, ${sc.weapon}, ${sc.pet}, now())
       on conflict (player_id) do update set name = excluded.name, look = excluded.look, lv = excluded.lv, total = excluded.total,
-        combat = excluded.combat, kills = excluded.kills, tasks = excluded.tasks, weapon = excluded.weapon, updated_at = now()`;
+        combat = excluded.combat, kills = excluded.kills, tasks = excluded.tasks, weapon = excluded.weapon, pet = excluded.pet, updated_at = now()`;
     const view = Object.assign({}, S); if (view.pending) view.pending = {g: view.pending.g};   // the phone never sees fights ahead of time
     return {ok: true, player_id: p.id, state: view, toasts: E.toasts, arena: E.arenaMsg, pop: out.pop, fight: out.fight, serverNow: Date.now()};
   });

@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.17',
+  version: '0.18',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -125,6 +125,15 @@ const CONFIG = {
   hpBase: 10, hpPerLvl: 2,    // max health = 10 + 2 x Hitpoints level
   restBelow: 0.35,            // Fight idle skips a turn to rest when health is below this share (and there's no food to auto-eat)
   autoEatBelow: 0.5,          // auto-eat: below this share of max health your dad eats his best fish instead of attacking
+  // pets: super rare, one per non-combat skill, purely for bragging. odds = 1 in this many actions at level 0,
+  // and every level makes it 1% likelier (about twice as likely at 99). Tuned so each takes ~2-3 months of normal play.
+  pets: {
+    fishing:  {name: 'Gulliver the Seagull', icon: '🐦', odds: 20000, per: 'cast',        hint: 'Something lurks near the fishing spots...',   desc: 'Stole your sandwich. Stayed for the company.'},
+    cooking:  {name: 'Toasty',               icon: '🍞', odds: 15000, per: 'cooking try', hint: 'Something smells faintly of burnt bread...',   desc: 'A slice of toast with a face. Burnt on one side, just like your cooking.'},
+    trading:  {name: 'Rocky the Raccoon',    icon: '🦝', odds: 2000,  per: 'sale',        hint: 'Someone keeps rummaging through your junk...', desc: 'Handles your sales. Definitely not skimming. Probably.'},
+    slayer:   {name: 'Honkers',              icon: '🪿', odds: 200,   per: 'Slayer task', hint: 'A familiar honk echoes after every task...',  desc: 'An Angry Goose who switched sides. Still angry.'},
+  },
+  petPerLvl: 0.01,
   // slayer
   slayerEncounter: 0.40,      // in your task's area, the task enemy shows up this often
   slayerTaskMin: 10, slayerTaskMax: 20,
@@ -187,6 +196,7 @@ function freshState(name, look) {
     activity: 'fish', actAt: t, paused: false,   // your dad does ONE idle thing at a time: fish, cook, trade or fight
     weapons: Array(10).fill(0), equipped: -1,
     task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false,
+    pets: {}, petOut: null,   // pets you've found (skill -> times found) and the one following you
     started: t, lastSeen: t, activeAt: t,
     stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0},
     loot: {}, kc: Array(50).fill(0),
@@ -225,6 +235,8 @@ function migrate(s) {
   if (m.task && !(m.task.e >= 0 && m.task.e < 50 && m.task.n > 0)) m.task = null;
   m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
   m.autoEat = !!m.autoEat;
+  const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
+  if (!pets[m.petOut]) m.petOut = null;
   // v0.10: rare items became weapons. Any old rare in your bag is now that area's weapon.
   m.weapons = intArr(m.weapons, 10); let found = 0;
   for (const k of Object.keys(m.loot)) if (k[0] === 'r') { m.weapons[+k.slice(1)] += m.loot[k]; found += m.loot[k]; delete m.loot[k]; }
@@ -271,14 +283,25 @@ function regenTo(T) {
 }
 
 
+/* ---------- pets ---------- */
+const petOdds = k => Math.max(1, Math.round(CONFIG.pets[k].odds / (1 + CONFIG.petPerLvl * lvl(k))));   // "1 in N" right now
+function rollPet(k) {
+  if (Math.random() >= 1 / petOdds(k)) return;
+  const P = CONFIG.pets[k];
+  if (S.pets[k]) { S.pets[k]++; addLog(`You have a funny feeling you would have been followed... (${P.name} again)`, 'lvl'); return; }
+  S.pets[k] = 1; if (!S.petOut) S.petOut = k;
+  toast(`${P.icon} New pet: ${P.name}!`);
+  addLog(`${P.icon} ${P.name} has started following you! ${P.desc}`, 'lvl');
+}
+
 /* ---------- idle: fishing, cooking and (optional) fighting, processed in time order ---------- */
 function fishTry(r) {
-  const i = S.spot, f = FISH[i]; r.fishTries++;
+  const i = S.spot, f = FISH[i]; r.fishTries++; rollPet('fishing');
   if (Math.random() < catchChance(i)) { S.raw[i]++; S.xp.fishing += f.xp; S.stats.caught++; r.caught[f.name] = (r.caught[f.name] || 0) + 1; r.fishXp += f.xp; }
 }
 function cookTry(r) {
   const i = cookPick(); if (i < 0) return;      // nothing to cook: the pan waits
-  const f = FISH[i]; S.raw[i]--; r.cookTries++;
+  const f = FISH[i]; S.raw[i]--; r.cookTries++; rollPet('cooking');
   if (Math.random() < cookChance(i)) { S.cooked[i]++; S.xp.cooking += f.xp; S.stats.cooked++; r.cooked[f.name] = (r.cooked[f.name] || 0) + 1; r.cookXp += f.xp; }
   else { S.stats.burnt++; r.burnt++; }
 }
@@ -286,6 +309,7 @@ function tradeTry(r) {
   const k = tradePick(); if (!k) return;        // nothing to sell: the stall waits
   const it = lootInfo(k), coins = Math.max(1, Math.round(it.price * tradeMult())), xp = Math.round(CONFIG.tradeXpBase + it.price * CONFIG.tradeXpPerCoin);
   S.loot[k]--; S.coins += coins; S.xp.trading += xp; S.stats.sold++; S.stats.tradeCoins += coins;
+  rollPet('trading');
   r.tradeTries++; r.sold[it.name] = (r.sold[it.name] || 0) + 1; r.tradeCoins += coins; r.tradeXp += xp;
 }
 const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting'};
@@ -490,7 +514,7 @@ function newTask() {
 function completeTask() {
   const T = S.task, E = ENEMIES[T.e];
   const xp = Math.round(T.n * E.xp * CONFIG.slayerXpPerKill), pts = T.ext ? 2 : 1;
-  S.xp.slayer += xp; S.slayerPts += pts; S.stats.tasks++; S.task = null;
+  S.xp.slayer += xp; S.slayerPts += pts; S.stats.tasks++; S.task = null; rollPet('slayer');
   return {name: E.name, n: T.n, xp, pts};
 }
 function taskDoneAlert(d) {
@@ -614,6 +638,7 @@ function doAction(action, a) {
     case 'equip': { const i = intIn(a.i, 0, 9); if (i != null) equip(i); break; }
     case 'sellWeapon': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = sellWeapon(i); break; }
     case 'autoEat': S.autoEat = !S.autoEat; addLog(S.autoEat ? `Auto-eat on: below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking, in fights and fight idle.` : 'Auto-eat off.'); break;
+    case 'petOut': if (S.pets[a.k]) { S.petOut = S.petOut === a.k ? null : a.k; addLog(S.petOut ? `${CONFIG.pets[a.k].name} is following you now.` : `${CONFIG.pets[a.k].name} is taking a nap at home.`); } break;
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
     default: out.unknown = true;
   }
@@ -623,5 +648,5 @@ function doAction(action, a) {
 // what the highscore board shows, worked out from the real state
 function scoreRow() {
   const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
-  return {name: S.name, look: S.look, lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped};
+  return {name: S.name, look: S.look, lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
 }

@@ -50,7 +50,8 @@ button:disabled{cursor:default}
 #top{padding:10px 14px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
 #top:empty{display:none}
 .who{display:flex;align-items:center;gap:10px}
-.who .av{width:42px;height:42px;border-radius:10px;overflow:hidden;flex:none}
+.who .av{position:relative;width:42px;height:42px;flex:none}
+.who .av>svg{border-radius:10px}
 .who .av svg,.bigav svg,.preview svg{display:block;width:100%;height:100%}
 .who .name{font-weight:700;line-height:1.15;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who .title{font-size:13px;color:var(--muted)}
@@ -172,7 +173,8 @@ main{flex:1;overflow-y:auto;padding:16px 14px 28px;-webkit-overflow-scrolling:to
 /* dad card */
 .dcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
 .dhero{display:flex;align-items:center;gap:14px;padding:16px;color:#14313B}
-.bigav{width:96px;height:96px;border-radius:16px;overflow:hidden;border:3px solid #fff;flex:none}
+.bigav{position:relative;width:96px;height:96px;border-radius:16px;border:3px solid #fff;flex:none}
+.bigav>svg{border-radius:13px}
 .dname{font-family:var(--font-num);font-size:30px;line-height:1;font-weight:700;word-break:break-word}
 .dtitle{font-weight:700;margin-top:6px}
 .dtotal{font-size:14px}
@@ -288,7 +290,8 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
 .hs-row.me{background:var(--surface-2)}
 .hs-rank{font-family:var(--font-num);font-weight:700;font-size:18px;width:22px;text-align:center;color:var(--muted)}
 .hs-row:nth-child(1) .hs-rank{color:var(--gold)}
-.hs-av{width:40px;height:40px;border-radius:10px;overflow:hidden;flex:none}
+.hs-av{position:relative;width:40px;height:40px;flex:none}
+.hs-av>svg{border-radius:10px}
 .hs-av svg{display:block;width:100%;height:100%}
 .hs-val{font-family:var(--font-num);font-weight:700;font-size:22px;color:var(--primary)}
 .idlecard.active{border-color:var(--primary);box-shadow:inset 4px 0 0 var(--primary)}
@@ -310,6 +313,11 @@ nav button span{white-space:nowrap}
 .newscard ul{margin:0;padding-left:20px}
 .newscard li{margin:0 0 7px;font-size:15px;line-height:1.4}
 .updatebar{display:block;width:100%;margin-top:8px;padding:9px 12px;border:0;border-radius:10px;background:var(--gold-bg);color:#231804;font-weight:700;font-size:14px;text-align:left}
+.pbadge{position:absolute;left:-6px;bottom:-6px;width:34px;height:34px;border-radius:50%;background:var(--surface);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:19px;z-index:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.pbadge.sm{width:22px;height:22px;font-size:12px;left:-5px;bottom:-5px;border-width:1.5px}
+.pbadge.big{width:40px;height:40px;font-size:23px;left:-10px;bottom:-10px}
+.foe-ic.pet{background:var(--surface-2)}
+.small.petline{margin-top:6px;color:var(--muted)}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -331,6 +339,11 @@ nav button span{white-space:nowrap}
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.18', title: 'Pets!', notes: [
+    'Four super rare pets to collect, one per non-combat skill: something by the fishing spots, something that smells of burnt toast, someone rummaging through your junk, and a very familiar honk after Slayer tasks.',
+    'Each skill screen shows your odds right now. They improve a little with every level. Expect months, not days.',
+    'Found one? It follows you around: on your avatar, the Dad card, your share image, in fights and on the Ranks. Your collection lives on the Dad tab.',
+  ]},
   {v: '0.17', title: 'Auto-eat', notes: [
     'New <b>Auto-eat</b> toggle on the Fight tab. When your health drops below 50%, your dad eats his best fish instead of attacking that round. The enemy still swings, so eating costs a turn.',
     'Works in <b>fight idle</b> too: your dad eats instead of resting, as long as there\'s food in the bag. Fish in the morning, fight in the afternoon.',
@@ -484,7 +497,7 @@ function idleLine() {
 function renderTop() {
   if (!S || editing === 'setup') { $('#top').innerHTML = ''; return; }
   const mh = anim ? anim.mh : maxHP(), hpNow = anim ? animHp() : S.hp, coinsNow = anim ? anim.coins0 : S.coins;
-  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(S.look)}</div>
+  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(S.look)}${petBadge(S.petOut, 'sm')}</div>
     <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
     <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
     <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
@@ -514,6 +527,12 @@ const progHTML = (id, label) => `<div class="prog"><div class="prog-track"><div 
 // a "switch to this" button for an idle activity that isn't running
 const actBtn = (a, label, why) => `<button class="btn alt" style="width:100%;margin-top:10px" data-act="activity" data-a="${a}" ${why ? 'disabled' : ''}>${label}<small>${why || `Stops ${ACT[S.activity]}`}</small></button>`;
 const doingNow = () => `<p class="small note doing">Right now your dad is <b>${ACT[S.activity]}</b>.</p>`;
+// a little pet badge in the corner of an avatar
+const petBadge = (k, cls = '') => k && CONFIG.pets[k] ? `<span class="pbadge ${cls}" title="${esc(CONFIG.pets[k].name)}">${CONFIG.pets[k].icon}</span>` : '';
+function petLine(k) {   // under each pet skill: what you've got, or your odds right now
+  const P = CONFIG.pets[k];
+  return `<p class="small petline">${S.pets[k] ? `${P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.` : `Pet chance: 1 in ${fmt(petOdds(k))} per ${P.per}. Better odds as you level.`}</p>`;
+}
 function fishTab() {
   const i = S.spot, f = FISH[i], L = lvl('fishing'), c = cookPick(), mh = maxHP();
   const spots = FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
@@ -527,10 +546,10 @@ function fishTab() {
   return `<div class="duo">${skillHTML('fishing', true)}${skillHTML('cooking', true)}</div>
   ${doingNow()}
   <section class="idlecard${S.activity === 'fish' ? ' active' : ''}"><p class="stage-title">${S.activity === 'fish' ? 'Fishing' : 'Fish'} at the ${f.name} spot</p>
-    <p class="stage-meta">${pct(catchChance(i))} catch chance, one cast every ${CONFIG.fishSeconds} seconds.</p>
+    <p class="stage-meta">${pct(catchChance(i))} catch chance, one cast every ${CONFIG.fishSeconds} seconds.</p>${petLine('fishing')}
     ${S.activity === 'fish' ? progHTML('actBar', 'Next cast in') : actBtn('fish', 'Go fishing', '')}</section>
   <section class="idlecard${S.activity === 'cook' ? ' active' : ''}"><p class="stage-title">${c >= 0 ? `${S.activity === 'cook' ? 'Cooking' : 'Cook'} ${FISH[c].name}` : 'Nothing to cook'}</p>
-    <p class="stage-meta">${c >= 0 ? `${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds. Always cooks your best raw fish, then goes back to fishing when it runs out.` : 'Catch some fish first.'}</p>
+    <p class="stage-meta">${c >= 0 ? `${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds. Always cooks your best raw fish, then goes back to fishing when it runs out.` : 'Catch some fish first.'}</p>${petLine('cooking')}
     ${S.activity === 'cook' ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
     ${raw ? `<p class="small" style="margin-top:8px">Raw fish waiting: ${raw}.</p>` : ''}</section>
   <p class="small note">Your dad does one thing at a time. It keeps going while the game is closed, for up to ${dur(idleWindowMs())}. Buy more idle time in the Trade tab.</p>
@@ -546,7 +565,7 @@ function arenaHTML() {
   const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
   const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
   return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
-    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(S.look)}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
+    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(S.look)}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
       <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
       <div class="fname"><span>${esc(S.name)}</span>${weapon() ? `<em class="wname">${weapon().name}</em>` : ''}<b id="youHpNum">${php}/${mh}</b></div>${E ? fst(pHit(lvl('attack'), E.lvl), youMax) : ''}</div>
     <div class="vs">vs</div>
@@ -636,7 +655,7 @@ function slayerTab() {
       : item('Task extension', `${CONFIG.slayerExtendCost} points, unlock once. New tasks get 50% more kills, 50% more xp and 2 points.`, CONFIG.slayerExtendCost, 'buyExtend', 'Buy', p >= CONFIG.slayerExtendCost))
     + item(`${CONFIG.slayerPotionPack} ${AREAS[best].potion[0]}`, `${CONFIG.slayerPotionCost} point. Potions from your best area, heal ${AREAS[best].potion[1]} each.`, CONFIG.slayerPotionCost, 'buyPotions', 'Buy', p >= CONFIG.slayerPotionCost);
   return `${skillHTML('slayer')}
-  <p class="small note" style="margin-top:10px">Slayer level gives +0.5% damage per level against your task enemy.</p>
+  <p class="small note" style="margin-top:10px">Slayer level gives +0.5% damage per level against your task enemy.</p>${petLine('slayer')}
   ${task}
   <h3 class="sect">Slayer store</h3><p class="small note">You have <b class="pts">${p}</b> Slayer point${p === 1 ? '' : 's'}. Tasks done: ${S.stats.tasks}.</p>
   <div class="panel">${store}</div>`;
@@ -660,7 +679,7 @@ function tradeTab() {
   return `${skillHTML('trading')}
   ${doingNow()}
   <section class="idlecard${S.activity === 'trade' ? ' active' : ''}"><p class="stage-title">${k ? `${S.activity === 'trade' ? 'Selling' : 'Sell'} ${lootInfo(k).name}` : 'Nothing to sell'}</p>
-    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first. Goes back to fishing when the stall is empty.` : 'Monster drops land here. Weapons are never sold for you.'}</p>
+    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first. Goes back to fishing when the stall is empty.` : 'Monster drops land here. Weapons are never sold for you.'}</p>${petLine('trading')}
     ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
   <p class="small note" style="margin-top:10px">You get ${pct(m)} of an item's value: ${pct(CONFIG.tradeBase)} plus 1% per Trading level. Sold so far: ${fmt(S.stats.sold)} items for ${fmt(S.stats.tradeCoins)} coins.</p>
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
@@ -677,7 +696,7 @@ function dadTab() {
   const sk = Object.keys(SKILLS).map(k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
     return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; }).join('');
   return `<article class="dcard"><div class="dhero" style="background:${LOOKS.bg[S.look.bg] || LOOKS.bg[0]}">
-      <div class="bigav">${avatarSVG(S.look)}</div>
+      <div class="bigav">${avatarSVG(S.look)}${petBadge(S.petOut, 'big')}</div>
       <div><div class="dname">${esc(S.name)}</div><div class="dtitle">${dadTitle()}</div><div class="dtotal">Total level ${totalLevel()}, combat ${combatLevel()}</div>
       <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div></div></div>
     <div class="dskills">${sk}</div>
@@ -687,6 +706,14 @@ function dadTab() {
   <button class="btn alt" data-act="edit">Change name and look</button></div>
   <div id="cloudLine" style="margin-top:14px">${cloudLine()}</div>
   ${installHTML()}
+  <h3 class="sect" style="margin-top:22px">Pets ${Object.keys(S.pets).length}/${Object.keys(CONFIG.pets).length}</h3>
+  <p class="small note">Super rare companions, one for each non-combat skill. Purely for bragging rights.</p>
+  <div class="panel">${Object.entries(CONFIG.pets).map(([k, P]) => S.pets[k]
+    ? `<div class="foe-row${S.petOut === k ? ' task' : ''}"><span class="foe-ic pet">${P.icon}</span><div class="row-main">
+        <div class="row-name">${P.name}${S.pets[k] > 1 ? ` <span class="lvtag">found ${S.pets[k]}x</span>` : ''}</div><div class="row-meta">${P.desc}</div>
+        <div class="row-btns" style="margin-top:8px"><button class="sbtn${S.petOut === k ? '' : ' solid'}" data-act="petOut" data-k="${k}">${S.petOut === k ? 'Send home' : 'Take along'}</button></div></div></div>`
+    : `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown pet</div>
+        <div class="row-meta">${P.hint} (${SKILLS[k]}, 1 in ${fmt(petOdds(k))} per ${P.per})</div></div></div>`).join('')}</div>
   <h3 class="sect" style="margin-top:22px">Weapons</h3><p class="small note">Every area hides one rare weapon (${rate(CONFIG.rareChance)} per kill). Equip one for bonus damage, sell spares.</p>
   <div class="panel">${AREAS.map((a, i) => { const w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
     if (!n) return `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown weapon</div><div class="row-meta">Drops in ${a.place}.</div></div></div>`;
@@ -764,6 +791,11 @@ async function makeShareCard() {
   const img = await svgImage(avatarSVG(S.look), 520);
   rr(g, 90, 85, 280, 280, 44); g.fillStyle = '#fff'; g.fill();
   g.save(); rr(g, 100, 95, 260, 260, 36); g.clip(); g.drawImage(img, 100, 95, 260, 260); g.restore();
+  if (S.petOut && CONFIG.pets[S.petOut]) {   // the pet that follows you, on the corner of the picture
+    g.beginPath(); g.arc(105, 345, 46, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill();
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '56px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    g.fillText(CONFIG.pets[S.petOut].icon, 105, 348); g.textBaseline = 'alphabetic';
+  }
   g.fillStyle = ink; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   fitFont(g, S.name, 700, 80, NUM, CW - 400); g.fillText(S.name, 410, 210);
   g.font = `700 40px ${UI}`; g.fillText(dadTitle(), 410, 272);
@@ -886,6 +918,7 @@ const handlers = {
   eat: A('eat', b => ({i: +b.dataset.i})),
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
+  petOut: A('petOut', b => ({k: b.dataset.k})),
   fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },
   fightIdle: A('fightIdle'),
   activity: A('activity', b => ({a: b.dataset.a})),
@@ -1045,7 +1078,7 @@ function cleanScore(id, d) {
     beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1)};
   const w = Math.floor(+d.weapon);
   return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
-    combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, at: +d.at || 0};
+    combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, pet: CONFIG.pets[d.pet] ? d.pet : null, at: +d.at || 0};
 }
 const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];
 const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
@@ -1055,7 +1088,7 @@ function highscoresHTML() {
   const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
   const chips = HS_SORTS.map(([k, label]) => `<button class="chip hs" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
   const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.playerId ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
-      <span class="hs-av">${avatarSVG(r.look)}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.playerId ? ' <span class="lvtag">you</span>' : ''}</div>
+      <span class="hs-av">${avatarSVG(r.look)}${petBadge(r.pet, 'sm')}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.playerId ? ' <span class="lvtag">you</span>' : ''}</div>
       <div class="row-meta">${titleFor(r.total)}, combat ${r.combat}${r.at ? `, played ${ago(r.at)}` : ''}</div></div>
       <span class="hs-val">${fmt(hsValue(r, hsSort))}</span></div>`).join('');
   return `<div class="hs-chips">${chips}</div><div class="panel">${list || '<div class="empty">No dads on the board yet. You could be first.</div>'}</div>`;
