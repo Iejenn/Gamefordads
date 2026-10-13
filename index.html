@@ -297,6 +297,7 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
 .linkbtn{display:inline-flex;align-items:center;text-decoration:none}
 #cloudLine b{font-weight:700;color:var(--ink)}
 .linkbtn.dl{display:flex;align-items:center;justify-content:center;text-decoration:none}
+#cloudLine:empty{display:none}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -320,7 +321,7 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
    so tweaking numbers after friend feedback = edit this block only.
    ============================================================ */
 const CONFIG = {
-  version: '0.13.1',
+  version: '0.13.2',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   regenMs: 60000,             // +1 health every minute
   // idle: fishing and cooking always run by themselves. Fight idle is optional.
@@ -1150,6 +1151,8 @@ function dadTab() {
     <div class="dfoot"><b>GFD</b><span>Fighting in ${AREAS[Math.max(0, unlockedAreas() - 1)].place}, day ${days}</span></div></article>
   <div class="stack"><button class="btn" data-act="share">Share card<small>Makes an image of your dad and skills</small></button>
   <button class="btn alt" data-act="edit">Change name and look</button></div>
+  ${cloud.state !== 'on' && (!S.lastExport || now() - S.lastExport > 7 * 86400000) ? `<div class="upgrade warnbox" style="margin-top:14px"><p class="small"><b>Back up your dad.</b> Your progress only lives in this browser. If it gets cleared, the save code is the only way back. Copy it and paste it in a Discord DM to yourself.</p>
+    <button class="btn" style="margin-top:10px;width:100%" data-act="copy">Copy save code<small>Last copied: ${S.lastExport ? ago(S.lastExport) : 'never'}</small></button></div>` : ''}
   <p class="small note" id="cloudLine" style="margin-top:12px">${cloudLine()}</p>
   ${installHTML()}
   <h3 class="sect" style="margin-top:22px">Highscores</h3><div id="hsBox">${highscoresHTML()}</div>
@@ -1161,8 +1164,6 @@ function dadTab() {
       <div class="row-meta">${w.desc}</div>
       <div class="row-btns" style="margin-top:8px"><button class="sbtn${on ? '' : ' solid'}" data-act="equip" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
       <button class="sbtn" data-act="sellWeapon" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell ${fmt(w.price)}</button></div></div></div>`; }).join('')}</div>
-  ${cloud.state !== 'on' && (!S.lastExport || now() - S.lastExport > 7 * 86400000) ? `<div class="upgrade warnbox" style="margin-top:16px"><p class="small"><b>Back up your dad.</b> Your progress only lives in this browser. If it gets cleared, the save code is the only way back. Copy it and paste it in a Discord DM to yourself.</p>
-    <button class="btn" style="margin-top:10px;width:100%" data-act="copy">Copy save code<small>Last copied: ${S.lastExport ? ago(S.lastExport) : 'never'}</small></button></div>` : ''}
   <details class="tools"><summary>Backup and move your save</summary><div class="inner">
     <p class="small">Your progress lives in this browser only. Copy this code to back it up or move to another phone.</p>
     <textarea id="exportBox" readonly>${exportCode()}</textarea>
@@ -1208,6 +1209,7 @@ function setupRescue() {
     <textarea id="importBox" placeholder="Paste save code"></textarea>
     <button class="sbtn" data-act="import">Load save code</button>
     ${ioMsg ? `<p class="small k-warn">${esc(ioMsg)}</p>` : ''}</div></details>
+  ${window.claude ? '' : '<p class="small" style="margin-top:12px"><b>Played on the old claude.ai link?</b> Open it, go to the Dad tab, open "Backup and move your save" and tap Copy save code. Then paste it under "Load a save code" here.</p>'}
   <p class="small" style="margin-top:12px">Saves live inside the browser you play in. If you used another browser or app before (Discord's built-in browser, Chrome, Safari), your dad is still there. Open the link the same way as before.</p>`;
 }
 const levelSum = st => Object.keys(SKILLS).reduce((a, k) => a + levelOf((st.xp || {})[k] || 0), 0);
@@ -1505,7 +1507,7 @@ const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILL
 const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
 function highscoresHTML() {
   if (!cloud.checked) return '<p class="small">Checking claude.ai for the highscores...</p>';
-  if (!cloud.db && cloud.reason === 'local') return '<div class="upgrade"><p class="small">The highscore board is moving with the game and will be back soon.</p></div>';
+  if (!cloud.db && cloud.reason === 'local') return '<div class="upgrade"><p class="small">Not available yet on this version of the game. Saves live on each phone, so there\'s nothing shared to rank yet.</p></div>';
   if (!cloud.db) return '<div class="upgrade"><p class="small">Highscores and cloud saves need the game open inside claude.ai while you\'re signed in. Until then, your dad saves on this device like before. See the cloud save line above for what\'s missing.</p></div>';
   const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
   const chips = HS_SORTS.map(([k, label]) => `<button class="chip hs" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
@@ -1527,7 +1529,7 @@ function cloudLine() {
   const R = cloud.reason, err = cloud.err ? ` (claude.ai said: ${esc(cloud.err)})` : '';
   const retry = '<button class="sbtn" data-act="cloudRetry">Try again</button>';
   if (!cloud.checked && R === 'checking') return 'Cloud save: checking...';
-  if (R === 'local') return '<b>Saved on this device.</b> Copy your save code now and then (Backup, below) so a cleared browser can never cost you your dad.';
+  if (R === 'local') return '';   // normal website: the backup box above already says where your save lives
   if (R === 'on') return `Cloud save: on, synced ${cloud.lastSync ? (now() - cloud.lastSync < 90000 ? 'just now' : now() - cloud.lastSync < 3600000 ? Math.round((now() - cloud.lastSync) / 60000) + ' min ago' : ago(cloud.lastSync)) : 'soon'}. Your dad is safe in your claude.ai account and follows you to any device.${err}`;
   const why = {
     'no-claude': 'This copy of the game is not running inside claude.ai, so it can only save on this device. Open it from the claude.ai link, signed in.',
