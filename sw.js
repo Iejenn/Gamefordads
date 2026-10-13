@@ -1,6 +1,6 @@
 // GFD offline helper: always try the network first so updates show up straight away,
 // and fall back to the last copy we saw when there's no signal.
-const CACHE = 'gfd-v2';
+const CACHE = 'gfd-v3';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

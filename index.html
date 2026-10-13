@@ -218,7 +218,7 @@ input[type=text]{width:100%;min-height:48px;font:inherit;font-size:17px;padding:
 #ticker li+li{border-top:1px dashed var(--line);color:var(--muted)}
 .k-lvl{color:var(--gold);font-weight:700}
 .k-warn{color:var(--hp)}
-nav{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line)}
+nav{display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line)}
 nav:empty{display:none}
 nav button{background:none;border:0;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);position:relative}
 nav button svg{width:24px;height:24px}
@@ -301,6 +301,13 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
 .codebox{display:flex;align-items:center;gap:10px;margin-top:6px}
 .code{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:700;letter-spacing:.5px;background:var(--surface-2);border-radius:8px;padding:9px 10px;word-break:break-all}
 #cloudCodeBox{font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
+nav button span{white-space:nowrap}
+.pagetitle{margin:0 0 6px;font-size:22px}
+.newscard{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px 18px 16px;width:100%;max-width:380px;max-height:78vh;overflow-y:auto;box-shadow:0 14px 36px rgba(0,0,0,.35)}
+.sheet .newscard .news-kicker{margin:0 0 8px;font-family:var(--font-num);font-weight:700;font-size:24px;color:var(--primary);text-align:left}
+.newscard h2{font-size:16px;margin:12px 0 6px}
+.newscard ul{margin:0;padding-left:20px}
+.newscard li{margin:0 0 7px;font-size:15px;line-height:1.4}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -324,14 +331,14 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
    so tweaking numbers after friend feedback = edit this block only.
    ============================================================ */
 const CONFIG = {
-  version: '0.14',
+  version: '0.15',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
   regenMs: 60000,             // +1 health every minute
   // idle: fishing and cooking always run by themselves. Fight idle is optional.
   fishSeconds: 60,            // one fishing attempt every 60 seconds
-  cookSeconds: 60,            // one cooking attempt every 60 seconds (always cooks your best raw fish)
+  cookSeconds: 5,             // one cooking attempt every 5 seconds (always cooks your best raw fish, then back to fishing)
   fightIdleMinutes: 5,        // Fight idle: one fight every 5 minutes
   idleBaseMinutes: 100,       // after you close the game, idle keeps going this long (1h 40m)...
   idleStepMinutes: 50,        // ...plus 50 minutes per Idle time upgrade (16h 40m when maxed)
@@ -452,6 +459,31 @@ const CONFIG = {
   slayerCancelCost: 1, slayerExtendCost: 10, slayerPotionCost: 1, slayerPotionPack: 3,
 };
 
+/* ---------- What's New ----------
+   Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
+const CHANGELOG = [
+  {v: '0.15', title: 'Ranks, fast cooking and this very popup', notes: [
+    'Highscores moved to their own tab: <b>Ranks</b>. Plenty of room for every dad in the neighbourhood.',
+    'Cooking is much faster: one try every <b>5 seconds</b> instead of a minute. Cook your whole catch in no time, then your dad goes back to fishing by himself.',
+    "This <b>What's New</b> popup. You'll see it once after every update, so you always know what changed.",
+  ]},
+  {v: '0.14', title: 'Cloud saves', notes: [
+    'Your dad now saves to the cloud. Find your <b>cloud code</b> on the Dad tab and copy it somewhere safe: type it on any phone and your dad comes back.',
+    'Live highscores for all dads.',
+  ]},
+];
+const verNum = v => String(v || '0').split('.').reduce((a, x, i) => a + (+x || 0) / Math.pow(1000, i), 0);
+function showWhatsNew(sinceV, all) {
+  const list = all ? CHANGELOG : sinceV ? CHANGELOG.filter(c => verNum(c.v) > verNum(sinceV)) : CHANGELOG.slice(0, 2);
+  if (!list.length) return;
+  const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', "What's new");
+  el.innerHTML = `<div class="newscard"><p class="news-kicker">What's new in GFD</p>
+    ${list.map(c => `<section><h2>v${c.v}: ${c.title}</h2><ul>${c.notes.map(n => `<li>${n}</li>`).join('')}</ul></section>`).join('')}
+    <button class="btn" style="width:100%;margin-top:6px" data-act="closeShare">Got it</button></div>`;
+  $('#app').appendChild(el);
+  if (S) { S.seenVersion = CONFIG.version; save(); }
+}
+
 /* ---------- helpers ---------- */
 const FISH = CONFIG.fish, AREAS = CONFIG.areas;
 // flat list of all 50 enemies; enemy id g = area * 5 + slot
@@ -543,6 +575,7 @@ const ICON = {
   pan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="13.5" r="6.5"/><path d="M15.6 9.8 22 5.5"/></svg>`,
   sword: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5 9 15M20.5 3.5h-4.2M20.5 3.5v4.2M6.5 12.5l5 5M4 20l3.5-3.5"/></svg>`,
   target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>`,
+  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6M10 17h4"/></svg>`,
   shop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 9h16l-1.2 11H5.2z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke-linecap="round"/></svg>`,
 };
 
@@ -1143,6 +1176,12 @@ function tradeTab() {
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
   ${up}`;
 }
+function ranksTab() {
+  const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
+  return `<h2 class="pagetitle">Ranks</h2>
+  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dads on total level. ` : ''}Updates about once a minute while dads play. Tap a skill to rank by it.</p>
+  <div id="hsBox">${highscoresHTML()}</div>`;
+}
 function dadTab() {
   const days = Math.floor((now() - S.started) / 86400000) + 1;
   const sk = Object.keys(SKILLS).map(k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
@@ -1158,7 +1197,6 @@ function dadTab() {
   <button class="btn alt" data-act="edit">Change name and look</button></div>
   <div id="cloudLine" style="margin-top:14px">${cloudLine()}</div>
   ${installHTML()}
-  <h3 class="sect" style="margin-top:22px">Highscores</h3><div id="hsBox">${highscoresHTML()}</div>
   <h3 class="sect" style="margin-top:22px">Weapons</h3><p class="small note">Every area hides one rare weapon (${rate(CONFIG.rareChance)} per kill). Equip one for bonus damage, sell spares.</p>
   <div class="panel">${AREAS.map((a, i) => { const w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
     if (!n) return `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown weapon</div><div class="row-meta">Drops in ${a.place}.</div></div></div>`;
@@ -1180,7 +1218,7 @@ function dadTab() {
     <button class="sbtn" data-act="import">Load save code</button>
     ${ioMsg ? `<p class="small k-warn">${esc(ioMsg)}</p>` : ''}
     <button class="sbtn" style="border-color:var(--hp);color:var(--hp)" data-act="reset">${resetArmed > now() ? 'Tap again to erase everything' : 'Start over'}</button>
-    <p class="small">GFD v${CONFIG.version}</p></div></details>`;
+    <button class="sbtn" data-act="whatsNew">GFD v${CONFIG.version}: what's new?</button></div></details>`;
 }
 
 function editorHTML(setup) {
@@ -1350,13 +1388,13 @@ function finishAnim() {   // replay done (or skipped): now the fight counts
 function renderMain() {
   const m = $('#main');
   if (editing) { m.innerHTML = editorHTML(editing === 'setup'); return; }
-  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: slayerTab, trade: tradeTab, dad: dadTab}[S.tab] || fishTab)();
+  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: slayerTab, trade: tradeTab, ranks: ranksTab, dad: dadTab}[S.tab] || fishTab)();
   updateProgress();
 }
 function renderNav() {
   const nav = $('#nav'), tk = $('#ticker');
   if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
-  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Fishing', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop]]
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Fishing', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
     .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
   tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
   const L = S.log.length ? S.log : [{text: 'Nothing happened yet.', kind: ''}];
@@ -1396,13 +1434,14 @@ const handlers = {
   equip: b => run(() => equip(+b.dataset.i), b),
   sellWeapon: b => run(() => sellWeapon(+b.dataset.i), b),
   buyIdle: b => run(buyIdle, b),
-  tab: b => { S.tab = b.dataset.t; if (S.tab === 'dad' && now() - cloud.scoresAt > 30000) loadScores(); if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; save(); render(); $('#main').scrollTop = 0; },
+  tab: b => { S.tab = b.dataset.t; if (S.tab === 'ranks' && now() - cloud.scoresAt > 30000) loadScores(); if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; save(); render(); $('#main').scrollTop = 0; },
   edit: () => { draft = {name: S.name, look: Object.assign({}, S.look)}; editing = 'edit'; render(); $('#main').scrollTop = 0; },
   look: b => { const k = b.dataset.k, v = b.dataset.v;
     draft.look[k] = k === 'glasses' ? v === '1' : (k === 'hair' || k === 'beard') ? v : +v; renderMain(); },
   saveLook: () => { S.name = draft.name.trim() || 'Dad'; S.look = draft.look; editing = false; save(); render(); },
   cancelLook: () => { editing = false; render(); },
-  start: () => { S = freshState(draft.name.trim() || 'Dad', draft.look); editing = false; save(); render(); cloudInit(); },
+  start: () => { S = freshState(draft.name.trim() || 'Dad', draft.look); S.seenVersion = CONFIG.version; editing = false; save(); render(); cloudInit(); },
+  whatsNew: () => showWhatsNew(null, true),
   share: b => openShare(b),
   closeShare: () => closeShare(),
   shareNative: () => { if (!shareBlob) return;
@@ -1477,7 +1516,7 @@ function parseRemote(d) { try { return d && typeof d.data === 'string' ? migrate
 function resolveSaves(remote) {
   if (!remote) return;
   if (anim) finishAnim();
-  const take = msg => { const code = S && S.cloudCode; S = remote; if (!S.cloudCode) S.cloudCode = code; editing = editing === 'setup' ? false : editing;
+  const take = msg => { const code = S && S.cloudCode, seen = S && S.seenVersion; S = remote; if (seen) S.seenVersion = seen; if (!S.cloudCode) S.cloudCode = code; editing = editing === 'setup' ? false : editing;
     tick(); S.activeAt = now(); addLog(msg, 'lvl'); lastBackupAt = 0; save(); render(); };
   if (remote.started === S.started) { if ((remote.savedAt || remote.lastSeen || 0) > bootSavedAt + 1000) { take('Loaded your newer save from the cloud.'); toast('Cloud save loaded'); } return; }
   if (progressOf(remote) > progressOf(S)) { stash(S, `This device had a different dad (${S.name}) with less progress. He's parked on this device; your cloud dad is back.`); take(`Loaded ${remote.name} from the cloud.`); }
@@ -1603,6 +1642,7 @@ else {
   save();
 }
 render();
+if (S && S.seenVersion !== CONFIG.version) setTimeout(() => showWhatsNew(S.seenVersion), 600);   // an update landed since last time
 cloudInit();
 var installEvt = null;   // var, not let: the Dad tab can render before this line runs
 function standalone() { return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
@@ -1617,6 +1657,7 @@ setInterval(() => {
     if (!busy) renderMain();
   }
   if (!editing) updateProgress();
+  if (S.tab === 'ranks' && !document.hidden && now() - cloud.scoresAt > 60000) loadScores();   // keep the board fresh while you look at it
 }, 1000);
 document.addEventListener('visibilitychange', () => {
   if (!S) return;
