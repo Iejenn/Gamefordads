@@ -10,7 +10,7 @@ const toast = t => { toasts.push(String(t)); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.16',
+  version: '0.17',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -128,7 +128,8 @@ const CONFIG = {
   defPerLvl: 0.005,                                             // Defence: 0.5% less damage per level. Defence 100 = 50% less
   hpXpRatio: 1/3,             // Hitpoints xp per kill = a third of the xp your combat style gets
   hpBase: 10, hpPerLvl: 2,    // max health = 10 + 2 x Hitpoints level
-  restBelow: 0.35,            // Fight idle skips a turn to rest when health is below this share
+  restBelow: 0.35,            // Fight idle skips a turn to rest when health is below this share (and there's no food to auto-eat)
+  autoEatBelow: 0.5,          // auto-eat: below this share of max health your dad eats his best fish instead of attacking
   // slayer
   slayerEncounter: 0.40,      // in your task's area, the task enemy shows up this often
   slayerTaskMin: 10, slayerTaskMax: 20,
@@ -190,7 +191,7 @@ function freshState(name, look) {
     spot: 0, area: 0, tab: 'fish', lastFoe: null,
     activity: 'fish', actAt: t, paused: false,   // your dad does ONE idle thing at a time: fish, cook, trade or fight
     weapons: Array(10).fill(0), equipped: -1,
-    task: null, slayerPts: 0, extendOwned: false, extendOn: false,
+    task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false,
     started: t, lastSeen: t, activeAt: t,
     stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0},
     loot: {}, kc: Array(50).fill(0),
@@ -228,6 +229,7 @@ function migrate(s) {
   const loot = {}; for (const k in (m.loot || {})) if (/^(e\d+|r\d)$/.test(k)) loot[k] = Math.max(0, Math.floor(+m.loot[k] || 0)); m.loot = loot;
   if (m.task && !(m.task.e >= 0 && m.task.e < 50 && m.task.n > 0)) m.task = null;
   m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
+  m.autoEat = !!m.autoEat;
   // v0.10: rare items became weapons. Any old rare in your bag is now that area's weapon.
   m.weapons = intArr(m.weapons, 10); let found = 0;
   for (const k of Object.keys(m.loot)) if (k[0] === 'r') { m.weapons[+k.slice(1)] += m.loot[k]; found += m.loot[k]; delete m.loot[k]; }
@@ -317,6 +319,7 @@ function runIdle(t) {
   if (r.tradeTries > 2) addLog(`Trading: sold ${itemsText(r.sold)} for ${fmt(r.tradeCoins)} coins. +${fmt(r.tradeXp)} xp`);
   if (r.cookTries > 2) addLog(`Cooking: cooked ${itemsText(r.cooked) || 'nothing'}${r.burnt ? `, burnt ${r.burnt}` : ''}. +${fmt(r.cookXp)} xp`);
   if (fr.n) addLog(fightTallyText(fr, 'Fight idle'), fr.ko ? 'warn' : '');
+  else if (fr.rest) addLog(`Fight idle: rested ${fr.rest} time${fr.rest > 1 ? 's' : ''} on low health${S.autoEat ? ', no fish left to auto-eat' : '. Turn on auto-eat to eat instead'}.`, 'warn');
   fr.rares.forEach(rareAlert); fr.tasksDone.forEach(taskDoneAlert);
   checkLevelUps(before);
   return r.events;
@@ -350,28 +353,40 @@ function rareAlert(ri) {
   addLog(t, 'lvl');
 }
 
-// decides a whole fight against enemy g without changing anything yet. ev = every hit as ['p'|'e', damage]
+// decides a whole fight against enemy g without changing anything yet.
+// ev = every step as ['p', damage] (you hit), ['e', damage] (it hits), ['h', health, fish] (you ate)
 function simFight(g) {
-  const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence'));
+  const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence')), mh = maxHP();
   const mult = (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0));   // weapon and Slayer bonuses stack
-  let ehp = E.hp, hp = S.hp, taken = 0; const ev = [];
+  const food = S.autoEat ? S.cooked.slice() : null, heals = FISH.map(f => f.heal);
+  let ehp = E.hp, hp = S.hp, taken = 0, healed = 0; const ev = [], eaten = {};
   for (let round = 0; round < 200; round++) {
-    const d = Math.random() < pHit(A, E.lvl) ? Math.round((1 + Math.floor(Math.random() * pMaxHit(St))) * mult) : 0;
-    ehp -= d; ev.push(['p', d]);
-    if (ehp <= 0) break;
+    // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round
+    let ate = false;
+    if (food && hp < mh * CONFIG.autoEatBelow) {
+      const i = smartPick(food, heals, hp);
+      if (i >= 0) { const h = Math.min(heals[i], mh - hp); hp += h; healed += h; food[i]--; eaten[i] = (eaten[i] || 0) + 1; ev.push(['h', h, i]); ate = true; }
+    }
+    if (!ate) {
+      const d = Math.random() < pHit(A, E.lvl) ? Math.round((1 + Math.floor(Math.random() * pMaxHit(St))) * mult) : 0;
+      ehp -= d; ev.push(['p', d]);
+      if (ehp <= 0) break;
+    }
     const e = Math.random() < E.acc ? Math.round((1 + Math.floor(Math.random() * E.maxHit)) * (1 - red)) : 0;  // 0 = missed or fully blocked
     if (e) { hp = Math.max(0, hp - e); taken += e; }
     ev.push(['e', e]);
     if (hp <= 0) break;
   }
-  return {g, ev, taken, ko: hp <= 0, win: ehp <= 0 && hp > 0};
+  return {g, ev, taken, healed, eaten, hpStart: S.hp, hpEnd: hp, ko: hp <= 0, win: ehp <= 0 && hp > 0};
 }
 const fightOnce = g => applyFight(simFight(g));
 // applies a decided fight: damage, then (on a win) coins, xp, drops and Slayer progress
 function applyFight(sim) {
   const g = sim.g, E = ENEMIES[g], taken = sim.taken;
-  S.hp = Math.max(0, S.hp - taken);
-  if (!sim.win) { if (sim.ko) { S.hp = 0; S.stats.knockouts++; } return {g, win: false, taken, items: []}; }
+  const ate = useFood(sim.eaten);                     // food eaten during the fight leaves the bag
+  // health = how the fight ended, plus whatever regenerated while it played (exactly what the replay showed)
+  S.hp = sim.ko ? 0 : clamp((sim.hpEnd ?? S.hp - taken) + (S.hp - (sim.hpStart ?? S.hp)), 0, maxHP());
+  if (!sim.win) { if (sim.ko) S.stats.knockouts++; return {g, win: false, taken, items: [], ate}; }
   const coins = Math.max(1, Math.round(E.coins * (0.6 + Math.random() * 0.8)));
   const hx = Math.round(E.xp * CONFIG.hpXpRatio);
   S.coins += coins; S.xp[S.style] += E.xp; S.xp.hitpoints += hx;   // xp goes to the chosen combat style
@@ -382,11 +397,18 @@ function applyFight(sim) {
   S.stats.kills++; S.kc[g]++;
   let taskDone = null;
   if (onTask(g)) { S.task.done++; if (S.task.done >= S.task.n) taskDone = completeTask(); }
-  return {g, win: true, taken, coins, xp: E.xp, hx, items, rare, potion, taskDone};
+  return {g, win: true, taken, coins, xp: E.xp, hx, items, rare, potion, taskDone, ate};
 }
-const newFightTally = () => ({n: 0, w: 0, coins: 0, xp: 0, hx: 0, taken: 0, ko: 0, rest: 0, items: {}, foes: {}, rares: [], tasksDone: []});
+// takes eaten fish out of the bag (never more than you still have) and returns {fish name: count}
+function useFood(eaten) {
+  const out = {}; let n = 0;
+  for (const i in (eaten || {})) { const k = Math.min(eaten[i], S.cooked[i] || 0); if (k > 0) { S.cooked[i] -= k; n += k; out[FISH[i].name] = k; } }
+  S.stats.eaten += n; return out;
+}
+const newFightTally = () => ({n: 0, w: 0, coins: 0, xp: 0, hx: 0, taken: 0, ko: 0, rest: 0, items: {}, foes: {}, rares: [], tasksDone: [], ate: {}});
 function tally(fr, r) {
   fr.n++; fr.taken += r.taken; const E = ENEMIES[r.g];
+  for (const k in (r.ate || {})) fr.ate[k] = (fr.ate[k] || 0) + r.ate[k];
   if (!r.win) { fr.ko++; return; }
   fr.w++; fr.coins += r.coins; fr.xp += r.xp; fr.hx += r.hx; fr.foes[E.name] = (fr.foes[E.name] || 0) + 1;
   r.items.forEach(x => { fr.items[x] = (fr.items[x] || 0) + 1; });
@@ -395,13 +417,15 @@ function tally(fr, r) {
 function fightTallyText(fr, label) {
   let t = `${label}: won ${fr.w} of ${fr.n}${fr.w ? ` (${itemsText(fr.foes)})` : ''}. +${fmt(fr.coins)} coins, +${fmt(fr.xp)} ${SKILLS[S.style]} xp, +${fmt(fr.hx)} Hitpoints xp, -${fmt(fr.taken)} health.`;
   if (Object.keys(fr.items).length) t += ` Loot: ${itemsText(fr.items)}.`;
+  if (Object.keys(fr.ate).length) t += ` Ate ${itemsText(fr.ate)}.`;
   if (fr.rest) t += ` Rested ${fr.rest} time${fr.rest > 1 ? 's' : ''} on low health.`;
   if (fr.ko) t += ` Knocked out ${fr.ko} time${fr.ko > 1 ? 's' : ''}.`;
   return t;
 }
 function idleFight(fr) {
   if (S.area >= unlockedAreas()) return;
-  if (S.hp < Math.ceil(maxHP() * CONFIG.restBelow)) { fr.rest++; return; }   // too hurt: rest this turn, health keeps coming back
+  const canEat = S.autoEat && S.cooked.some(n => n > 0);   // with auto-eat and food, the fight itself eats you back up
+  if (!canEat && S.hp < Math.ceil(maxHP() * CONFIG.restBelow)) { fr.rest++; return; }   // too hurt: rest this turn, health keeps coming back
   tally(fr, fightOnce(pickEnemy(S.area)));
 }
 
@@ -419,7 +443,7 @@ function endFight(sim) {
     addLog(`The ${E.name} knocked you out. Eat, drink a potion or rest to heal.`, 'warn');
     arenaMsg = {area: S.area, kind: 'warn', text: `Knocked out! The ${E.name} wins this one.`};
   } else {
-    addLog(`You beat the ${E.name}. +${r.coins} coins, +${r.xp} ${SKILLS[S.style]} xp, +${r.hx} Hitpoints xp, -${r.taken} health.${loot ? ` Loot: ${loot}.` : ''}`);
+    addLog(`You beat the ${E.name}. +${r.coins} coins, +${r.xp} ${SKILLS[S.style]} xp, +${r.hx} Hitpoints xp, -${r.taken} health.${loot ? ` Loot: ${loot}.` : ''}${Object.keys(r.ate).length ? ` Ate ${itemsText(r.ate)}.` : ''}`);
     arenaMsg = {area: S.area, kind: '', text: `Victory! +${r.coins} coins${loot ? `, ${loot}` : ''}`};
   }
   if (r.rare != null) rareAlert(r.rare);
@@ -551,9 +575,11 @@ function stopPending() {
   const P = S.pending; if (!P) return;
   const shown = Math.max(2, Math.floor((now() - P.at) / replayStep(P.ev.length)));
   if (shown >= P.ev.length) return commitPending();
-  S.pending = null; let lost = 0;
-  for (let i = 0; i < shown; i++) if (P.ev[i][0] === 'e') lost += P.ev[i][1];
-  S.hp = Math.max(0, S.hp - lost);
+  S.pending = null; const mh = maxHP(), start = P.hpStart ?? S.hp, eaten = {}; let cur = start, lost = 0;
+  for (let i = 0; i < shown; i++) { const [w, d, fi] = P.ev[i];
+    if (w === 'e') { cur = Math.max(0, cur - d); lost += d; } else if (w === 'h') { cur = Math.min(mh, cur + d); eaten[fi] = (eaten[fi] || 0) + 1; } }
+  useFood(eaten);
+  S.hp = clamp(cur + (S.hp - start), 0, mh);
   const E = ENEMIES[P.g];
   addLog(`You stopped to heal. The ${E.name} got away. -${lost} health.`, 'warn');
   arenaMsg = {area: S.area, kind: 'warn', text: `Fight stopped. The ${E.name} got away.`};
@@ -581,7 +607,7 @@ function doAction(action, a) {
     case 'eat': case 'eatAll': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = eat(i, action === 'eatAll'); break; }
     case 'eatBest': out.pop = eatBest(); break;
     case 'drinkBest': out.pop = drinkBest(); break;
-    case 'fight': { const sim = beginFight(); if (sim) { S.pending = {g: sim.g, ev: sim.ev, taken: sim.taken, ko: sim.ko, win: sim.win, at: now()}; out.fight = {g: sim.g, ev: sim.ev}; } break; }
+    case 'fight': { const sim = beginFight(); if (sim) { S.pending = Object.assign({}, sim, {at: now()}); out.fight = {g: sim.g, ev: sim.ev}; } break; }
     case 'fightEnd': out.pop = commitPending(); break;
     case 'fightStop': stopPending(); break;
     case 'newTask': newTask(); break;
@@ -592,6 +618,7 @@ function doAction(action, a) {
     case 'buyIdle': out.pop = buyIdle(); break;
     case 'equip': { const i = intIn(a.i, 0, 9); if (i != null) equip(i); break; }
     case 'sellWeapon': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = sellWeapon(i); break; }
+    case 'autoEat': S.autoEat = !S.autoEat; addLog(S.autoEat ? `Auto-eat on: below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking, in fights and fight idle.` : 'Auto-eat off.'); break;
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
     default: out.unknown = true;
   }
