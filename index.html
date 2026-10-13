@@ -308,6 +308,7 @@ nav button span{white-space:nowrap}
 .newscard h2{font-size:16px;margin:12px 0 6px}
 .newscard ul{margin:0;padding-left:20px}
 .newscard li{margin:0 0 7px;font-size:15px;line-height:1.4}
+.updatebar{display:block;width:100%;margin-top:8px;padding:9px 12px;border:0;border-radius:10px;background:var(--gold-bg);color:#231804;font-weight:700;font-size:14px;text-align:left}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -329,6 +330,10 @@ nav button span{white-space:nowrap}
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.16.1', title: 'Always the newest version', notes: [
+    'GFD now checks for updates by itself and reloads to the newest version. No more playing on an old copy that can\'t save.',
+    'Played on an old version after the server move? That progress didn\'t count, sorry. Your real dad is safe on the server.',
+  ]},
   {v: '0.16', title: 'Your dad moved to the server', notes: [
     'Every catch, fight, drop and coin is now decided on the server, not on your phone. No more cheating: the <b>Ranks</b> are 100% honest.',
     'Your progress came along. Nothing lost.',
@@ -470,7 +475,8 @@ function renderTop() {
     <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
     <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
     <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
-    <div class="idleline">${idleLine()}</div>`;
+    <div class="idleline">${idleLine()}</div>
+    ${updateReady ? `<button class="updatebar" data-act="reloadApp">New version ${esc(updateReady)} is ready. Tap to update</button>` : ''}`;
   updateProgress();
 }
 // progress bars for the next fishing cast / cooking attempt / idle fight, updated every second
@@ -895,6 +901,7 @@ const handlers = {
     (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(done).catch(() => {
       const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select();
       try { document.execCommand('copy'); done(); } catch (e) { toast(code); } t.remove(); }); },
+  reloadApp: () => location.reload(),
   install: () => { if (!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); },
 };
 let fightAsked = false;
@@ -1061,6 +1068,21 @@ function installHTML() {
   return '';
 }
 
+/* ---------- staying up to date ----------
+   Browsers can keep running an old copy of the game after an update. version.json on GitHub says which
+   version is newest: on opening we reload straight away, mid-game we show a tap-to-update bar. */
+let updateReady = null;
+async function checkVersion(boot) {
+  if (!/^https?:/.test(location.protocol)) return;
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), {cache: 'no-store'}); if (!r.ok) return;
+    const v = (await r.json()).version;
+    if (!v || verNum(v) <= verNum(CONFIG.version)) return;
+    if (boot && !sessionStorage.getItem('gfd_reloaded_' + v)) { sessionStorage.setItem('gfd_reloaded_' + v, '1'); location.reload(); return; }
+    updateReady = v; renderTop();
+  } catch (e) {}
+}
+
 /* ---------- boot ---------- */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 (function boot() {
@@ -1080,6 +1102,7 @@ try { if (navigator.storage && navigator.storage.persist) navigator.storage.pers
     if (res && !res.ok && res.reason === 'no_dad') { S = null; lsSet(LS.code, null); lsSet(LS.cache, null); draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); }
   });
   loadScores();
+  checkVersion(true);
 })();
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (S && S.tab === 'dad' && !editing) renderMain(); });
 if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -1092,8 +1115,9 @@ setInterval(() => {
   const due = S.actAt + actMs(S.activity) < now() - 1000;
   if (now() - cloud.lastSync > 20000 || (due && now() - cloud.lastSync > 5000)) { cloud.lastSync = now(); act('sync'); }
   if (S.tab === 'ranks' && now() - cloud.scoresAt > 60000) loadScores();
+  if (Date.now() % 300000 < 1000) checkVersion(false);   // every 5 minutes
 }, 1000);
-document.addEventListener('visibilitychange', () => { if (S && !document.hidden && !editing) { cloud.lastSync = now(); act('sync'); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; checkVersion(false); if (S && !editing) { cloud.lastSync = now(); act('sync'); } });
 </script>
 </body>
 </html>
