@@ -298,6 +298,9 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
 #cloudLine b{font-weight:700;color:var(--ink)}
 .linkbtn.dl{display:flex;align-items:center;justify-content:center;text-decoration:none}
 #cloudLine:empty{display:none}
+.codebox{display:flex;align-items:center;gap:10px;margin-top:6px}
+.code{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:700;letter-spacing:.5px;background:var(--surface-2);border-radius:8px;padding:9px 10px;word-break:break-all}
+#cloudCodeBox{font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -321,8 +324,10 @@ nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:
    so tweaking numbers after friend feedback = edit this block only.
    ============================================================ */
 const CONFIG = {
-  version: '0.13.2',
+  version: '0.14',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
+  supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
+  supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
   regenMs: 60000,             // +1 health every minute
   // idle: fishing and cooking always run by themselves. Fight idle is optional.
   fishSeconds: 60,            // one fishing attempt every 60 seconds
@@ -1151,9 +1156,7 @@ function dadTab() {
     <div class="dfoot"><b>GFD</b><span>Fighting in ${AREAS[Math.max(0, unlockedAreas() - 1)].place}, day ${days}</span></div></article>
   <div class="stack"><button class="btn" data-act="share">Share card<small>Makes an image of your dad and skills</small></button>
   <button class="btn alt" data-act="edit">Change name and look</button></div>
-  ${cloud.state !== 'on' && (!S.lastExport || now() - S.lastExport > 7 * 86400000) ? `<div class="upgrade warnbox" style="margin-top:14px"><p class="small"><b>Back up your dad.</b> Your progress only lives in this browser. If it gets cleared, the save code is the only way back. Copy it and paste it in a Discord DM to yourself.</p>
-    <button class="btn" style="margin-top:10px;width:100%" data-act="copy">Copy save code<small>Last copied: ${S.lastExport ? ago(S.lastExport) : 'never'}</small></button></div>` : ''}
-  <p class="small note" id="cloudLine" style="margin-top:12px">${cloudLine()}</p>
+  <div id="cloudLine" style="margin-top:14px">${cloudLine()}</div>
   ${installHTML()}
   <h3 class="sect" style="margin-top:22px">Highscores</h3><div id="hsBox">${highscoresHTML()}</div>
   <h3 class="sect" style="margin-top:22px">Weapons</h3><p class="small note">Every area hides one rare weapon (${rate(CONFIG.rareChance)} per kill). Equip one for bonus damage, sell spares.</p>
@@ -1165,7 +1168,11 @@ function dadTab() {
       <div class="row-btns" style="margin-top:8px"><button class="sbtn${on ? '' : ' solid'}" data-act="equip" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
       <button class="sbtn" data-act="sellWeapon" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell ${fmt(w.price)}</button></div></div></div>`; }).join('')}</div>
   <details class="tools"><summary>Backup and move your save</summary><div class="inner">
-    <p class="small">Your progress lives in this browser only. Copy this code to back it up or move to another phone.</p>
+    <p class="small"><b>Got a cloud code from another phone?</b> Type it here to load that dad. Your current dad is parked on this device first, never deleted.</p>
+    <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="sbtn" data-act="cloudLoad">Load cloud code</button>
+    <p class="small k-warn" id="cloudMsg">${esc(cloud.msg)}</p>
+    <p class="small" style="margin-top:6px">Spare backup: the long save code below holds your whole dad and works even without internet.</p>
     <textarea id="exportBox" readonly>${exportCode()}</textarea>
     <button class="sbtn" data-act="copy">Copy save code</button>
     <p class="small">Paste a save code here to load it. This replaces your current dad.</p>
@@ -1199,8 +1206,11 @@ function editorHTML(setup) {
 // on the "make your dad" screen: ways back in for anyone whose dad went missing
 function setupRescue() {
   const b = backupSave();
-  return `<p class="small" id="setupCloud" style="margin-top:14px">${cloud.checked ? '' : 'Checking your claude.ai account for a saved dad...'}</p>
-  <h3 class="sect" style="margin-top:26px">Lost your dad?</h3>
+  return `<h3 class="sect" style="margin-top:26px">Lost your dad?</h3>
+  <div class="upgrade"><p class="small"><b>Have a cloud code?</b> Type it here and your dad comes back.</p>
+    <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="margin-top:8px">
+    <button class="btn" style="width:100%;margin-top:10px" data-act="cloudLoad">Get my dad back</button>
+    <p class="small k-warn" id="cloudMsg" style="margin-top:8px">${esc(cloud.msg)}</p></div>
   ${brokenSave ? `<div class="upgrade warnbox"><p class="small"><b>We found a save but couldn't read it.</b> It's kept safe and won't be overwritten. Copy this and send it to whoever runs the game:</p>
     <textarea readonly>${esc(brokenSave)}</textarea></div>` : ''}
   ${b ? `<button class="btn alt" style="width:100%;margin-bottom:10px" data-act="restoreBackup">Restore backup<small>${esc(b.name)}, total level ${levelSum(b)}, saved ${ago(b.lastSeen || now())}</small></button>` : ''}
@@ -1386,13 +1396,13 @@ const handlers = {
   equip: b => run(() => equip(+b.dataset.i), b),
   sellWeapon: b => run(() => sellWeapon(+b.dataset.i), b),
   buyIdle: b => run(buyIdle, b),
-  tab: b => { S.tab = b.dataset.t; if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; save(); render(); $('#main').scrollTop = 0; },
+  tab: b => { S.tab = b.dataset.t; if (S.tab === 'dad' && now() - cloud.scoresAt > 30000) loadScores(); if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; save(); render(); $('#main').scrollTop = 0; },
   edit: () => { draft = {name: S.name, look: Object.assign({}, S.look)}; editing = 'edit'; render(); $('#main').scrollTop = 0; },
   look: b => { const k = b.dataset.k, v = b.dataset.v;
     draft.look[k] = k === 'glasses' ? v === '1' : (k === 'hair' || k === 'beard') ? v : +v; renderMain(); },
   saveLook: () => { S.name = draft.name.trim() || 'Dad'; S.look = draft.look; editing = false; save(); render(); },
   cancelLook: () => { editing = false; render(); },
-  start: () => { S = freshState(draft.name.trim() || 'Dad', draft.look); editing = false; save(); render(); },
+  start: () => { S = freshState(draft.name.trim() || 'Dad', draft.look); editing = false; save(); render(); cloudInit(); },
   share: b => openShare(b),
   closeShare: () => closeShare(),
   shareNative: () => { if (!shareBlob) return;
@@ -1408,6 +1418,12 @@ const handlers = {
   import: () => { const ok = importCode($('#importBox').value); if (ok) editing = false; render(); if (ok) toast('Save loaded'); },
   hsSort: b => { hsSort = b.dataset.s; renderCloudBits(); },
   cloudRetry: () => { cloudInit(); },
+  cloudLoad: () => { const box = $('#cloudCodeBox'); loadByCode(box ? box.value : ''); },
+  copyCloud: () => { if (!S || !S.cloudCode) return; const code = S.cloudCode;
+    const done = () => { S.codeCopiedAt = now(); save(); toast('Cloud code copied'); renderCloudBits(); };
+    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(done).catch(() => {
+      const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); done(); } catch (e) { toast(code); } t.remove(); }); },
   install: () => { if (!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); },
   restoreBackup: () => { const b = backupSave(); if (!b) return; S = b; editing = false; tick(); S.activeAt = now();
     addLog('Restored your automatic backup. Welcome back.', 'lvl'); save(); render(); toast('Backup restored'); },
@@ -1433,117 +1449,146 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => { if (e.target.id === 'nameInput' && draft) draft.name = e.target.value; });
 
-/* ---------- cloud save + highscores (needs a claude.ai sign-in) ----------
-   Your save goes to a private slot under your claude.ai account: data/users/<you>/save (nobody else can read it).
-   The highscore board is scores/<you>: everyone signed in reads it, each dad only writes his own row.
-   Not signed in? The game just keeps saving on this device like before. */
-const cloud = {checked: false, state: 'off', reason: 'checking', err: '', db: null, uid: null, unsub: null, busy: false, lastSync: 0, lastJson: '', lastScoreJson: '', scores: []};
+/* ---------- cloud save + highscores (Supabase) ----------
+   Every dad gets a secret cloud code (GFD-XXXX-XXXX-XXXX-XXXX). The game sends the save to Supabase with it,
+   and anyone who types the code on another phone gets that dad back. The server only stores a hash of the code.
+   The database is locked: the game can only call gfd_save, gfd_load and gfd_leaderboard (see supabase/gfd_cloud.sql). */
+const cloud = {checked: false, state: 'off', reason: 'checking', err: '', busy: false, lastSync: 0, lastJson: '', lastScoreJson: '', scores: [], scoresAt: 0, playerId: null, msg: ''};
 let hsSort = 'total', bootSavedAt = 0;   // bootSavedAt: when this device's save was really made, before startup re-saves it
 const progressOf = st => Object.values(st.xp || {}).reduce((a, b) => a + (+b || 0), 0);
-function parseRemote(d) { try { return d && typeof d.data === 'string' ? migrate(JSON.parse(d.data)) : null; } catch (e) { return null; } }
 function stash(st, why) { try { localStorage.setItem('gfd_save_other_' + now(), JSON.stringify(st)); } catch (e) {} addLog(why, 'warn'); }
+async function rpc(fn, args) {
+  const r = await fetch(`${CONFIG.supabaseUrl}/rest/v1/rpc/${fn}`, {method: 'POST',
+    headers: {'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey, 'Content-Type': 'application/json'},
+    body: JSON.stringify(args || {})});
+  if (!r.ok) { let t = ''; try { t = (await r.text()).slice(0, 140); } catch (e) {} throw {code: 'http_' + r.status, message: t}; }
+  return r.json();
+}
+// a cloud code: GFD + 16 characters from an alphabet without look-alikes (no 0/O, 1/I)
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newCloudCode() {
+  const b = new Uint8Array(16); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.random() * 256; });
+  const c = Array.from(b, x => CODE_ABC[x % 32]).join('');
+  return `GFD-${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8, 12)}-${c.slice(12)}`;
+}
+const cleanCode = s => { const c = String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return /^GFD[A-Z0-9]{16}$/.test(c) ? `GFD-${c.slice(3, 7)}-${c.slice(7, 11)}-${c.slice(11, 15)}-${c.slice(15)}` : null; };
+function parseRemote(d) { try { return d && typeof d.data === 'string' ? migrate(JSON.parse(d.data)) : null; } catch (e) { return null; } }
 // phone save vs cloud save: same dad -> newest wins. Two different dads -> keep the one with more progress, park the other.
 function resolveSaves(remote) {
   if (!remote) return;
   if (anim) finishAnim();
-  const take = msg => { S = remote; editing = editing === 'setup' ? false : editing; tick(); S.activeAt = now(); addLog(msg, 'lvl'); lastBackupAt = 0; save(); render(); };
-  if (!S) { take(`Loaded ${remote.name} from your claude.ai account.`); toast('Cloud save loaded'); return; }
-  if (remote.started === S.started) { if ((remote.savedAt || remote.lastSeen || 0) > bootSavedAt + 1000) { take('Loaded your newer save from your claude.ai account.'); toast('Cloud save loaded'); } return; }
-  if (progressOf(remote) > progressOf(S)) { stash(S, `This device had a different dad (${S.name}) with less progress. He's parked on this device; your account's dad is back.`); take(`Loaded ${remote.name} from your claude.ai account.`); }
-  else stash(remote, `Your account had a different dad (${remote.name}) with less progress. This dad now goes to the cloud; the other one is parked on this device.`);
+  const take = msg => { const code = S && S.cloudCode; S = remote; if (!S.cloudCode) S.cloudCode = code; editing = editing === 'setup' ? false : editing;
+    tick(); S.activeAt = now(); addLog(msg, 'lvl'); lastBackupAt = 0; save(); render(); };
+  if (remote.started === S.started) { if ((remote.savedAt || remote.lastSeen || 0) > bootSavedAt + 1000) { take('Loaded your newer save from the cloud.'); toast('Cloud save loaded'); } return; }
+  if (progressOf(remote) > progressOf(S)) { stash(S, `This device had a different dad (${S.name}) with less progress. He's parked on this device; your cloud dad is back.`); take(`Loaded ${remote.name} from the cloud.`); }
+  else stash(remote, `The cloud had a different dad (${remote.name}) with less progress. This dad is now the one in the cloud; the other one is parked on this device.`);
 }
-// reason = why the cloud is or isn't working, shown on the Dad tab so players can tell us
 async function cloudInit() {
   cloud.checked = false; cloud.reason = 'checking'; cloud.err = ''; renderCloudBits();
   try {
-    const C = window.claude;
-    if (!C || typeof C.use !== 'function') { cloud.reason = 'local'; return; }        // normal website (GitHub Pages): saves on this device
-    const [db, user] = await Promise.all([C.use('db'), C.use('user')]);
-    if (!db) { cloud.reason = 'no-db'; return; }                                       // not signed in here
-    cloud.db = db; cloud.state = 'readonly';
-    if (!cloud.unsub) cloud.unsub = db.collection('scores').onSnapshot(snap => { cloud.scores = snap.docs.map(d => cleanScore(d.id, d.data())).filter(Boolean); renderCloudBits(); },
-      e => { cloud.err = (e && e.code) || 'read failed'; renderCloudBits(); });
-    const uid = user ? await user.id() : null;
-    if (!uid) { cloud.reason = 'no-id'; return; }                                      // can look, has no private save slot
-    cloud.uid = uid;
-    const snap = await db.doc(`data/users/${uid}/save`).get();
-    resolveSaves(snap.exists ? parseRemote(snap.data()) : null);
+    if (!CONFIG.supabaseUrl || !window.fetch) { cloud.reason = 'off'; return; }
+    loadScores();
+    if (!S) { cloud.reason = 'nodad'; return; }                   // on the make-your-dad screen: nothing to sync yet
+    if (!S.cloudCode) { S.cloudCode = newCloudCode(); save(); addLog('Your dad now has a cloud code. Copy it on the Dad tab: it gets him back on any phone.', 'lvl'); }
+    const r = await rpc('gfd_load', {p_code: S.cloudCode});
+    if (r && r.ok) { cloud.playerId = r.player_id; resolveSaves(r.data ? parseRemote(r) : null); }
     cloud.state = 'on'; cloud.reason = 'on'; cloud.lastJson = ''; cloud.lastScoreJson = '';
     await cloudSync(true);
-  } catch (e) { cloud.reason = 'error'; cloud.err = (e && (e.code || e.message)) || String(e); }
+  } catch (e) { cloud.reason = 'offline'; cloud.err = (e && (e.code || e.message)) || String(e); cloud.state = 'retry'; }
   finally { cloud.checked = true; renderCloudBits(); }
 }
-// writes at most once a minute, only what changed. force = right now (closing the game, first sync)
+// writes at most once a minute, only when something changed. force = right now (closing the game, first sync)
 async function cloudSync(force) {
-  if (cloud.state !== 'on' || !S || cloud.busy) return;
+  if (!S || cloud.busy || !S.cloudCode) return;
+  if (cloud.state === 'retry' && now() - cloud.lastSync > 120000) { cloud.lastSync = now(); cloudInit(); return; }   // came back online: start over
+  if (cloud.state !== 'on') return;
   if (!force && now() - cloud.lastSync < 60000) return;
   const json = JSON.stringify(S), score = scoreDoc(), sj = JSON.stringify(score);
   if (json === cloud.lastJson && sj === cloud.lastScoreJson) return;
   cloud.busy = true;
   try {
-    if (json !== cloud.lastJson) { await cloud.db.doc(`data/users/${cloud.uid}/save`).set({savedAt: S.savedAt || now(), started: S.started, data: json}); cloud.lastJson = json; }
-    if (sj !== cloud.lastScoreJson) { await cloud.db.doc(`scores/${cloud.uid}`).set(Object.assign({at: now()}, score)); cloud.lastScoreJson = sj; }
-    cloud.lastSync = now();
-  } catch (e) { cloud.err = (e && (e.code || e.message)) || String(e);
-    if (e && ['invalid_argument', 'not_granted', 'revoked', 'capability_disabled'].includes(e.code)) { cloud.state = 'readonly'; cloud.reason = 'refused'; } }
+    const r = await rpc('gfd_save', {p_code: S.cloudCode, p_data: json, p_saved_at: S.savedAt || now(), p_started: S.started, p_score: score});
+    if (r && r.ok) { cloud.playerId = r.player_id; cloud.lastJson = json; cloud.lastScoreJson = sj; cloud.lastSync = now(); cloud.err = ''; loadScores(); }
+    else if (r && r.reason === 'stale') {          // another phone saved this dad more recently: take that one
+      const l = await rpc('gfd_load', {p_code: S.cloudCode}); bootSavedAt = 0; cloud.busy = false; if (l && l.ok && l.data) resolveSaves(parseRemote(l)); cloud.lastSync = now();
+    }
+    else { cloud.err = (r && r.reason) || 'refused'; if (r && r.reason === 'full') { cloud.state = 'off'; cloud.reason = 'full'; } }
+  } catch (e) { cloud.err = (e && (e.code || e.message)) || 'offline'; cloud.state = 'retry'; cloud.reason = 'offline'; cloud.lastSync = now(); }
   cloud.busy = false; renderCloudBits();
+}
+async function loadScores() {
+  try { const r = await rpc('gfd_leaderboard', {}); if (r && r.ok) { cloud.scores = (r.rows || []).map(x => cleanScore(x.player_id, x)).filter(Boolean); cloud.scoresAt = now(); renderCloudBits(); } }
+  catch (e) { /* board just stays as it was */ }
+}
+// typed a cloud code: fetch that dad. On the start screen he just appears; mid-game the current dad is parked first.
+async function loadByCode(raw) {
+  const code = cleanCode(raw); cloud.msg = '';
+  if (!code) { cloud.msg = "That doesn't look like a cloud code. It starts with GFD and has 16 letters and numbers after it."; renderCloudBits(); return; }
+  cloud.msg = 'Looking for your dad...'; renderCloudBits();
+  try {
+    const r = await rpc('gfd_load', {p_code: code});
+    if (!r || !r.ok || !r.data) { cloud.msg = 'No dad is saved under that code. Check for typos (it ignores dashes and capitals).'; renderCloudBits(); return; }
+    const remote = parseRemote(r); if (!remote) { cloud.msg = "Found it, but the save couldn't be read."; renderCloudBits(); return; }
+    if (anim) finishAnim();
+    if (S && S.started !== remote.started) stash(S, `${S.name} was parked on this device so ${remote.name} could load.`);
+    remote.cloudCode = code; S = remote; editing = false; bootSavedAt = S.savedAt || 0; cloud.playerId = r.player_id;
+    tick(); S.activeAt = now(); addLog(`Welcome back, ${S.name}! Loaded from your cloud code.`, 'lvl'); toast('Dad restored'); cloud.msg = '';
+    lastBackupAt = 0; save(); render(); cloudInit();
+  } catch (e) { cloud.msg = "Couldn't reach the cloud. Check your internet and try again."; renderCloudBits(); }
 }
 function scoreDoc() {
   const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
-  return {name: S.name, look: S.look, total: totalLevel(), combat: combatLevel(), lv, kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped};
+  return {name: S.name, look: S.look, lv, kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped};
 }
 // other dads' rows are their input: clean every field before showing it
 function cleanScore(id, d) {
   if (!d || typeof d !== 'object') return null;
   const n = (v, max) => clamp(Math.floor(+v || 0), 0, max), lv = {};
   for (const k in SKILLS) lv[k] = n((d.lv || {})[k], 100) || 1;
-  const L = d.look || {}, look = {skin: n(L.skin, 4), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, LOOKS.hairColor.length - 1),
-    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, 5), bg: n(L.bg, 5)};
-  const w = Math.floor(+d.weapon); 
+  const L = d.look || {}, look = {skin: n(L.skin, LOOKS.skin.length - 1), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, LOOKS.hairColor.length - 1),
+    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1)};
+  const w = Math.floor(+d.weapon);
   return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
-    combat: n(d.combat, 100), kills: n(d.kills, 1e9), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, at: +d.at || 0};
+    combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, at: +d.at || 0};
 }
 const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];
 const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
 function highscoresHTML() {
-  if (!cloud.checked) return '<p class="small">Checking claude.ai for the highscores...</p>';
-  if (!cloud.db && cloud.reason === 'local') return '<div class="upgrade"><p class="small">Not available yet on this version of the game. Saves live on each phone, so there\'s nothing shared to rank yet.</p></div>';
-  if (!cloud.db) return '<div class="upgrade"><p class="small">Highscores and cloud saves need the game open inside claude.ai while you\'re signed in. Until then, your dad saves on this device like before. See the cloud save line above for what\'s missing.</p></div>';
+  if (!cloud.scoresAt && !cloud.checked) return '<p class="small">Loading the highscores...</p>';
+  if (!cloud.scoresAt) return '<div class="upgrade"><p class="small">Couldn\'t load the highscores right now. They\'ll show up when you\'re back online.</p></div>';
   const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
   const chips = HS_SORTS.map(([k, label]) => `<button class="chip hs" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
-  const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.uid ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
-      <span class="hs-av">${avatarSVG(r.look)}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.uid ? ' <span class="lvtag">you</span>' : ''}</div>
-      <div class="row-meta">${titleFor(r.total)}, combat ${r.combat}${r.at ? `, updated ${ago(r.at)}` : ''}</div></div>
+  const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.playerId ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
+      <span class="hs-av">${avatarSVG(r.look)}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.playerId ? ' <span class="lvtag">you</span>' : ''}</div>
+      <div class="row-meta">${titleFor(r.total)}, combat ${r.combat}${r.at ? `, played ${ago(r.at)}` : ''}</div></div>
       <span class="hs-val">${fmt(hsValue(r, hsSort))}</span></div>`).join('');
-  const note = cloud.state === 'on' ? '' : '<p class="small note" style="margin-top:10px">You can see the board, but you\'re not on it and your save isn\'t in the cloud. Ask the dad who shared the game to invite you by email as an Editor.</p>';
-  return `<div class="hs-chips">${chips}</div><div class="panel">${list || '<div class="empty">No dads on the board yet.</div>'}</div>${note}`;
+  return `<div class="hs-chips">${chips}</div><div class="panel">${list || '<div class="empty">No dads on the board yet. You could be first.</div>'}</div>`;
 }
 function installHTML() {
-  if (standalone() || window.claude) return '';
+  if (standalone()) return '';
   if (installEvt) return '<button class="btn alt" style="width:100%;margin-top:12px" data-act="install">Install GFD as an app<small>Own icon, full screen, no browser bars</small></button>';
   if (/iphone|ipad/i.test(navigator.userAgent)) return '<p class="small note" style="margin-top:12px">Want GFD as an app? In Safari tap the Share button, then "Add to Home Screen".</p>';
   return '';
 }
-const openBtn = label => `<a class="sbtn solid linkbtn" href="${CONFIG.homeUrl}" target="_blank" rel="noopener">${label}</a>`;
+const syncedAgo = () => cloud.lastSync ? (now() - cloud.lastSync < 90000 ? 'just now' : now() - cloud.lastSync < 3600000 ? Math.round((now() - cloud.lastSync) / 60000) + ' min ago' : ago(cloud.lastSync)) : 'soon';
+// the box on the Dad tab: your cloud code, whether it's synced, and a nudge to keep the code somewhere safe
 function cloudLine() {
-  const R = cloud.reason, err = cloud.err ? ` (claude.ai said: ${esc(cloud.err)})` : '';
-  const retry = '<button class="sbtn" data-act="cloudRetry">Try again</button>';
-  if (!cloud.checked && R === 'checking') return 'Cloud save: checking...';
-  if (R === 'local') return '';   // normal website: the backup box above already says where your save lives
-  if (R === 'on') return `Cloud save: on, synced ${cloud.lastSync ? (now() - cloud.lastSync < 90000 ? 'just now' : now() - cloud.lastSync < 3600000 ? Math.round((now() - cloud.lastSync) / 60000) + ' min ago' : ago(cloud.lastSync)) : 'soon'}. Your dad is safe in your claude.ai account and follows you to any device.${err}`;
-  const why = {
-    'no-claude': 'This copy of the game is not running inside claude.ai, so it can only save on this device. Open it from the claude.ai link, signed in.',
-    'no-db': "You're not signed in to claude.ai in this browser (or this view doesn't allow saving). Sign in on claude.ai, then open the game from the claude.ai link.",
-    'no-id': "You're signed in, but claude.ai gives this page no save slot for you. Usually that means you only have view access: ask for an Editor invite by email.",
-    'refused': 'claude.ai refused to save. Usually that means you only have view access: ask for an Editor invite by email, and the game must not also be shared by public link.',
-    'error': 'Something went wrong talking to claude.ai.',
-  }[R] || 'Cloud save is off.';
-  return `<b>Cloud save: off.</b> ${why}${err}<span class="cloudbtns">${R === 'no-claude' || R === 'no-db' ? openBtn('Open in claude.ai') : ''}${retry}</span>`;
+  if (!S) return '';
+  const code = S.cloudCode ? `<div class="codebox"><span class="code">${S.cloudCode}</span><button class="sbtn solid" data-act="copyCloud">Copy</button></div>` : '';
+  const R = cloud.reason;
+  const status = R === 'on' ? `Cloud save: on, synced ${syncedAgo()}.`
+    : R === 'checking' ? 'Cloud save: connecting...'
+    : R === 'offline' ? 'Cloud save: offline right now. It catches up by itself when you have internet again.'
+    : R === 'full' ? 'Cloud save: the game has reached its maximum number of dads.'
+    : 'Cloud save: off.';
+  const nudge = S.codeCopiedAt ? 'Anyone with this code can play your dad, so keep it to yourself.'
+    : '<b>Copy your cloud code and keep it somewhere safe</b> (a Discord DM to yourself works). Type it on any phone, or after your browser got cleared, and your dad comes back.';
+  return `<div class="upgrade${S.codeCopiedAt ? '' : ' warnbox'}"><h3 class="sect">Your cloud code</h3>${code}<p class="small" style="margin-top:8px">${nudge}</p><p class="small" style="margin-top:6px">${status}</p></div>`;
 }
 function renderCloudBits() {
   const hs = document.getElementById('hsBox'); if (hs) hs.innerHTML = highscoresHTML();
   const cl = document.getElementById('cloudLine'); if (cl) cl.innerHTML = cloudLine();
-  const sc = document.getElementById('setupCloud'); if (sc) sc.textContent = cloud.checked ? (cloud.uid ? 'No dad found in your claude.ai account yet. Make one!' : '') : 'Checking your claude.ai account for a saved dad...';
+  const cm = document.getElementById('cloudMsg'); if (cm) cm.textContent = cloud.msg;
 }
 
 /* ---------- boot ---------- */

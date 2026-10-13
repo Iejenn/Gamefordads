@@ -8,4 +8,4 @@ On your phone: open the link, then use "Install GFD as an app" on the Dad tab (A
 or Share > Add to Home Screen (iPhone/Safari).
 
 Everything is one file: `index.html`. All balance numbers live in the `CONFIG` block at the top of the script.
-Saves live in your browser. Copy your save code (Dad tab > Backup) now and then.
+Saves live in your browser and sync to Supabase (see `supabase/gfd_cloud.sql`). Your cloud code on the Dad tab gets your dad back on any phone.
