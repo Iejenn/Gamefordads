@@ -4,8 +4,15 @@ A tiny idle RPG for working dads. Fish, cook, fight geese, level up while you're
 
 **Play:** https://iejenn.github.io/Gamefordads/
 
-On your phone: open the link, then use "Install GFD as an app" on the Dad tab (Android/Chrome),
+On your phone: open the link, then "Install GFD as an app" on the Dad tab (Android/Chrome),
 or Share > Add to Home Screen (iPhone/Safari).
 
-Everything is one file: `index.html`. All balance numbers live in the `CONFIG` block at the top of the script.
-Saves live in your browser and sync to Supabase (see `supabase/gfd_cloud.sql`). Your cloud code on the Dad tab gets your dad back on any phone.
+## How it's built
+- `engine.js`: ALL the game rules and balance (`CONFIG` at the top). The server runs it to decide what happens;
+  the phone loads it only to show numbers.
+- `index.html`: the screens. Every button sends an action ("fight", "eat", "start cooking") to the server.
+- `supabase/functions/gfd/`: the Supabase Edge Function. `engine.js` there is generated from the root `engine.js`
+  (wrapped so every request gets a fresh copy). Change the root file, regenerate, redeploy.
+- `supabase/migrations/`: database history. Tables are locked; only the Edge Function writes dads and scores.
+
+A dad's cloud code (Dad tab) is his only key. The server stores just a hash of it.
