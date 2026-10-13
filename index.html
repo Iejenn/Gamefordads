@@ -334,11 +334,14 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.18.1"></script>
+<script src="engine.js?v=0.18.2"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.18.2', title: 'Pets hotfix', notes: [
+    'The pets update briefly stopped existing dads from saving. Fixed: nothing was lost, and idle time was caught up afterwards.',
+  ]},
   {v: '0.18.1', title: 'Smoother updates', notes: [
     'Updating could leave the game stuck on some phones, because the browser kept half of the old version around. Updates now always load completely fresh.',
     'If the screen ever fails to draw, you now get a Reload button instead of a frozen game. Your dad was safe on the server the whole time.',
@@ -389,7 +392,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.18.1';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.18.2';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -1046,7 +1049,7 @@ function applyServer(res, btn) {
   cloud.reason = 'on'; cloud.err = ''; cloud.playerId = res.player_id;
   if (res.serverNow) clockSkew = res.serverNow - Date.now();       // timers follow the server's clock, not the phone's
   const tab = (S && S.tab) || lsGet(LS.tab) || 'fish';
-  S = res.state; S.tab = tab;
+  S = migrate(res.state) || res.state; S.tab = tab;   // fill in anything missing, so the screen never trips over a gap
   if (res.arena !== undefined) arenaMsg = res.arena;
   (res.toasts || []).forEach(toast);
   if (editing === 'setup') editing = false;
@@ -1166,7 +1169,7 @@ try { if (navigator.storage && navigator.storage.persist) navigator.storage.pers
   // a save from the old version on this phone: it moves to the server once, under its cloud code
   if (!code && legacy && legacy.xp && !lsGet(LS.moved)) { code = cleanCode(legacy.cloudCode) || newCloudCode(); lsSet(LS.code, code); }
   if (!code) { draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); return; }
-  S = cached || (legacy && legacy.xp ? legacy : null);
+  S = cached && cached.xp ? migrate(cached) : (legacy && legacy.xp ? migrate(legacy) : null);
   if (S) S.tab = lsGet(LS.tab) || S.tab || 'fish';
   render();
   const extra = legacy && legacy.xp && !lsGet(LS.moved) && Date.now() < MOVE_DEADLINE ? {legacy} : null;

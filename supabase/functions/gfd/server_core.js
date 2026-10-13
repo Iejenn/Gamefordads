@@ -25,7 +25,7 @@ export async function handle(body, sql, createEngine) {
     const row = p ? (await tx`select state, legacy from public.gfd_state where player_id = ${p.id} for update`)[0] : null;
     const E = createEngine(null);
     if (row) {
-      E.setS(row.legacy ? E.migrate(row.state) : row.state);       // amnesty saves are converted once, on first visit
+      E.setS(E.migrate(row.state));   // every load fills in anything a newer version added (old saves, new fields like pets)
       if (!E.S) return {ok: false, reason: 'broken_save'};
       if (row.legacy) E.S.log.unshift({text: 'Your dad moved to the server: from now on every dice roll happens there. Your progress came along.', kind: 'lvl'});
     } else if (action === 'create') {
@@ -50,7 +50,7 @@ export async function handle(body, sql, createEngine) {
       on conflict (player_id) do update set state = excluded.state, legacy = false, version = public.gfd_state.version + 1, updated_at = now()`;
     const sc = E.scoreRow();
     await tx`insert into public.gfd_scores (player_id, name, look, lv, total, combat, kills, tasks, weapon, pet, updated_at)
-      values (${p.id}, ${sc.name}, ${tx.json(sc.look)}, ${tx.json(sc.lv)}, ${sc.total}, ${sc.combat}, ${sc.kills}, ${sc.tasks}, ${sc.weapon}, ${sc.pet}, now())
+      values (${p.id}, ${sc.name}, ${tx.json(sc.look)}, ${tx.json(sc.lv)}, ${sc.total}, ${sc.combat}, ${sc.kills ?? 0}, ${sc.tasks ?? 0}, ${sc.weapon ?? -1}, ${sc.pet ?? null}, now())
       on conflict (player_id) do update set name = excluded.name, look = excluded.look, lv = excluded.lv, total = excluded.total,
         combat = excluded.combat, kills = excluded.kills, tasks = excluded.tasks, weapon = excluded.weapon, pet = excluded.pet, updated_at = now()`;
     const view = Object.assign({}, S); if (view.pending) view.pending = {g: view.pending.g};   // the phone never sees fights ahead of time
