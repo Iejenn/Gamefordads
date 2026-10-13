@@ -334,11 +334,15 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js"></script>
+<script src="engine.js?v=0.18.1"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.18.1', title: 'Smoother updates', notes: [
+    'Updating could leave the game stuck on some phones, because the browser kept half of the old version around. Updates now always load completely fresh.',
+    'If the screen ever fails to draw, you now get a Reload button instead of a frozen game. Your dad was safe on the server the whole time.',
+  ]},
   {v: '0.18', title: 'Pets!', notes: [
     'Four super rare pets to collect, one per non-combat skill: something by the fishing spots, something that smells of burnt toast, someone rummaging through your junk, and a very familiar honk after Slayer tasks.',
     'Each skill screen shows your odds right now. They improve a little with every level. Expect months, not days.',
@@ -385,6 +389,11 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
+const UI_VERSION = '0.18.1';   // must match CONFIG.version in engine.js (bump both with every update)
+const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
+if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
+  if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
+}
 const $ = s => document.querySelector(s);
 
 /* ---------- avatar ---------- */
@@ -909,7 +918,13 @@ function renderNav() {
   tk.innerHTML = tickerOpen ? `<ul>${L.slice(0, 15).map(e => `<li class="k-${e.kind}">${esc(e.text)}</li>`).join('')}</ul>`
     : `<p class="k-${L[0].kind}">${esc(L[0].text)}</p>`;
 }
-function render() { renderTop(); renderMain(); renderNav(); }
+function render() { try { renderTop(); renderMain(); renderNav(); } catch (e) { showCrash(e); } }
+function showCrash(e) {
+  const m = document.getElementById('main'); if (!m) return;
+  m.innerHTML = `<div class="upgrade" style="margin-top:40px;text-align:center"><p class="small"><b>Something went wrong showing the game.</b> Your dad is safe on the server.</p>
+    <button class="btn" style="width:100%;margin-top:12px" data-act="hardReload">Reload GFD</button>
+    <p class="small" style="margin-top:8px;opacity:.6">${String((e && e.message) || e).replace(/[<>&]/g, '').slice(0, 140)}</p></div>`;
+}
 
 /* ---------- input: every button asks the server ---------- */
 const A = (action, args) => b => act(action, typeof args === 'function' ? args(b) : args, b);
@@ -959,7 +974,8 @@ const handlers = {
     (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(done).catch(() => {
       const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select();
       try { document.execCommand('copy'); done(); } catch (e) { toast(code); } t.remove(); }); },
-  reloadApp: () => location.reload(),
+  reloadApp: () => freshReload(updateReady),
+  hardReload: () => freshReload(),
   install: () => { if (!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); },
 };
 let fightAsked = false;
@@ -1014,7 +1030,7 @@ async function callServer(action, args, extra, code) {
 // one request at a time, in the order you tapped
 function act(action, args, btn, extra, code) {
   if (!(code || myCode())) return Promise.resolve(null);
-  const p = reqQ.then(() => callServer(action, args, extra, code)).then(res => applyServer(res, btn), e => {
+  const p = reqQ.then(() => callServer(action, args, extra, code)).then(res => { try { return applyServer(res, btn); } catch (e) { showCrash(e); return null; } }, e => {
     cloud.online = false; cloud.reason = 'offline'; cloud.err = (e && (e.code || e.message)) || 'offline';
     if (action !== 'sync') toast("Can't reach the server. Check your internet.");
     if (!S) renderMain(); else { renderTop(); renderCloudBits(); } return null;
@@ -1136,7 +1152,7 @@ async function checkVersion(boot) {
     const r = await fetch('version.json?t=' + Date.now(), {cache: 'no-store'}); if (!r.ok) return;
     const v = (await r.json()).version;
     if (!v || verNum(v) <= verNum(CONFIG.version)) return;
-    if (boot && !sessionStorage.getItem('gfd_reloaded_' + v)) { sessionStorage.setItem('gfd_reloaded_' + v, '1'); location.reload(); return; }
+    if (boot && !sessionStorage.getItem('gfd_reloaded_' + v)) { sessionStorage.setItem('gfd_reloaded_' + v, '1'); freshReload(v); return; }
     updateReady = v; renderTop();
   } catch (e) {}
 }
