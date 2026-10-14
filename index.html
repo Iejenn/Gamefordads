@@ -369,11 +369,15 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.21"></script>
+<script src="engine.js?v=0.21.1"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.21.1', title: 'Tougher monsters, working DIY', notes: [
+    'The <b>Start DIY</b> button works now. It used to send your dad straight back to fishing. Sorry, dads.',
+    'Monsters in later areas have more health: the Garage a little, the Dark Hallway more than double. Strong dads were two-hitting everything. Fights now get longer as you progress instead of shorter, so food, meals and armour matter more. The Backyard is unchanged.',
+  ]},
   {v: '0.21', title: 'DIY and gear!', notes: [
     'New skill: <b>DIY</b>, in the new <b>Shed</b> tab (was Trade). Your dad takes monster junk apart into materials: Cardboard, Duct Tape, Plywood, Sheet Metal and Carbon Fibre.',
     'Build <b>gear</b> from them: helmets and body armour, from a Cardboard Box Helmet up to a Kevlar BBQ Apron. Gear shows on your dad and makes enemies hit you less. Wearing better gear needs Defence levels.',
@@ -448,7 +452,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.21';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.21.1';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }

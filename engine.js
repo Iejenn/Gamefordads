@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.21',
+  version: '0.21.1',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -192,6 +192,7 @@ const CONFIG = {
   armour: {head: [0.04, 0.06, 0.08, 0.09, 0.10], body: [0.06, 0.09, 0.12, 0.14, 0.15]},   // less damage taken (10/15/20/23/25% for a full set), front-loaded so cheap gear matters
   // enemies hit harder now that armour exists, so a dad in matching gear takes about what he took before
   enemyHitMult: 1.25, enemyAccBonus: 0.03,
+  enemyHpPerArea: 0.15,          // enemy health x (1 + this x area number): Backyard stays as is, later areas get much tougher
   newsEvery: 5,               // other dads see your level-ups every 5 levels (plus 99), and every rare drop, pet and badge
 };
 
@@ -199,7 +200,7 @@ const CONFIG = {
 /* ---------- helpers ---------- */
 const FISH = CONFIG.fish, AREAS = CONFIG.areas;
 // flat list of all 50 enemies; enemy id g = area * 5 + slot
-const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e)));
+const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e, {hp: Math.round(e.hp * (1 + CONFIG.enemyHpPerArea * ri))})));
 // grouped like the tabs: combat, food, shed
 const SKILLS = {attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', fishing:'Fishing', farming:'Farming', cooking:'Cooking', trading:'Trading', diy:'DIY'};
 const SKILL_GROUPS = [['Combat', ['attack', 'strength', 'defence', 'hitpoints', 'slayer']], ['Food', ['fishing', 'farming', 'cooking']], ['Shed', ['trading', 'diy']]];
@@ -312,7 +313,7 @@ function migrate(s) {
   if (found) { const best = m.weapons.reduce((b, n, i) => n ? i : b, -1); if (m.equipped < 0) m.equipped = best;
     m.log.unshift({text: `Rare drops are weapons now! Your old rare finds turned into ${found} weapon${found > 1 ? 's' : ''}. Check the Dad tab.`, kind: 'lvl'}); }
   // v0.12: one idle activity at a time instead of everything at once
-  if (!['fish', 'cook', 'trade', 'fight'].includes(s.activity)) { m.activity = m.fightIdle ? 'fight' : 'fish'; m.actAt = now(); }
+  if (!['fish', 'cook', 'trade', 'fight', 'diy'].includes(s.activity)) { m.activity = m.fightIdle ? 'fight' : 'fish'; m.actAt = now(); }
   if (!Number.isFinite(m.actAt)) m.actAt = now();
   delete m.fishAt; delete m.cookAt; delete m.tradeAt; delete m.fightAt; delete m.fightIdle;
   return m;
