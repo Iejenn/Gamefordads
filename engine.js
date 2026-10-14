@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.22.1',
+  version: '0.22.2',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -113,7 +113,7 @@ const CONFIG = {
   ],
   junkChance: 0.25,           // every enemy drops its junk item this often
   rareChance: 1 / 250,        // any enemy in an area can drop that area's weapon
-  // trading: sells your monster junk by itself, most valuable first
+  // trading: sells your monster junk by itself, cheapest first
   tradeSeconds: 60,           // one sale every 60 seconds
   tradeBase: 0.75, tradePerLvl: 0.01,   // you get 75% of an item's value, +1% per Trading level (175% at 100)
   tradeXpBase: 4, tradeXpPerCoin: 0.5,  // Trading xp per sale = 4 + half the item's value
@@ -128,13 +128,13 @@ const CONFIG = {
   // farming: monsters drop seeds, plots grow them in real time (alongside whatever your dad is doing),
   // and a vegetable plus the matching fish cooks into a meal. Crop c pairs with fish 2c and 2c+1, and drops in areas 2c and 2c+1.
   crops: [
-    {name: 'Potato', many: 'Potatoes',  icon: '🥔', req: 1,  growMin: 30,  xp: 40,   desc: 'Reliable. Like you.'},
-    {name: 'Carrot', many: 'Carrots',  icon: '🥕', req: 21, growMin: 60,  xp: 120,  desc: 'Good for your eyes. Allegedly.'},
-    {name: 'Garlic', many: 'Garlic',  icon: '🧄', req: 41, growMin: 120, xp: 300,  desc: 'Keeps vampires and coworkers away.'},
-    {name: 'Pumpkin', many: 'Pumpkins', icon: '🎃', req: 61, growMin: 240, xp: 700,  desc: 'Too big for the wheelbarrow.'},
-    {name: 'Truffle', many: 'Truffles', icon: '🍄', req: 81, growMin: 480, xp: 1500, desc: 'Dug up at 3am. Worth it.'},
+    {name: 'Potato', many: 'Potatoes',  icon: '🥔', req: 1,  growMin: 10,  xp: 15,   desc: 'Reliable. Like you.'},
+    {name: 'Carrot', many: 'Carrots',  icon: '🥕', req: 21, growMin: 15,  xp: 40,  desc: 'Good for your eyes. Allegedly.'},
+    {name: 'Garlic', many: 'Garlic',  icon: '🧄', req: 41, growMin: 20,  xp: 100,  desc: 'Keeps vampires and coworkers away.'},
+    {name: 'Pumpkin', many: 'Pumpkins', icon: '🎃', req: 61, growMin: 30,  xp: 230,  desc: 'Too big for the wheelbarrow.'},
+    {name: 'Truffle', many: 'Truffles', icon: '🍄', req: 81, growMin: 45,  xp: 500, desc: 'Dug up at 3am. Worth it.'},
   ],
-  seedChance: 0.10,           // every kill: chance to drop that area's seed
+  seedChance: 0.15,           // every kill: chance to drop that area's seed (faster crops need more seeds)
   harvestBase: 3, harvestRand: 3, harvestPerLvl: 1 / 25,   // vegetables per harvest = 3 + (0 to 2) + 1 per 25 Farming levels
   plotCosts: [2000, 10000, 50000, 250000],                  // farm plots 2 to 5 (you start with 1)
   // meals: fish i + its vegetable. Heal and cooking xp are multiplied, everything else works like cooking a fish.
@@ -341,7 +341,7 @@ function sellables() {
   if (S.sellMats) for (let t = 0; t < MATS.length; t++) if (S.mats[t] > 0) out.push(['m' + t, S.mats[t]]);
   return out;
 }
-const tradePick = () => { let best = null; for (const [k] of sellables()) if (!best || lootInfo(k).price > lootInfo(best).price) best = k; return best; };
+const tradePick = () => { let best = null; for (const [k] of sellables()) if (!best || lootInfo(k).price < lootInfo(best).price) best = k; return best; };   // cheapest first
 const catchChance = i => Math.min(CONFIG.catchMax, CONFIG.catchBase + CONFIG.catchPerLvl * (lvl('fishing') - FISH[i].req));
 const cookChance = i => Math.min(CONFIG.cookMax, CONFIG.cookBase + CONFIG.cookPerLvl * (lvl('cooking') - FISH[i].req));
 const bestSpot = L => FISH.filter(f => f.req <= L).length - 1;
