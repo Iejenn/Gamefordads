@@ -12,7 +12,7 @@ const addNews = (kind, text) => { news.push({kind, text}); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.20',
+  version: '0.21',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -155,6 +155,8 @@ const CONFIG = {
     cooking:  {name: 'Toasty',               icon: '🍞', odds: 15000, per: 'cooking try', hint: 'Something smells faintly of burnt bread...',   desc: 'A slice of toast with a face. Burnt on one side, just like your cooking.'},
     trading:  {name: 'Rocky the Raccoon',    icon: '🦝', odds: 2000,  per: 'sale',        hint: 'Someone keeps rummaging through your junk...', desc: 'Handles your sales. Definitely not skimming. Probably.'},
     slayer:   {name: 'Honkers',              icon: '🪿', odds: 200,   per: 'Slayer task', hint: 'A familiar honk echoes after every task...',  desc: 'An Angry Goose who switched sides. Still angry.'},
+    diy:      {name: 'Dusty the Robot Vacuum', icon: '🤖', odds: 3500, per: 'item taken apart', hint: 'Something keeps bumping into your workbench...', desc: 'Bumps into everything. Somehow still cleaner than your garage.',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="16" ry="8" fill="#5E676E"/><ellipse cx="20" cy="23" rx="16" ry="9" fill="#C9D0D6"/><path d="M4.2 24.5 C6 29 12 31.5 20 31.5 C28 31.5 34 29 35.8 24.5" stroke="#3E4449" stroke-width="2" fill="none"/><circle cx="20" cy="15.8" r="1.6" fill="#3BD16F"/><circle cx="14.5" cy="22.5" r="3.6" fill="#fff" stroke="#3E4449" stroke-width=".8"/><circle cx="25.5" cy="22.5" r="3.6" fill="#fff" stroke="#3E4449" stroke-width=".8"/><circle cx="15.6" cy="23.4" r="1.6" fill="#1d1d1d"/><circle cx="24.2" cy="21.6" r="1.6" fill="#1d1d1d"/><path d="M6 33 l-2 3 M8.5 34 l-1 3.2 M11 34.6 l0 3.2" stroke="#8A949C" stroke-width="1.2" stroke-linecap="round"/></svg>'},
     farming:  {name: 'Mortimer the Mole',    icon: '🕳️', odds: 600,   per: 'harvest',     hint: 'Someone keeps leaving molehills in your plots...', desc: 'Digs up your garden. Takes the credit for the harvest.',
       svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="25" rx="14" ry="12" fill="#5B4636"/><ellipse cx="20" cy="28" rx="8" ry="6" fill="#8A6F5A"/><ellipse cx="20" cy="25.5" rx="3.2" ry="2.4" fill="#F29AAE"/><path d="M13.5 20.5q2-2 4 0M22.5 20.5q2-2 4 0" stroke="#1d1d1d" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="10.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><ellipse cx="29.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><path d="M9.5 15a10.5 8.5 0 0 1 21 0z" fill="#F2B533"/><rect x="8" y="14" width="24" height="2.6" rx="1.2" fill="#D99A1E"/><circle cx="20" cy="10.5" r="2" fill="#FFF4C2"/></svg>'},
   },
@@ -173,6 +175,30 @@ const CONFIG = {
     {name: 'Silver Badge', cost: 50,  bonus: 0.10, desc: 'The geese have started talking about you.'},
     {name: 'Gold Badge',   cost: 100, bonus: 0.15, desc: 'The HOA now asks YOU for permission.'},
   ],
+  // DIY: take monster junk apart into materials (idle, one item every diySeconds, cheapest junk first),
+  // then build gear by hand. Material t comes from areas 2t and 2t+1. Building needs DIY level, wearing needs Defence level.
+  diySeconds: 10,
+  materials: [
+    {name: 'Cardboard',    icon: '📦', req: 1,  xp: 6},
+    {name: 'Duct Tape',    icon: '🩹', req: 21, xp: 15},
+    {name: 'Plywood',      icon: '🪵', req: 41, xp: 35},
+    {name: 'Sheet Metal',  icon: '⚙️', req: 61, xp: 80},
+    {name: 'Carbon Fibre', icon: '🧵', req: 81, xp: 170},
+  ],
+  matValue: 1.15,             // a material sells for 15% more than the average junk it comes from
+  gear: [                     // one row per material: [head, body], each [name, flavour text]
+    [['Cardboard Box Helmet', "It's a box. On your head."],      ['Cardboard Chestplate', 'Says FRAGILE on the front. Accurate.']],
+    [['Duct Tape Cap', 'Holds your thoughts together.'],          ['Duct Tape Vest', 'If it moves and it should not: tape.']],
+    [['Plywood Hard Hat', 'Splinters included at no extra cost.'], ['Plywood Barrel', 'Suspenders sold separately.']],
+    [['Bucket Helmet', 'Still has a mop smell. Very intimidating.'], ['Bin-Lid Breastplate', 'Wednesdays you have to hand it in.']],
+    [['Carbon Fibre Helmet', 'Lighter than your excuses.'],       ['Kevlar BBQ Apron', 'Grill master. Bulletproof. Both.']],
+  ],
+  gearCost: {head: 10, body: 20},          // materials per piece
+  gearXpMult: 2,                           // build xp = materials used x material xp x this
+  gearValue: 1.5,                          // a spare piece sells for 1.5x its materials
+  armour: {head: [0.04, 0.06, 0.08, 0.09, 0.10], body: [0.06, 0.09, 0.12, 0.14, 0.15]},   // less damage taken (10/15/20/23/25% for a full set), front-loaded so cheap gear matters
+  // enemies hit harder now that armour exists, so a dad in matching gear takes about what he took before
+  enemyHitMult: 1.25, enemyAccBonus: 0.03,
   newsEvery: 5,               // other dads see your level-ups every 5 levels (plus 99), and every rare drop, pet and badge
 };
 
@@ -181,7 +207,10 @@ const CONFIG = {
 const FISH = CONFIG.fish, AREAS = CONFIG.areas;
 // flat list of all 50 enemies; enemy id g = area * 5 + slot
 const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e)));
-const SKILLS = {fishing:'Fishing', cooking:'Cooking', farming:'Farming', attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', trading:'Trading'};
+// grouped like the tabs: combat, food, shed
+const SKILLS = {attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', fishing:'Fishing', farming:'Farming', cooking:'Cooking', trading:'Trading', diy:'DIY'};
+const SKILL_GROUPS = [['Combat', ['attack', 'strength', 'defence', 'hitpoints', 'slayer']], ['Food', ['fishing', 'farming', 'cooking']], ['Shed', ['trading', 'diy']]];
+const MATS = CONFIG.materials, SLOTS = ['head', 'body'];
 const CROPS = CONFIG.crops;
 const vegOf = i => Math.floor(i / 2);             // fish i's vegetable (and area ri's seed)
 const mealHeal = i => FISH[i].heal * CONFIG.mealHealMult;
@@ -226,7 +255,8 @@ function freshState(name, look) {
     v: 2, name: name || 'Dad', look: Object.assign({}, DEFAULT_LOOK, look || {}),
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
-    xp: {fishing: 0, cooking: 0, farming: 0, attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, trading: 0}, style: 'attack',
+    xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, trading: 0, diy: 0}, style: 'attack',
+    mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, sellMats: false,
     seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
     plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
     raw: Array(10).fill(0), cooked: Array(10).fill(0), pots: Array(10).fill(0),
@@ -236,7 +266,7 @@ function freshState(name, look) {
     task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false, badge: 0,
     pets: {}, petOut: null,   // pets you've found (skill -> times found) and the one following you
     started: t, lastSeen: t, activeAt: t,
-    stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0, harvests: 0, meals: 0},
+    stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0, harvests: 0, meals: 0, dismantled: 0, built: 0},
     loot: {}, kc: Array(50).fill(0),
     log: [{text: 'Welcome, dad. Your fishing rod is already in the water.', kind: ''}],
   };
@@ -276,6 +306,9 @@ function migrate(s) {
   const loot = {}; for (const k in (m.loot || {})) if (/^(e\d+|r\d)$/.test(k)) loot[k] = Math.max(0, Math.floor(+m.loot[k] || 0)); m.loot = loot;
   if (m.task && !(m.task.e >= 0 && m.task.e < 50 && m.task.n > 0)) m.task = null;
   m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
+  m.mats = intArr(s.mats, CONFIG.materials.length); m.sellMats = !!m.sellMats;
+  const gi = s.gearInv || {}; m.gearInv = {head: intArr(gi.head, 5), body: intArr(gi.body, 5)};
+  const wr = s.wear || {}; m.wear = {}; for (const sl of ['head', 'body']) { const t = Math.floor(+wr[sl]); m.wear[sl] = t >= 0 && t < 5 && m.gearInv[sl][t] > 0 ? t : -1; }
   m.autoEat = !!m.autoEat; m.badge = clamp(Math.floor(+m.badge || 0), 0, CONFIG.badges.length);
   const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
   if (!pets[m.petOut]) m.petOut = null;
@@ -301,12 +334,19 @@ const idleWindowMs = () => (CONFIG.idleBaseMinutes + CONFIG.idleStepMinutes * S.
 const unlockedAreas = () => AREAS.filter(a => a.req <= combatLevel()).length;
 function dadTitle() { return titleFor(totalLevel()); }
 function titleFor(t) {
-  return t >= 900 ? 'Ultimate Dad' : t >= 765 ? 'Legendary Dad' : t >= 585 ? 'Veteran Dad' : t >= 405 ? 'Seasoned Dad' : t >= 225 ? 'Grill Master' : t >= 90 ? 'Weekend Warrior' : 'Rookie Dad'; }
+  return t >= 1000 ? 'Ultimate Dad' : t >= 850 ? 'Legendary Dad' : t >= 650 ? 'Veteran Dad' : t >= 450 ? 'Seasoned Dad' : t >= 250 ? 'Grill Master' : t >= 100 ? 'Weekend Warrior' : 'Rookie Dad'; }
 const weapon = () => S.equipped >= 0 ? AREAS[S.equipped].weapon : null;
 const weaponBonus = () => weapon() ? weapon().dmg : 0;
 const tradeMult = () => CONFIG.tradeBase + CONFIG.tradePerLvl * lvl('trading');
 // trading sells your most valuable junk first
-const tradePick = () => { let best = null; for (const k in S.loot) if (S.loot[k] > 0 && (!best || lootInfo(k).price > lootInfo(best).price)) best = k; return best; };
+// everything Trading may sell: junk ('e12'), spare gear ('head3'), and materials ('m2') only if you allow it
+function sellables() {
+  const out = []; for (const k in S.loot) if (S.loot[k] > 0) out.push([k, S.loot[k]]);
+  for (const sl of SLOTS) for (let t = 0; t < 5; t++) { const n = spareGear(sl, t); if (n > 0) out.push([sl + t, n]); }
+  if (S.sellMats) for (let t = 0; t < MATS.length; t++) if (S.mats[t] > 0) out.push(['m' + t, S.mats[t]]);
+  return out;
+}
+const tradePick = () => { let best = null; for (const [k] of sellables()) if (!best || lootInfo(k).price > lootInfo(best).price) best = k; return best; };
 const catchChance = i => Math.min(CONFIG.catchMax, CONFIG.catchBase + CONFIG.catchPerLvl * (lvl('fishing') - FISH[i].req));
 const cookChance = i => Math.min(CONFIG.cookMax, CONFIG.cookBase + CONFIG.cookPerLvl * (lvl('cooking') - FISH[i].req));
 const bestSpot = L => FISH.filter(f => f.req <= L).length - 1;
@@ -376,6 +416,42 @@ function buyPlot() {
   return [`-${fmt(c)} coins`, 'gold'];
 }
 
+/* ---------- DIY: junk in, materials out, gear built by hand ---------- */
+const matOf = ri => Math.floor(ri / 2);                       // area ri's material (same pairing as seeds)
+const matPrice = t => Math.round(ENEMIES.filter(e => matOf(e.area) === t).reduce((a, e) => a + e.junk[1], 0) / 10 * CONFIG.matValue);
+const gearName = (sl, t) => CONFIG.gear[t][sl === 'head' ? 0 : 1][0];
+const gearDesc = (sl, t) => CONFIG.gear[t][sl === 'head' ? 0 : 1][1];
+const gearPrice = (sl, t) => Math.round(CONFIG.gearCost[sl] * matPrice(t) * CONFIG.gearValue);
+const canWear = t => lvl('defence') >= MATS[t].req;
+const armourRed = () => SLOTS.reduce((a, sl) => a + (S.wear[sl] >= 0 ? CONFIG.armour[sl][S.wear[sl]] : 0), 0);
+// a piece only counts as spare if you already wear that tier or better there: an upgrade you can't wear yet is never sold
+const spareGear = (sl, t) => t <= S.wear[sl] ? S.gearInv[sl][t] - (S.wear[sl] === t ? 1 : 0) : 0;
+// the cheapest junk goes under the screwdriver first (Trading sells the most valuable first)
+const dismantlePick = () => { let best = null; for (const k in S.loot) if (S.loot[k] > 0 && (!best || lootInfo(k).price < lootInfo(best).price)) best = k; return best; };
+function diyTry(r) {
+  const k = dismantlePick(); if (!k) return;
+  const t = matOf(ENEMIES[+k.slice(1)].area), M = MATS[t];
+  S.loot[k]--; S.mats[t]++; S.xp.diy += M.xp; S.stats.dismantled++; rollPet('diy');
+  r.diyTries++; r.mats[M.name] = (r.mats[M.name] || 0) + 1; r.diyXp += M.xp;
+}
+function build(sl, t) {
+  if (!SLOTS.includes(sl) || !(t >= 0 && t < MATS.length)) return;
+  const M = MATS[t], cost = CONFIG.gearCost[sl];
+  if (lvl('diy') < M.req || S.mats[t] < cost) return;
+  S.mats[t] -= cost; S.gearInv[sl][t]++; S.stats.built++;
+  const xp = cost * M.xp * CONFIG.gearXpMult; S.xp.diy += xp;
+  let t2 = `Built a ${gearName(sl, t)}. +${fmt(xp)} DIY xp.`;
+  if (canWear(t) && t > S.wear[sl]) { S.wear[sl] = t; t2 += ' Wearing it now.'; }
+  addLog(t2, 'lvl');
+  return [`+${fmt(xp)} xp`, 'green'];
+}
+function wear(sl, t) {
+  if (!SLOTS.includes(sl)) return;
+  if (S.wear[sl] === t) { S.wear[sl] = -1; addLog(`Took off the ${gearName(sl, t)}.`); return; }
+  if (!(S.gearInv[sl][t] > 0) || !canWear(t)) return;
+  S.wear[sl] = t; addLog(`Put on the ${gearName(sl, t)}. -${pct(CONFIG.armour[sl][t])} damage taken.`);
+}
+
 /* ---------- idle: fishing, cooking and (optional) fighting, processed in time order ---------- */
 function fishTry(r) {
   const i = S.spot, f = FISH[i]; r.fishTries++; rollPet('fishing');
@@ -396,25 +472,26 @@ function cookTry(r) {
 function tradeTry(r) {
   const k = tradePick(); if (!k) return;        // nothing to sell: the stall waits
   const it = lootInfo(k), coins = Math.max(1, Math.round(it.price * tradeMult())), xp = Math.round(CONFIG.tradeXpBase + it.price * CONFIG.tradeXpPerCoin);
-  S.loot[k]--; S.coins += coins; S.xp.trading += xp; S.stats.sold++; S.stats.tradeCoins += coins;
+  takeOne(k); S.coins += coins; S.xp.trading += xp; S.stats.sold++; S.stats.tradeCoins += coins;
   rollPet('trading');
   r.tradeTries++; r.sold[it.name] = (r.sold[it.name] || 0) + 1; r.tradeCoins += coins; r.tradeXp += xp;
 }
-const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting'};
-const actMs = a => a === 'fish' ? CONFIG.fishSeconds * 1000 : a === 'cook' ? CONFIG.cookSeconds * 1000 : a === 'trade' ? CONFIG.tradeSeconds * 1000 : CONFIG.fightIdleMinutes * 60000;
-const canDo = a => a === 'cook' ? cookPick() >= 0 : a === 'trade' ? !!tradePick() : true;
+const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting', diy: 'taking junk apart'};
+const actMs = a => a === 'fish' ? CONFIG.fishSeconds * 1000 : a === 'cook' ? CONFIG.cookSeconds * 1000 : a === 'trade' ? CONFIG.tradeSeconds * 1000 : a === 'diy' ? CONFIG.diySeconds * 1000 : CONFIG.fightIdleMinutes * 60000;
+const canDo = a => a === 'cook' ? cookPick() >= 0 : a === 'trade' ? !!tradePick() : a === 'diy' ? !!dismantlePick() : true;
 function runIdle(t) {
   const end = Math.min(t, (S.activeAt || t) + idleWindowMs());
   const before = snapLevels(), fr = newFightTally();
-  const r = {fishTries: 0, caught: {}, fishXp: 0, cookTries: 0, cooked: {}, cookXp: 0, burnt: 0, tradeTries: 0, sold: {}, tradeCoins: 0, tradeXp: 0, events: 0};
+  const r = {fishTries: 0, caught: {}, fishXp: 0, cookTries: 0, cooked: {}, cookXp: 0, burnt: 0, tradeTries: 0, sold: {}, tradeCoins: 0, tradeXp: 0, diyTries: 0, mats: {}, diyXp: 0, events: 0};
   for (let guard = 0; guard < 50000; guard++) {
     const T = S.actAt + actMs(S.activity); if (T > end) break;
     S.actAt = T; r.events++;
     // ran out of raw fish or things to sell: your dad goes back to fishing instead of standing around
-    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
+    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : S.activity === 'diy' ? 'No junk left to take apart, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
     if (S.activity === 'fish') fishTry(r);
     else if (S.activity === 'cook') cookTry(r);
     else if (S.activity === 'trade') tradeTry(r);
+    else if (S.activity === 'diy') diyTry(r);
     else { regenTo(T); idleFight(fr); }
   }
   if (t > end) {   // past the idle window: pause, and pick up again when the game is opened
@@ -424,6 +501,7 @@ function runIdle(t) {
   // one quiet catch every 30 seconds isn't news, a pile of them after being away is
   if (r.fishTries > 2) addLog(`Fishing: ${r.fishTries} casts, caught ${itemsText(r.caught) || 'nothing'}. +${fmt(r.fishXp)} xp`);
   if (r.tradeTries > 2) addLog(`Trading: sold ${itemsText(r.sold)} for ${fmt(r.tradeCoins)} coins. +${fmt(r.tradeXp)} xp`);
+  if (r.diyTries > 2) addLog(`DIY: took apart ${r.diyTries} pieces of junk, got ${itemsText(r.mats)}. +${fmt(r.diyXp)} xp`);
   if (r.cookTries > 2) addLog(`Cooking: cooked ${itemsText(r.cooked) || 'nothing'}${r.burnt ? `, burnt ${r.burnt}` : ''}. +${fmt(r.cookXp)} xp`);
   if (fr.n) addLog(fightTallyText(fr, 'Fight idle'), fr.ko ? 'warn' : '');
   else if (fr.rest) addLog(`Fight idle: rested ${fr.rest} time${fr.rest > 1 ? 's' : ''} on low health${S.autoEat ? ', no fish left to auto-eat' : '. Turn on auto-eat to eat instead'}.`, 'warn');
@@ -442,6 +520,8 @@ function tick() {
 const pHit = (A, L) => clamp(CONFIG.hitBase + CONFIG.hitPerLvl * (A - L), CONFIG.hitMin, CONFIG.hitMax);
 const pMaxHit = St => Math.round(CONFIG.dmgBase * (1 + CONFIG.dmgPerLvl * St));
 const defRed = D => Math.min(0.9, CONFIG.defPerLvl * D);
+// how hard an enemy hits you right now: its buffed max hit, minus Defence and armour
+const enemyMax = E => Math.round(E.maxHit * CONFIG.enemyHitMult * (1 - defRed(lvl('defence'))) * (1 - armourRed()));
 const slayerBonus = () => CONFIG.slayerDmgPerLvl * lvl('slayer');
 const badgeBonus = () => S.badge ? CONFIG.badges[S.badge - 1].bonus : 0;
 const onTask = g => !!(S.task && S.task.e === g);
@@ -451,7 +531,12 @@ function pickEnemy(ri) {
   return ri * 5 + Math.floor(Math.random() * 5);
 }
 const addLoot = k => { S.loot[k] = (S.loot[k] || 0) + 1; };
-const lootInfo = k => ({name: ENEMIES[+k.slice(1)].junk[0], price: ENEMIES[+k.slice(1)].junk[1]});
+const lootInfo = k => k[0] === 'e' ? {name: ENEMIES[+k.slice(1)].junk[0], price: ENEMIES[+k.slice(1)].junk[1]}
+  : k[0] === 'm' ? {name: MATS[+k.slice(1)].name, price: matPrice(+k.slice(1))}
+  : {name: gearName(k.slice(0, 4), +k.slice(4)), price: gearPrice(k.slice(0, 4), +k.slice(4))};
+function takeOne(k) {
+  if (k[0] === 'e') S.loot[k]--; else if (k[0] === 'm') S.mats[+k.slice(1)]--; else S.gearInv[k.slice(0, 4)][+k.slice(4)]--;
+}
 const itemsText = map => Object.entries(map).map(([n, c]) => c > 1 ? `${c} ${n}` : n).join(', ');
 // a weapon drop: auto-equip it if it beats what you're holding
 function rareAlert(ri) {
@@ -467,7 +552,7 @@ function simFight(g) {
   const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence')), mh = maxHP();
   const task = onTask(g), hitP = Math.min(CONFIG.hitMax, pHit(A, E.lvl) + (task ? badgeBonus() : 0));   // the badge helps you hit your task enemy
   const mult = (1 + weaponBonus()) * (1 + (task ? slayerBonus() : 0)) * (1 + (task ? badgeBonus() : 0));   // weapon, Slayer level and badge stack
-  const food = S.autoEat ? foodList() : null, heals = foodHeals();
+  const food = S.autoEat ? foodList() : null, heals = foodHeals(), arm = armourRed();
   let ehp = E.hp, hp = S.hp, taken = 0, healed = 0, ateLast = false; const ev = [], eaten = {};
   for (let round = 0; round < 200; round++) {
     // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round.
@@ -483,7 +568,7 @@ function simFight(g) {
       ehp -= d; ev.push(['p', d]);
       if (ehp <= 0) break;
     }
-    const e = Math.random() < E.acc ? Math.round((1 + Math.floor(Math.random() * E.maxHit)) * (1 - red)) : 0;  // 0 = missed or fully blocked
+    const e = Math.random() < Math.min(0.95, E.acc + CONFIG.enemyAccBonus) ? Math.round((1 + Math.floor(Math.random() * E.maxHit)) * CONFIG.enemyHitMult * (1 - red) * (1 - arm)) : 0;  // 0 = missed or fully blocked
     if (e) { hp = Math.max(0, hp - e); taken += e; }
     ev.push(['e', e]);
     if (hp <= 0) break;
@@ -734,7 +819,7 @@ function doAction(action, a) {
   switch (action) {
     case 'sync': break;
     case 'spot': { const i = intIn(a.i, 0, bestSpot(lvl('fishing'))); if (i != null && i !== S.spot) { S.spot = i; addLog(`Now fishing at the ${FISH[i].name} spot.`); } break; }
-    case 'activity': if (['fish', 'cook', 'trade'].includes(a.a)) setActivity(a.a); break;
+    case 'activity': if (['fish', 'cook', 'trade', 'diy'].includes(a.a)) setActivity(a.a); break;
     case 'fightIdle': setActivity(S.activity === 'fight' ? 'fish' : 'fight'); break;
     case 'area': { const i = intIn(a.i, 0, unlockedAreas() - 1); if (i != null) { S.area = i; arenaMsg = null; } break; }
     case 'style': if (STYLES.some(x => x[0] === a.s) && S.style !== a.s) { S.style = a.s; addLog(`Combat style: ${STYLES.find(x => x[0] === S.style)[1]}. Fight xp now trains ${SKILLS[S.style]}.`); } break;
@@ -758,6 +843,9 @@ function doAction(action, a) {
     case 'tendAll': out.pop = tendAll(); break;
     case 'buyPlot': out.pop = buyPlot(); break;
     case 'eatMeal': case 'eatMealAll': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = eatMeal(i, action === 'eatMealAll'); break; }
+    case 'build': { const t = intIn(a.t, 0, MATS.length - 1); if (t != null) out.pop = build(a.s, t); break; }
+    case 'wear': { const t = intIn(a.t, 0, MATS.length - 1); if (t != null) wear(a.s, t); break; }
+    case 'sellMats': S.sellMats = !S.sellMats; addLog(S.sellMats ? 'Trading may now sell your materials too.' : 'Trading keeps its hands off your materials.'); break;
     case 'buyBadge': out.pop = buyBadge(); break;
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
     default: out.unknown = true;
@@ -768,7 +856,7 @@ function doAction(action, a) {
 // what the highscore board shows, worked out from the real state
 function scoreRow() {
   const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
-  return {name: S.name, look: Object.assign({}, S.look, {badge: S.badge || 0}), lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
+  return {name: S.name, look: Object.assign({}, S.look, {badge: S.badge || 0, head: S.wear.head, body: S.wear.body}), lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
 }
 
 return { get S() { return S; }, setS(v) { S = v; }, get arenaMsg() { return arenaMsg; }, toasts, news,

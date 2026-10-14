@@ -336,6 +336,23 @@ nav button span{white-space:nowrap}
 @media (prefers-color-scheme: dark){.k-news,#ticker li.k-news{color:#B9A3F5}}
 #ticker .k-news b{font-weight:700}
 .badge-ic{width:18px;height:18px;vertical-align:-4px}
+.dgroup{grid-column:1/-1;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 -4px}
+.dgroup:first-child{margin-top:0}
+.gear-row{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.gear-row+.gear-row{border-top:1px solid var(--line)}
+.gear-ic{width:40px;height:40px;flex:none;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.gear-ic svg{width:36px;height:30px}
+.build{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.build .row-btns{margin-top:6px}
+.count.dim{opacity:.5}
+.hs-wrap{display:flex;gap:10px;align-items:flex-start}
+.hs-rail{display:flex;flex-direction:column;gap:6px;width:96px;flex:none;position:sticky;top:0}
+.hs-cat{width:100%;padding:8px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;text-align:left}
+.hs-cat[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.hs-list{flex:1;min-width:0}
+.hs-list .hs-row{padding:10px 8px;gap:8px}
+.hs-list .hs-av{width:34px;height:34px}
+.hs-list .row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -352,11 +369,19 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.20"></script>
+<script src="engine.js?v=0.21"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.21', title: 'DIY and gear!', notes: [
+    'New skill: <b>DIY</b>, in the new <b>Shed</b> tab (was Trade). Your dad takes monster junk apart into materials: Cardboard, Duct Tape, Plywood, Sheet Metal and Carbon Fibre.',
+    'Build <b>gear</b> from them: helmets and body armour, from a Cardboard Box Helmet up to a Kevlar BBQ Apron. Gear shows on your dad and makes enemies hit you less. Wearing better gear needs Defence levels.',
+    'Heads up: enemies hit about 25% harder now. In gear that matches your area you take about the same as before. Without gear, you feel it.',
+    'Materials and spare gear can be sold. Trading only sells your materials if you allow it in the Shed.',
+    'A 6th pet is somewhere in the shed. It bumps into things.',
+    'The Ranks now have a list of categories on the left instead of the long row of buttons, and skills are grouped: combat, food, shed.',
+  ]},
   {v: '0.20', title: 'Badges, news and smarter eating', notes: [
     'The <b>Neighbourhood Watch Badge</b> is in the Slayer store: Bronze, Silver and Gold. Extra damage and hit chance against your task enemy, and a shiny pin on your shirt for everyone to see.',
     'You now see the other dads\' big moments in your log, in purple: rare drops, pets, badges and every 5th level. Rare drops and pets also pop up as a message.',
@@ -423,7 +448,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.20';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.21';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -442,12 +467,30 @@ function badgePin(b) {
   if (!(b > 0)) return ''; const c = BADGE_COLORS[b] || BADGE_COLORS[1];
   return `<g transform="translate(22.5 54.5) scale(1.35)"><path d="M0 -3.6 L1.05 -1.1 L3.4 -1.1 L1.5 0.5 L2.2 3 L0 1.5 L-2.2 3 L-1.5 0.5 L-3.4 -1.1 L-1.05 -1.1Z" fill="${c}" stroke="${shade(c, .35)}" stroke-width=".55" stroke-linejoin="round"/>${b >= 3 ? '<circle cx="1.5" cy="-1.9" r=".6" fill="#fff"/>' : ''}</g>`;
 }
-const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0});
+const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0, head: S.wear ? S.wear.head : -1, body: S.wear ? S.wear.body : -1});
+// DIY gear drawings, tier 0-4: cardboard, duct tape, plywood, sheet metal, carbon fibre
+const GEAR_SVG = {
+  head: [
+    '<rect x="17.5" y="5" width="29" height="19" rx="1" fill="#C89A63" stroke="#9C7443" stroke-width="1"/><path d="M17.5 9.5 H46.5" stroke="#9C7443" stroke-width=".8"/><rect x="29.5" y="5" width="5" height="19" fill="#E8D7A8" opacity=".9"/>',
+    '<path d="M18.8 22 C18.8 13.5 24.5 9.5 32 9.5 C39.5 9.5 45.2 13.5 45.2 22Z" fill="#A9B0B6"/><path d="M21 17 H43 M20 20 H44 M23.5 13.5 H40.5" stroke="#8C949A" stroke-width="1.2"/><path d="M18.3 21.2 L46 21.2 C49 21.2 51.5 22.2 51.5 23.6 L18.3 23.6Z" fill="#8C949A"/>',
+    '<path d="M19 21 C19 12 24.5 8 32 8 C39.5 8 45 12 45 21Z" fill="#D7B07A"/><path d="M16.5 20.5 H47.5 V23.4 H16.5Z" fill="#B88C55"/><path d="M24 11 C27 13 28 17 27.5 20.5 M36 9.5 C37.5 12 38.5 15.5 38 20.5" stroke="#B88C55" stroke-width=".8" fill="none"/><rect x="30.5" y="8" width="3" height="13" fill="#C49862"/>',
+    '<path d="M19.5 22.5 L22.5 6.5 H41.5 L44.5 22.5Z" fill="#9AA4AC" stroke="#6E777E" stroke-width="1"/><rect x="21.5" y="5" width="21" height="2.6" rx="1" fill="#7E878E"/><path d="M20.6 17 H43.4" stroke="#6E777E" stroke-width=".8"/><path d="M20 21 C17 25 17.5 30 19.5 32" stroke="#6E777E" stroke-width="1.2" fill="none"/>',
+    '<path d="M18.5 23 C18 12 24 7.5 32 7.5 C40 7.5 46 12 45.5 23 L42 23 C41 17 37 14.5 32 14.5 C27 14.5 23 17 22 23Z" fill="#2B2F33"/><path d="M22.5 22 C23.5 17.5 27 15.3 32 15.3 C37 15.3 40.5 17.5 41.5 22" stroke="#4E555B" stroke-width="1.2" fill="none"/><path d="M24 10 L37 20 M29 8.4 L42 17.5 M20.6 14 L31 22" stroke="#40464B" stroke-width=".7"/><path d="M31 7.6 H33 V14.5 H31Z" fill="#D9483A"/>',
+  ],
+  body: [
+    '<path d="M14 64 L15 50 C20 47 25 46.5 32 46.5 C39 46.5 44 47 49 50 L50 64Z" fill="#C89A63" stroke="#9C7443" stroke-width=".9"/><path d="M15 56 H49" stroke="#9C7443" stroke-width=".8"/><rect x="29.5" y="47" width="5" height="17" fill="#E8D7A8" opacity=".85"/>',
+    '<path d="M12.5 64 C12.5 52 20 47 32 47 C44 47 51.5 52 51.5 64Z" fill="#A9B0B6"/><path d="M16 53 L30 64 M24 48.5 L41 64 M36 48 L50 60 M14 59 L20 64" stroke="#8C949A" stroke-width="2.2"/><path d="M27 47 V64 M37 47 V64" stroke="#C9D0D6" stroke-width="1"/>',
+    '<path d="M13 64 C12 55 13 50 16 48 H48 C51 50 52 55 51 64Z" fill="#B98A52"/><path d="M13.5 53 H50.5 M13 59 H51" stroke="#6E5233" stroke-width="1.6"/><path d="M22 48 V64 M32 48 V64 M42 48 V64" stroke="#9C7443" stroke-width=".6"/><path d="M20 48 L18.5 45 M44 48 L45.5 45" stroke="#6E5233" stroke-width="1.6"/>',
+    '<path d="M20 47.5 L25 50 M44 47.5 L39 50" stroke="#5A3E2B" stroke-width="1.6"/><circle cx="32" cy="56" r="10.5" fill="#9AA4AC" stroke="#6E777E" stroke-width="1"/><circle cx="32" cy="56" r="6.8" fill="none" stroke="#6E777E" stroke-width=".7"/><rect x="28" y="54.8" width="8" height="2.4" rx="1.2" fill="#6E777E"/>',
+    '<path d="M27 47.5 L25 44.5 M37 47.5 L39 44.5" stroke="#2B2F33" stroke-width="1.6"/><path d="M21.5 64 L21.5 52 C21.5 49 23.5 47.5 26.5 47.5 H37.5 C40.5 47.5 42.5 49 42.5 52 L42.5 64Z" fill="#2B2F33"/><path d="M32 61.5 C29 59.5 29.5 56.5 31 54.5 C31 56.5 32.5 57 32.5 55.5 C34.5 57.5 35 60 32 61.5Z" fill="#F07A2A"/>',
+  ],
+};
 function avatarSVG(L) {
   const skin = LOOKS.skin[L.skin] || LOOKS.skin[0], hair = LOOKS.hairColor[L.hairColor] || LOOKS.hairColor[0];
   const shirt = LOOKS.shirt[L.shirt] || LOOKS.shirt[0], bg = LOOKS.bg[L.bg] || LOOKS.bg[0], sd = shade(skin, .16);
   const sides = `<path d="M19.3 28 C18.8 22 19.6 19 21 17.5 L22 28Z" fill="${hair}"/><path d="M44.7 28 C45.2 22 44.4 19 43 17.5 L42 28Z" fill="${hair}"/>`;
   let top = '', cap = '';
+  const head = Number.isInteger(L.head) && L.head >= 0 ? GEAR_SVG.head[L.head] : '', body = Number.isInteger(L.body) && L.body >= 0 ? GEAR_SVG.body[L.body] : '';
   if (L.hair === 'mohawk') top = `<path d="M20.2 24 C20 17 25 13.6 32 13.6 C39 13.6 44 17 43.8 24 C41.5 19.5 37.5 17.5 32 17.5 C26.5 17.5 22.5 19.5 20.2 24Z" fill="${hair}" opacity=".25"/><path d="M26.6 18 L27.2 9.5 L29.2 11.8 L30.2 3.4 L32.2 9 L34 3.8 L34.9 10.6 L37 8.2 L37.4 18 C35.6 16.6 33.8 16.1 32 16.1 C30.2 16.1 28.4 16.6 26.6 18Z" fill="${hair}"/>`;
   if (L.hair === 'short') top = `<path d="M19.3 27 C18.5 16 23.5 11.5 32 11.5 C40.5 11.5 45.5 16 44.7 27 C43.6 21.5 41 19 37 18.6 C33 18.2 29 19.4 25 18.8 C22 19.6 20.2 22.5 19.3 27Z" fill="${hair}"/>`;
   if (L.hair === 'messy') top = `<path d="M19 27 C17.5 18 21 12.5 26 11 L27 7.5 L30 10.5 L33 7 L35.2 10.6 L39.5 8.2 L39.8 12.4 C44.2 14.6 46.5 20 45 27 C43.5 22 40 19.5 35 20.5 L33 18 L30 20.5 C26 19 21.5 21 19 27Z" fill="${hair}"/>`;
@@ -455,6 +498,7 @@ function avatarSVG(L) {
   if (L.hair === 'bald') top = `<ellipse cx="26.5" cy="17" rx="3.6" ry="2" fill="#fff" opacity=".35"/>`;
   if (L.hair === 'cap') { top = sides; const cd = shade(shirt, .28);
     cap = `<path d="M18.8 22 C18.8 13.5 24.5 9.5 32 9.5 C39.5 9.5 45.2 13.5 45.2 22Z" fill="${shirt}"/><path d="M18.3 21.2 L46 21.2 C49 21.2 51.5 22.2 51.5 23.6 L18.3 23.6Z" fill="${cd}"/><circle cx="32" cy="9.8" r="1.4" fill="${cd}"/>`; }
+  if (head) { top = L.hair === 'bald' ? '' : sides; cap = head; }   // a helmet hides the hair and any cap
   let beard = '';
   const jaw = 'M19.6 29 C19.8 40 25 44.5 32 44.5 C39 44.5 44.2 40 44.4 29 C42.8 34.5 40 36.3 36.5 35.6 C34.5 35.2 33 34.6 32 34.6 C31 34.6 29.5 35.2 27.5 35.6 C24 36.3 21.2 34.5 19.6 29Z';
   if (L.beard === 'full') beard = `<path d="${jaw}" fill="${hair}"/>`;
@@ -467,6 +511,7 @@ function avatarSVG(L) {
   return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar">
 <rect width="64" height="64" fill="${bg}"/>
 <path d="M10 64 C10 51 19 45 32 45 C45 45 54 51 54 64Z" fill="${shirt}"/>
+${body}
 <rect x="27" y="36" width="10" height="11" rx="3" fill="${sd}"/>
 <path d="M27.5 45 L32 50.5 L36.5 45Z" fill="${sd}"/>
 <circle cx="19.5" cy="29" r="3.2" fill="${skin}"/><circle cx="44.5" cy="29" r="3.2" fill="${skin}"/>
@@ -542,7 +587,7 @@ function barHTML(kind, icon, v, max, sub, label) {
 }
 function idleLine() {
   const a = S.activity, c = cookPick(), tk = tradePick();
-  const what = a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
+  const what = a === 'diy' ? 'taking junk apart' : a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
   return `Idle: ${what}, next in <b id="actBarH"></b>`;
 }
 function renderTop() {
@@ -646,7 +691,7 @@ function arenaHTML() {
   const A = AREAS[S.area], mh = anim ? anim.mh : maxHP(), php = anim ? animHp() : S.hp;
   const g = anim ? anim.g : (S.lastFoe != null && ENEMIES[S.lastFoe].area === S.area ? S.lastFoe : null), E = g != null ? ENEMIES[g] : null;
   const ehp = anim ? anim.ehp : !E ? 0 : arenaEnd && arenaEnd.g === g ? arenaEnd.ehp : E.hp;   // after a fight: show how it ended
-  const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0))) : 0, eMax = E ? Math.round(E.maxHit * (1 - defRed(lvl('defence')))) : 0;
+  const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0))) : 0, eMax = E ? enemyMax(E) : 0;
   const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
   const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
   return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
@@ -678,7 +723,7 @@ function fightTab() {
     return `<button class="pick" data-act="area" data-i="${j}" aria-pressed="${j === S.area}" ${locked ? 'disabled' : ''}>
       <span class="pn">${a.place}</span><span class="pm">${locked ? `Opens at combat level ${a.req}` : `${a.enemies.map(e => e.icon).join(' ')} Made for combat level ${a.req} to ${a.req + 9}`}</span></button>`; }).join('');
   const styles = STYLES.map(([k, name]) => `<button class="chip style" data-act="style" data-s="${k}" aria-pressed="${S.style === k}">${name}<small>Trains ${SKILLS[k]}</small></button>`).join('');
-  const foes = A0.enemies.map((e, k) => { const g = S.area * 5 + k, eMax = Math.round(e.maxHit * (1 - defRed(D)));
+  const foes = A0.enemies.map((e, k) => { const g = S.area * 5 + k, eMax = enemyMax(e);
     return `<div class="foe-row${onTask(g) ? ' task' : ''}"><span class="foe-ic" style="background:${A0.tint}">${e.icon}</span><div class="row-main">
       <div class="row-name">${e.name} <span class="lvtag">level ${e.lvl}</span>${onTask(g) ? ' <span class="lvtag task">task</span>' : ''}</div>
       <div class="row-meta">${e.blurb}</div>
@@ -764,23 +809,42 @@ function tradeTab() {
     ? `<div class="upgrade"><h3 class="sect">Idle time</h3><div class="big"><span>${dur(w)}</span></div><p class="small">Maxed out. Respect.</p></div>`
     : `<div class="upgrade"><h3 class="sect">Idle time upgrade ${S.capLevel + 1} of ${total}</h3>
       <div class="big">${dur(w)} &#8594; <span>${dur(w2)}</span></div>
-      <p class="small">How long fishing, cooking, trading and fight idle keep going after you close the game.</p>
+      <p class="small">How long your dad keeps going after you close the game.</p>
       <div class="costline"><span>${fmt(Math.min(S.coins, next))} of ${fmt(next)}</span><b>${fmt(next)} coins</b></div>
       <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
       <button class="btn" data-act="buyIdle" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy upgrade'}</button></div>`;
-  const k = tradePick(), m = tradeMult();
-  const stock = Object.keys(S.loot).filter(x => S.loot[x] > 0).sort((a, b) => lootInfo(b).price - lootInfo(a).price).map(x => {
-    const it = lootInfo(x), n = S.loot[x], get = Math.max(1, Math.round(it.price * m));
+  const k = tradePick(), m = tradeMult(), d = dismantlePick();
+  const stock = sellables().sort((x, y) => lootInfo(y[0]).price - lootInfo(x[0]).price).map(([x, n]) => {
+    const it = lootInfo(x), get = Math.max(1, Math.round(it.price * m));
     return `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${it.name}</div>
-      <div class="row-meta">Worth ${fmt(it.price)}, you get ${fmt(get)} each, ${fmt(get * n)} for all</div></div></div>`; }).join('');
-  return `${skillHTML('trading')}
+      <div class="row-meta">You get ${fmt(get)} each, ${fmt(get * n)} for all</div></div></div>`; }).join('');
+  const mats = MATS.map((M, t) => S.mats[t] ? `${S.mats[t]} ${M.name}` : '').filter(Boolean).join(', ');
+  return `<div class="duo">${skillHTML('trading', true)}${skillHTML('diy', true)}</div>
   ${doingNow()}
   <section class="idlecard${S.activity === 'trade' ? ' active' : ''}"><p class="stage-title">${k ? `${S.activity === 'trade' ? 'Selling' : 'Sell'} ${lootInfo(k).name}` : 'Nothing to sell'}</p>
-    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first. Goes back to fishing when the stall is empty.` : 'Monster drops land here. Weapons are never sold for you.'}</p>${petLine('trading')}
+    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first.` : 'Monster junk and spare gear land here. Weapons are never sold for you.'} You get ${pct(m)} of the value.</p>${petLine('trading')}
     ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
-  <p class="small note" style="margin-top:10px">You get ${pct(m)} of an item's value: ${pct(CONFIG.tradeBase)} plus 1% per Trading level. Sold so far: ${fmt(S.stats.sold)} items for ${fmt(S.stats.tradeCoins)} coins.</p>
+  <section class="idlecard${S.activity === 'diy' ? ' active' : ''}"><p class="stage-title">${d ? `${S.activity === 'diy' ? 'Taking apart' : 'Take apart'} ${lootInfo(d).name}` : 'No junk to take apart'}</p>
+    <p class="stage-meta">${d ? `Gives 1 ${MATS[matOf(ENEMIES[+d.slice(1)].area)].name}. One item every ${CONFIG.diySeconds} seconds, cheapest junk first.` : 'Beat monsters for junk, then take it apart here for materials.'}</p>${petLine('diy')}
+    ${S.activity === 'diy' ? progHTML('actBar', 'Next item in') : actBtn('diy', 'Start DIY', d ? '' : 'No junk')}
+    <p class="small" style="margin-top:8px">${mats ? `Materials: ${mats}.` : 'No materials yet.'}</p>
+    <button class="sbtn" style="margin-top:6px" data-act="sellMats">${S.sellMats ? 'Trading may sell materials: on' : 'Trading may sell materials: off'}</button></section>
+  <h3 class="sect">Build gear</h3><p class="small note">Building needs DIY level, wearing needs Defence level. Gear makes enemies hit you less. Spares sell for a profit.</p>
+  <div class="panel">${buildRows()}</div>
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
   ${up}${plotUpgrade()}`;
+}
+function buildRows() {
+  const L = lvl('diy');
+  return MATS.slice(0, visibleCount(MATS, L)).map((M, t) => {
+    if (L < M.req) return `<div class="row"><span class="count dim">${M.icon}</span><div class="row-main"><div class="row-name muted">${M.name} gear</div><div class="row-meta">Opens at DIY ${M.req}</div></div></div>`;
+    const btn = sl => { const cost = CONFIG.gearCost[sl], n = S.gearInv[sl][t], worn = S.wear[sl] === t;
+      return `<div class="build"><div class="row-name">${gearName(sl, t)}${n ? ` <span class="lvtag">x${n}</span>` : ''}</div>
+        <div class="row-meta">-${pct(CONFIG.armour[sl][t])} damage. ${cost} ${M.name}${canWear(t) ? '' : `, wear at Defence ${M.req}`}</div>
+        <div class="row-btns"><button class="sbtn solid" data-act="build" data-s="${sl}" data-t="${t}" ${S.mats[t] < cost ? 'disabled' : ''}>Build</button>
+        ${n ? `<button class="sbtn" data-act="wear" data-s="${sl}" data-t="${t}" ${!worn && !canWear(t) ? 'disabled' : ''}>${worn ? 'Take off' : 'Wear'}</button>` : ''}</div></div>`; };
+    return `<div class="row build-tier"><span class="count">${S.mats[t]}</span><div class="row-main"><div class="row-name">${M.icon} ${M.name}</div>${btn('head')}${btn('body')}</div></div>`;
+  }).join('');
 }
 function plotUpgrade() {
   const next = CONFIG.plotCosts[S.plots.length - 1], total = CONFIG.plotCosts.length + 1;
@@ -795,17 +859,28 @@ function plotUpgrade() {
 function ranksTab() {
   const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
   return `<h2 class="pagetitle">Ranks</h2>
-  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dads on total level. ` : ''}Updates about once a minute while dads play. Tap a skill to rank by it.</p>
+  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dads on total level. ` : ''}Updates about once a minute while dads play.</p>
   <div id="hsBox">${highscoresHTML()}</div>`;
+}
+// what your dad has on: weapon, head and body
+function gearBlock() {
+  const w = weapon(), row = (ic, name, eff, empty) => `<div class="gear-row"><span class="gear-ic">${ic}</span><div class="row-main"><div class="row-name${name ? '' : ' muted'}">${name || empty}</div>${eff ? `<div class="row-meta">${eff}</div>` : ''}</div></div>`;
+  const piece = sl => { const t = S.wear[sl]; return t >= 0
+    ? row(`<svg viewBox="${sl === 'head' ? '14 2 38 30' : '8 42 48 22'}">${GEAR_SVG[sl][t]}</svg>`, gearName(sl, t), `-${pct(CONFIG.armour[sl][t])} damage taken. ${gearDesc(sl, t)}`)
+    : row('❔', '', '', sl === 'head' ? 'Nothing on your head. Build something in the Shed.' : 'Just a shirt. Build something in the Shed.'); };
+  return `<h3 class="sect" style="margin-top:22px">Gear</h3><div class="panel">
+    ${row(w ? w.icon : '✊', w ? w.name : 'Bare hands', w ? `+${pct(w.dmg)} damage` : 'Weapons are rare drops. Collection below.')}${piece('head')}${piece('body')}</div>`;
 }
 function dadTab() {
   const days = Math.floor((now() - S.started) / 86400000) + 1;
-  const sk = Object.keys(SKILLS).map(k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
-    return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; }).join('');
+  const one = k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
+    return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; };
+  const sk = SKILL_GROUPS.map(([g, ks]) => `<div class="dgroup">${g}</div>${ks.map(one).join('')}`).join('');
   return `<article class="dcard"><div class="dhero" style="background:${LOOKS.bg[S.look.bg] || LOOKS.bg[0]}">
       <div class="bigav">${avatarSVG(myLook())}${petBadge(S.petOut, 'big')}</div>
       <div><div class="dname">${esc(S.name)}</div><div class="dtitle">${dadTitle()}</div><div class="dtotal">Total level ${totalLevel()}, combat ${combatLevel()}</div>
-      <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div></div></div>
+      <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div>
+      ${armourRed() ? `<div class="dweapon">Armour: -${pct(armourRed())} damage taken</div>` : ''}</div></div>
     <div class="dskills">${sk}</div>
     <div class="dstats"><div><b>${fmt(S.coins)}</b><span>Coins</span></div><div><b>${fmt(S.stats.kills)}</b><span>Kills</span></div><div><b>${fmt(S.stats.tasks)}</b><span>Slayer tasks</span></div></div>
     <div class="dfoot"><b>GFD</b><span>Fighting in ${AREAS[Math.max(0, unlockedAreas() - 1)].place}, day ${days}</span></div></article>
@@ -813,6 +888,7 @@ function dadTab() {
   <button class="btn alt" data-act="edit">Change name and look</button></div>
   <div id="cloudLine" style="margin-top:14px">${cloudLine()}</div>
   ${installHTML()}
+  ${gearBlock()}
   <h3 class="sect" style="margin-top:22px">Pets ${Object.keys(S.pets).length}/${Object.keys(CONFIG.pets).length}</h3>
   <p class="small note">Super rare companions, one for each non-combat skill. Purely for bragging rights.</p>
   <div class="panel">${Object.entries(CONFIG.pets).map(([k, P]) => S.pets[k]
@@ -913,15 +989,16 @@ async function makeShareCard() {
   // skills
   // skills in two columns, four rows
   const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2, rowH = Math.floor(585 / Math.ceil(Object.keys(SKILLS).length / 2));
-  Object.keys(SKILLS).forEach((k, i) => {
-    const col = i % 2, row = Math.floor(i / 2), x0 = X + PAD + col * (cellW + GAP), top = 440 + row * rowH;
+  const cols = [SKILL_GROUPS[0][1], SKILL_GROUPS.slice(1).flatMap(g => g[1])];
+  cols.forEach((list, col) => list.forEach((k, row) => {
+    const i = row * 2 + col, x0 = X + PAD + col * (cellW + GAP), top = 440 + row * rowH;
     const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) : 1;
     if (row) { g.fillStyle = line; g.fillRect(x0, top - 12, cellW, 2); }
     g.fillStyle = ink; g.textAlign = 'left'; g.font = `400 32px ${UI}`; g.fillText(SKILLS[k], x0, top + 46);
     g.fillStyle = prim; g.textAlign = 'right'; g.font = `700 60px ${NUM}`; g.fillText(String(l), x0 + cellW, top + 52);
     rr(g, x0, top + 70, cellW, 14, 7); g.fillStyle = track; g.fill();
     if (w > 0) { rr(g, x0, top + 70, Math.max(14, cellW * w), 14, 7); g.fillStyle = prim; g.fill(); }
-  });
+  }));
   // stats row
   const sy = 1030, colW = CW / 3;
   g.fillStyle = line; g.fillRect(X, sy, CW, 2); g.fillRect(X + colW, sy, 2, 160); g.fillRect(X + colW * 2, sy, 2, 160); g.fillRect(X, sy + 160, CW, 2);
@@ -1011,7 +1088,7 @@ function renderMain() {
 function renderNav() {
   const nav = $('#nav'), tk = $('#ticker');
   if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
-  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Shed', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
     .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
   tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
   const L = logLines();
@@ -1069,6 +1146,7 @@ const handlers = {
     resetArmed = now() + 4000; renderMain(); setTimeout(() => { if (S && S.tab === 'dad' && !editing) renderMain(); }, 4100); },
   whatsNew: () => showWhatsNew(null, true),
   hsSort: b => { hsSort = b.dataset.s; renderCloudBits(); },
+  build: A('build', b => ({s: b.dataset.s, t: +b.dataset.t})), wear: A('wear', b => ({s: b.dataset.s, t: +b.dataset.t})), sellMats: A('sellMats'),
   cloudRetry: () => act('sync'),
   cloudLoad: () => { const box = $('#cloudCodeBox'); loadByCode(box ? box.value : ''); },
   importOld: () => importOldCode($('#importBox') ? $('#importBox').value : ''),
@@ -1195,23 +1273,24 @@ function cleanScore(id, d) {
   const n = (v, max) => clamp(Math.floor(+v || 0), 0, max), lv = {};
   for (const k in SKILLS) lv[k] = n((d.lv || {})[k], 100) || 1;
   const L = d.look || {}, look = {skin: n(L.skin, LOOKS.skin.length - 1), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, LOOKS.hairColor.length - 1),
-    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1), badge: n(L.badge, 3)};
+    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1), badge: n(L.badge, 3),
+    head: Number.isInteger(L.head) && L.head >= 0 && L.head < 5 ? L.head : -1, body: Number.isInteger(L.body) && L.body >= 0 && L.body < 5 ? L.body : -1};
   const w = Math.floor(+d.weapon);
   return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
     combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, pet: CONFIG.pets[d.pet] ? d.pet : null, at: +d.at || 0};
 }
-const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];
+const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];   // skills in the same groups as the Dad card
 const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
 function highscoresHTML() {
   if (!cloud.scoresAt && !cloud.checked) return '<p class="small">Loading the highscores...</p>';
   if (!cloud.scoresAt) return '<div class="upgrade"><p class="small">Couldn\'t load the highscores right now. They\'ll show up when you\'re back online.</p></div>';
   const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
-  const chips = HS_SORTS.map(([k, label]) => `<button class="chip hs" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
+  const chips = HS_SORTS.map(([k, label]) => `<button class="hs-cat" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
   const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.playerId ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
       <span class="hs-av">${avatarSVG(r.look)}${petBadge(r.pet, 'sm')}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.playerId ? ' <span class="lvtag">you</span>' : ''}</div>
-      <div class="row-meta">${titleFor(r.total)}, combat ${r.combat}${r.at ? `, played ${ago(r.at)}` : ''}</div></div>
+</div>
       <span class="hs-val">${fmt(hsValue(r, hsSort))}</span></div>`).join('');
-  return `<div class="hs-chips">${chips}</div><div class="panel">${list || '<div class="empty">No dads on the board yet. You could be first.</div>'}</div>`;
+  return `<div class="hs-wrap"><nav class="hs-rail" aria-label="Rank by">${chips}</nav><div class="panel hs-list">${list || '<div class="empty">No dads on the board yet.</div>'}</div></div>`;
 }
 function installHTML() {
   if (standalone()) return '';
