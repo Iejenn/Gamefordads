@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.22',
+  version: '0.22.1',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -250,7 +250,7 @@ function freshState(name, look) {
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
     xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, trading: 0, diy: 0}, style: 'attack',
-    mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, sellMats: false,
+    mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, hideGear: {head: false, body: false}, sellMats: false,
     seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
     plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
     raw: Array(10).fill(0), cooked: Array(10).fill(0), pots: Array(10).fill(0),
@@ -302,6 +302,7 @@ function migrate(s) {
   m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
   m.mats = intArr(s.mats, CONFIG.materials.length); m.sellMats = !!m.sellMats;
   const gi = s.gearInv || {}; m.gearInv = {head: intArr(gi.head, 5), body: intArr(gi.body, 5)};
+  const hg = s.hideGear || {}; m.hideGear = {head: !!hg.head, body: !!hg.body};
   const wr = s.wear || {}; m.wear = {}; for (const sl of ['head', 'body']) { const t = Math.floor(+wr[sl]); m.wear[sl] = t >= 0 && t < 5 && m.gearInv[sl][t] > 0 ? t : -1; }
   m.autoEat = !!m.autoEat; m.badge = clamp(Math.floor(+m.badge || 0), 0, CONFIG.badges.length);
   const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
@@ -840,6 +841,7 @@ function doAction(action, a) {
     case 'eatMeal': case 'eatMealAll': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = eatMeal(i, action === 'eatMealAll'); break; }
     case 'build': { const t = intIn(a.t, 0, MATS.length - 1); if (t != null) out.pop = build(a.s, t); break; }
     case 'wear': { const t = intIn(a.t, 0, MATS.length - 1); if (t != null) wear(a.s, t); break; }
+    case 'hideGear': if (SLOTS.includes(a.s)) { S.hideGear[a.s] = !S.hideGear[a.s]; addLog(S.hideGear[a.s] ? `Your ${a.s === 'head' ? 'helmet' : 'armour'} is hidden on your dad. It still protects you.` : `Your ${a.s === 'head' ? 'helmet' : 'armour'} shows on your dad again.`); } break;
     case 'sellMats': S.sellMats = !S.sellMats; addLog(S.sellMats ? 'Trading may now sell your materials too.' : 'Trading keeps its hands off your materials.'); break;
     case 'buyBadge': out.pop = buyBadge(); break;
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
@@ -851,5 +853,5 @@ function doAction(action, a) {
 // what the highscore board shows, worked out from the real state
 function scoreRow() {
   const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
-  return {name: S.name, look: Object.assign({}, S.look, {badge: S.badge || 0, head: S.wear.head, body: S.wear.body}), lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
+  return {name: S.name, look: Object.assign({}, S.look, {badge: S.badge || 0, head: S.hideGear.head ? -1 : S.wear.head, body: S.hideGear.body ? -1 : S.wear.body}), lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
 }

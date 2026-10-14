@@ -353,6 +353,9 @@ nav button span{white-space:nowrap}
 .hs-list .hs-row{padding:10px 8px;gap:8px}
 .hs-list .hs-av{width:34px;height:34px}
 .hs-list .row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eye-btn{float:right;width:32px;height:32px;margin:-4px -4px 0 8px;padding:5px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted)}
+.eye-btn[aria-pressed="true"]{color:var(--hp);border-color:var(--hp)}
+.eye-btn svg{width:100%;height:100%}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -369,11 +372,14 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.22"></script>
+<script src="engine.js?v=0.22.1"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.22.1', title: 'Hide your gear', notes: [
+    'Don\'t like the look of a Bucket Helmet? Tap the <b>eye</b> next to your gear on the Dad tab to hide it on your dad, the share image and the Ranks. It still protects you.',
+  ]},
   {v: '0.22', title: 'Fight idle every minute, tougher monsters', notes: [
     '<b>Fight idle</b> now fights every minute instead of every 5. Your health and food decide how long he keeps going, so auto-eat and meals really pay off now.',
     'Monsters have even more health (the Dark Hallway is over 3x what it used to be), but hit a bit less hard. Fights take longer, not more painful.',
@@ -457,7 +463,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.22';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.22.1';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -476,7 +482,8 @@ function badgePin(b) {
   if (!(b > 0)) return ''; const c = BADGE_COLORS[b] || BADGE_COLORS[1];
   return `<g transform="translate(22.5 54.5) scale(1.35)"><path d="M0 -3.6 L1.05 -1.1 L3.4 -1.1 L1.5 0.5 L2.2 3 L0 1.5 L-2.2 3 L-1.5 0.5 L-3.4 -1.1 L-1.05 -1.1Z" fill="${c}" stroke="${shade(c, .35)}" stroke-width=".55" stroke-linejoin="round"/>${b >= 3 ? '<circle cx="1.5" cy="-1.9" r=".6" fill="#fff"/>' : ''}</g>`;
 }
-const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0, head: S.wear ? S.wear.head : -1, body: S.wear ? S.wear.body : -1});
+const shownGear = sl => S.wear && S.wear[sl] >= 0 && !(S.hideGear && S.hideGear[sl]) ? S.wear[sl] : -1;   // hidden gear still protects, it just isn't drawn
+const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0, head: shownGear('head'), body: shownGear('body')});
 // DIY gear drawings, tier 0-4: cardboard, duct tape, plywood, sheet metal, carbon fibre
 const GEAR_SVG = {
   head: [
@@ -874,8 +881,11 @@ function ranksTab() {
 // what your dad has on: weapon, head and body
 function gearBlock() {
   const w = weapon(), row = (ic, name, eff, empty) => `<div class="gear-row"><span class="gear-ic">${ic}</span><div class="row-main"><div class="row-name${name ? '' : ' muted'}">${name || empty}</div>${eff ? `<div class="row-meta">${eff}</div>` : ''}</div></div>`;
+  const eye = sl => { const hid = S.hideGear && S.hideGear[sl];   // eye = shown on your dad, crossed eye = hidden (armour still counts)
+    return `<button class="eye-btn" data-act="hideGear" data-s="${sl}" aria-pressed="${!!hid}" aria-label="${hid ? 'Show' : 'Hide'} on your dad" title="${hid ? 'Hidden on your dad: tap to show' : 'Shown on your dad: tap to hide'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>${hid ? '<path d="M3 3l18 18"/>' : ''}</svg></button>`; };
   const piece = sl => { const t = S.wear[sl]; return t >= 0
-    ? row(`<svg viewBox="${sl === 'head' ? '14 2 38 30' : '8 42 48 22'}">${GEAR_SVG[sl][t]}</svg>`, gearName(sl, t), `-${pct(CONFIG.armour[sl][t])} damage taken. ${gearDesc(sl, t)}`)
+    ? row(`<svg viewBox="${sl === 'head' ? '14 2 38 30' : '8 42 48 22'}">${GEAR_SVG[sl][t]}</svg>`, gearName(sl, t) + eye(sl), `-${pct(CONFIG.armour[sl][t])} damage taken.${S.hideGear && S.hideGear[sl] ? ' Hidden on your dad.' : ''} ${gearDesc(sl, t)}`)
     : row('❔', '', '', sl === 'head' ? 'Nothing on your head. Build something in the Shed.' : 'Just a shirt. Build something in the Shed.'); };
   return `<h3 class="sect" style="margin-top:22px">Gear</h3><div class="panel">
     ${row(w ? w.icon : '✊', w ? w.name : 'Bare hands', w ? `+${pct(w.dmg)} damage` : 'Weapons are rare drops. Collection below.')}${piece('head')}${piece('body')}</div>`;
@@ -1120,7 +1130,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'),
+  buyBadge: A('buyBadge'), hideGear: A('hideGear', b => ({s: b.dataset.s})),
   plot: A('plot', b => ({i: +b.dataset.i})), tendAll: A('tendAll'), buyPlot: A('buyPlot'),
   eatMeal: A('eatMeal', b => ({i: +b.dataset.i})), eatMealAll: A('eatMealAll', b => ({i: +b.dataset.i})),
   fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },
