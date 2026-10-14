@@ -318,6 +318,20 @@ nav button span{white-space:nowrap}
 .pbadge.big{width:40px;height:40px;font-size:23px;left:-10px;bottom:-10px}
 .foe-ic.pet{background:var(--surface-2)}
 .small.petline{margin-top:6px;color:var(--muted)}
+.trio{grid-template-columns:1fr 1fr 1fr;gap:10px 12px}
+.trio .skill.compact h2{font-size:14px}.trio .skill.compact .lvl{font-size:26px}.trio .xpline{font-size:11px}
+.farmhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.plot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);min-height:96px}
+.plot b{font-size:14px}.plot small{font-size:12px;color:var(--muted)}
+.plot-ic{font-size:30px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.plot.empty{border-style:dashed;background:transparent}.plot.empty .plot-ic{font-family:var(--font-num);color:var(--primary)}
+.plot.ready{border-color:var(--energy);background:color-mix(in srgb,var(--energy) 14%,var(--surface))}
+.plot.ready b{color:var(--energy)}
+.lvtag.meal{color:var(--energy);border-color:var(--energy)}
+.pbadge svg,.foe-ic svg{width:85%;height:85%}
+.pop.green{color:var(--energy)}
+.inl-pet svg{width:18px;height:18px;vertical-align:-4px}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -334,11 +348,18 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.18.2"></script>
+<script src="engine.js?v=0.19"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.19', title: 'Farming!', notes: [
+    'New skill: <b>Farming</b>. Monsters drop seeds, better areas drop better ones: Potato, Carrot, Garlic, Pumpkin and Truffle.',
+    'Plant them on your farm (Food tab) and they grow in real time, even while your dad fishes or fights. Ready crops wait for you. One tap harvests and replants.',
+    'Fish plus the matching vegetable cooks into a <b>meal</b>: Shrimp & Chips, Herring Hotpot, Midnight Truffle Feast... Meals heal double and give 50% more Cooking xp. Cooking does this by itself.',
+    'You start with one plot. Buy up to four more in the Trade tab.',
+    'And somewhere in the garden lurks a fifth pet. He has a hat.',
+  ]},
   {v: '0.18.2', title: 'Pets hotfix', notes: [
     'The pets update briefly stopped existing dads from saving. Fixed: nothing was lost, and idle time was caught up afterwards.',
   ]},
@@ -392,7 +413,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.18.2';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.19';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -523,6 +544,8 @@ function updateProgress() {
     el.style.width = clamp((now() - at) / ms * 100, 0, 100) + '%';
     const lab = document.getElementById(id + 'T'); if (lab) lab.textContent = clock(at + ms - now()); };
   set('actBar', S.actAt, actMs(S.activity));
+  let flip = false; document.querySelectorAll('.plotT[data-end]').forEach(el => { const left = +el.dataset.end - now(); if (left <= 0) flip = true; else el.textContent = ptime(left); });
+  if (flip && !anim && !editing) setTimeout(renderMain, 0);
   const h = document.getElementById('actBarH'); if (h) h.textContent = clock(S.actAt + actMs(S.activity) - now());
 }
 function skillHTML(k, compact) {
@@ -540,32 +563,61 @@ const progHTML = (id, label) => `<div class="prog"><div class="prog-track"><div 
 const actBtn = (a, label, why) => `<button class="btn alt" style="width:100%;margin-top:10px" data-act="activity" data-a="${a}" ${why ? 'disabled' : ''}>${label}<small>${why || `Stops ${ACT[S.activity]}`}</small></button>`;
 const doingNow = () => `<p class="small note doing">Right now your dad is <b>${ACT[S.activity]}</b>.</p>`;
 // a little pet badge in the corner of an avatar
-const petBadge = (k, cls = '') => k && CONFIG.pets[k] ? `<span class="pbadge ${cls}" title="${esc(CONFIG.pets[k].name)}">${CONFIG.pets[k].icon}</span>` : '';
+const petBadge = (k, cls = '') => k && CONFIG.pets[k] ? `<span class="pbadge ${cls}" title="${esc(CONFIG.pets[k].name)}">${CONFIG.pets[k].svg || CONFIG.pets[k].icon}</span>` : '';
 function petLine(k) {   // under each pet skill: what you've got, or your odds right now
   const P = CONFIG.pets[k];
-  return `<p class="small petline">${S.pets[k] ? `${P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.` : `Pet chance: 1 in ${fmt(petOdds(k))} per ${P.per}. Better odds as you level.`}</p>`;
+  return `<p class="small petline">${S.pets[k] ? `${P.svg ? `<span class="inl-pet">${P.svg}</span>` : P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.` : `Pet chance: 1 in ${fmt(petOdds(k))} per ${P.per}. Better odds as you level.`}</p>`;
+}
+const ptime = ms => { const m = Math.ceil(Math.max(0, ms) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
+const icon = x => x.svg || x.icon;
+function plotTile(p, i) {
+  if (p.c == null) { const c = bestSeed();
+    return `<button class="plot empty" data-act="plot" data-i="${i}" ${c < 0 ? 'disabled' : ''}><span class="plot-ic">+</span><b>Plant</b><small>${c >= 0 ? CROPS[c].name : 'No seeds'}</small></button>`; }
+  const C = CROPS[p.c], end = p.at + growMs(p.c), ready = now() >= end;
+  return `<button class="plot${ready ? ' ready' : ''}" data-act="plot" data-i="${i}"><span class="plot-ic">${C.icon}</span><b>${ready ? 'Harvest!' : C.name}</b>
+    <small>${ready ? C.name + ' is ready' : `<span class="plotT" data-end="${end}">${ptime(end - now())}</span>`}</small></button>`;
+}
+function farmCard() {
+  const anyReady = S.plots.some(plotReady), seeds = CROPS.map((C, c) => S.seeds[c] ? `${S.seeds[c]} ${C.name} seed${S.seeds[c] > 1 ? 's' : ''}${lvl('farming') < C.req ? ` (needs Farming ${C.req})` : ''}` : '').filter(Boolean).join(', ');
+  return `<section class="idlecard farm"><div class="farmhead"><p class="stage-title">Farm</p><span class="lvtag">Farming ${lvl('farming')}</span></div>
+    <div class="plots">${S.plots.map(plotTile).join('')}</div>
+    ${anyReady && S.plots.length > 1 ? '<button class="btn" style="width:100%;margin-top:10px" data-act="tendAll">Harvest and replant all</button>' : ''}
+    <p class="small" style="margin-top:8px">${seeds ? `In the seed bag: ${seeds}.` : `No seeds yet. Every monster can drop one (${rate(CONFIG.seedChance)}), better areas drop better seeds.`}</p>
+    ${petLine('farming')}
+    <p class="small note" style="margin-top:6px">Crops grow on their own, even while your dad fishes or fights, and wait for you when ready. More plots in the Trade tab.</p></section>`;
+}
+function cookCard() {
+  const c = cookPick(), on = S.activity === 'cook';
+  let title = 'Nothing to cook', meta = 'Catch some fish first.';
+  if (c >= 0) { const C = CROPS[vegOf(c)], meal = CONFIG.meals[c];
+    if (makesMeal(c)) { title = `${on ? 'Cooking' : 'Next'}: ${FISH[c].name} + ${C.name} = ${meal}`; meta = `Meals heal double (${mealHeal(c)} instead of ${FISH[c].heal}) and give 50% more xp.`; }
+    else { title = `${on ? 'Cooking' : 'Next'}: ${FISH[c].name}`; meta = `With a ${C.name} it would become ${meal}, healing ${mealHeal(c)} instead of ${FISH[c].heal}.`; }
+    meta += ` ${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds.`; }
+  const raw = FISH.map((x, j) => S.raw[j] ? `${S.raw[j]} ${x.name}${lvl('cooking') < x.req ? ` (needs Cooking ${x.req})` : ''}` : '').filter(Boolean).join(', ');
+  const veg = CROPS.map((C, j) => S.veg[j] ? cropN(j, S.veg[j]) : '').filter(Boolean).join(', ');
+  return `<section class="idlecard${on ? ' active' : ''}"><p class="stage-title">${title}</p><p class="stage-meta">${meta}</p>${petLine('cooking')}
+    ${on ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
+    ${raw || veg ? `<p class="small" style="margin-top:8px">In the pantry: ${[raw, veg].filter(Boolean).join(', ')}.</p>` : ''}</section>`;
 }
 function fishTab() {
-  const i = S.spot, f = FISH[i], L = lvl('fishing'), c = cookPick(), mh = maxHP();
+  const i = S.spot, f = FISH[i], L = lvl('fishing'), full = S.hp >= maxHP();
   const spots = FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
     return `<button class="pick" data-act="spot" data-i="${j}" aria-pressed="${j === i}" ${locked ? 'disabled' : ''}>
       <span class="pn">${x.name}</span><span class="pm">${locked ? `Opens at Fishing ${x.req}` : `${pct(catchChance(j))} catch, ${x.xp} xp, heals ${x.heal} when cooked`}</span></button>`; }).join('');
-  const food = FISH.map((x, j) => [x, j]).filter(([x, j]) => S.cooked[j] > 0).map(([x, j]) =>
-    `<div class="row"><span class="count">${S.cooked[j]}</span><div class="row-main"><div class="row-name">${x.name}</div><div class="row-meta">Heals ${x.heal} health each</div></div>
-      <div class="row-btns"><button class="sbtn" data-act="eat" data-i="${j}" ${S.hp >= mh ? 'disabled' : ''}>Eat</button>
-      <button class="sbtn solid" data-act="eatAll" data-i="${j}" ${S.hp >= mh ? 'disabled' : ''}>Eat all</button></div></div>`).join('');
-  const raw = FISH.map((x, j) => S.raw[j] ? `${S.raw[j]} ${x.name}${lvl('cooking') < x.req ? ` (needs Cooking ${x.req})` : ''}` : '').filter(Boolean).join(', ');
-  return `<div class="duo">${skillHTML('fishing', true)}${skillHTML('cooking', true)}</div>
+  // pantry: things to eat, best first (meals above plain fish)
+  const eatRow = (name, n, heal, act, j, meal) => `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${name}${meal ? ' <span class="lvtag meal">meal</span>' : ''}</div><div class="row-meta">Heals ${heal} each</div></div>
+      <div class="row-btns"><button class="sbtn" data-act="${act}" data-i="${j}" ${full ? 'disabled' : ''}>Eat</button><button class="sbtn solid" data-act="${act}All" data-i="${j}" ${full ? 'disabled' : ''}>All</button></div></div>`;
+  const food = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(j => (S.meals[j] ? eatRow(CONFIG.meals[j], S.meals[j], mealHeal(j), 'eatMeal', j, true) : '')
+    + (S.cooked[j] ? eatRow(FISH[j].name, S.cooked[j], FISH[j].heal, 'eat', j, false) : '')).join('');
+  return `<div class="duo trio">${skillHTML('fishing', true)}${skillHTML('farming', true)}${skillHTML('cooking', true)}</div>
   ${doingNow()}
   <section class="idlecard${S.activity === 'fish' ? ' active' : ''}"><p class="stage-title">${S.activity === 'fish' ? 'Fishing' : 'Fish'} at the ${f.name} spot</p>
     <p class="stage-meta">${pct(catchChance(i))} catch chance, one cast every ${CONFIG.fishSeconds} seconds.</p>${petLine('fishing')}
     ${S.activity === 'fish' ? progHTML('actBar', 'Next cast in') : actBtn('fish', 'Go fishing', '')}</section>
-  <section class="idlecard${S.activity === 'cook' ? ' active' : ''}"><p class="stage-title">${c >= 0 ? `${S.activity === 'cook' ? 'Cooking' : 'Cook'} ${FISH[c].name}` : 'Nothing to cook'}</p>
-    <p class="stage-meta">${c >= 0 ? `${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds. Always cooks your best raw fish, then goes back to fishing when it runs out.` : 'Catch some fish first.'}</p>${petLine('cooking')}
-    ${S.activity === 'cook' ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
-    ${raw ? `<p class="small" style="margin-top:8px">Raw fish waiting: ${raw}.</p>` : ''}</section>
-  <p class="small note">Your dad does one thing at a time. It keeps going while the game is closed, for up to ${dur(idleWindowMs())}. Buy more idle time in the Trade tab.</p>
-  <h3 class="sect">Food</h3><div class="panel">${food || '<div class="empty">Nothing cooked yet. Cooked fish heals you.</div>'}</div>
+  ${farmCard()}
+  ${cookCard()}
+  <p class="small note">Your dad fishes or cooks one at a time; the farm grows next to it. Idle keeps going for up to ${dur(idleWindowMs())} after you close the game.</p>
+  <h3 class="sect">Pantry</h3><div class="panel">${food || '<div class="empty">Nothing to eat yet. Cooked fish heals you, meals heal double.</div>'}</div>
   <h3 class="sect">Fishing spots</h3><p class="small note">A better fish every 10 Fishing levels. Better fish give more xp and heal more.</p><div class="panel">${spots}</div>`;
 }
 
@@ -589,9 +641,9 @@ function arenaHTML() {
 function healBtnsHTML(hp) {
   if (anim) return `<button class="btn alt" disabled>Eat<small>${S.autoEat ? 'Auto-eat is on' : 'Not during a fight'}</small></button>
     <button class="btn red" disabled>Potion<small>Not during a fight</small></button>`;
-  const mh = maxHP(), food = S.cooked.reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
-  const fi = smartPick(S.cooked, FISH.map(f => f.heal), hp), pi = smartPick(S.pots, AREAS.map(a => a.potion[1]), hp);
-  return `<button class="btn alt" data-act="eatBest" ${fi < 0 || hp >= mh ? 'disabled' : ''}>Eat (${food})<small>${fi >= 0 ? `${FISH[fi].name}, heals ${FISH[fi].heal}` : 'No cooked fish'}</small></button>
+  const mh = maxHP(), food = foodList().reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
+  const fi = smartPick(foodList(), foodHeals(), hp), pi = smartPick(S.pots, AREAS.map(a => a.potion[1]), hp);
+  return `<button class="btn alt" data-act="eatBest" ${fi < 0 || hp >= mh ? 'disabled' : ''}>Eat (${food})<small>${fi >= 0 ? `${foodName(fi)}, heals ${foodHeals()[fi]}` : 'No food'}</small></button>
     <button class="btn red" data-act="drinkBest" ${pi < 0 || hp >= mh ? 'disabled' : ''}>Potion (${pots})<small>${pi >= 0 ? `${AREAS[pi].potion[0]}, heals ${AREAS[pi].potion[1]}` : 'None yet'}</small></button>`;
 }
 function taskBanner() {
@@ -611,7 +663,7 @@ function fightTab() {
       <div class="row-meta">${e.blurb}</div>
       <div class="stats-row"><span class="st hp" title="Health">${ICON.heart}${e.hp}</span><span class="st" title="Max hit after your Defence">${ICON.sword}${eMax}</span>
         <span class="st gold" title="Coins">${ICON.coin}${fmt(Math.max(1, Math.round(e.coins * 0.6)))}-${fmt(Math.round(e.coins * 1.4))}</span><span class="kc-tag">Beaten ${fmt(S.kc[g])}</span></div>
-      <div class="row-meta">Drops ${e.junk[0]} ${rate(CONFIG.junkChance)}, ${A0.potion[0]} ${rate(e.potion)}</div></div></div>`; }).join('');
+      <div class="row-meta">Drops ${e.junk[0]} ${rate(CONFIG.junkChance)}, ${A0.potion[0]} ${rate(e.potion)}, ${CROPS[vegOf(S.area)].name} Seed ${rate(CONFIG.seedChance)}</div></div></div>`; }).join('');
   let hint = '';
   if (S.hp <= 0) hint = 'Knocked out. Eat, drink a potion or rest. Health comes back 1 per minute.';
   else if (S.hp < Math.ceil(mh * CONFIG.restBelow)) hint = 'Health is low. One bad fight could knock you out.';
@@ -624,7 +676,7 @@ function fightTab() {
     <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim || fightAsked ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
     <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
     <button class="btn idle wide${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat
-      ? `Below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking. Also in fight idle. ${S.cooked.reduce((a, b) => a + b, 0)} fish in the bag.`
+      ? `Below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking. Also in fight idle. ${foodList().reduce((a, b) => a + b, 0)} food in the bag.`
       : `Turn on to eat during fights and fight idle when health drops below ${pct(CONFIG.autoEatBelow)}. Eating takes your turn.`}</small></button>
     <button class="btn idle wide${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Goes back to fishing' : `1 fight every ${CONFIG.fightIdleMinutes} min, hands free. Stops ${ACT[S.activity]}.`}</small></button></div>
     ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
@@ -695,7 +747,17 @@ function tradeTab() {
     ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
   <p class="small note" style="margin-top:10px">You get ${pct(m)} of an item's value: ${pct(CONFIG.tradeBase)} plus 1% per Trading level. Sold so far: ${fmt(S.stats.sold)} items for ${fmt(S.stats.tradeCoins)} coins.</p>
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
-  ${up}`;
+  ${up}${plotUpgrade()}`;
+}
+function plotUpgrade() {
+  const next = CONFIG.plotCosts[S.plots.length - 1], total = CONFIG.plotCosts.length + 1;
+  if (next == null) return `<div class="upgrade"><h3 class="sect">Farm plots</h3><div class="big"><span>${S.plots.length}</span></div><p class="small">Every plot bought. A proper allotment.</p></div>`;
+  return `<div class="upgrade"><h3 class="sect">Farm plot ${S.plots.length + 1} of ${total}</h3>
+    <div class="big">${S.plots.length} &#8594; <span>${S.plots.length + 1}</span></div>
+    <p class="small">Another plot grows crops next to the others. More veg, more meals, more Farming xp.</p>
+    <div class="costline"><span>${fmt(Math.min(S.coins, next))} of ${fmt(next)}</span><b>${fmt(next)} coins</b></div>
+    <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
+    <button class="btn" data-act="buyPlot" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy plot'}</button></div>`;
 }
 function ranksTab() {
   const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
@@ -721,7 +783,7 @@ function dadTab() {
   <h3 class="sect" style="margin-top:22px">Pets ${Object.keys(S.pets).length}/${Object.keys(CONFIG.pets).length}</h3>
   <p class="small note">Super rare companions, one for each non-combat skill. Purely for bragging rights.</p>
   <div class="panel">${Object.entries(CONFIG.pets).map(([k, P]) => S.pets[k]
-    ? `<div class="foe-row${S.petOut === k ? ' task' : ''}"><span class="foe-ic pet">${P.icon}</span><div class="row-main">
+    ? `<div class="foe-row${S.petOut === k ? ' task' : ''}"><span class="foe-ic pet">${P.svg || P.icon}</span><div class="row-main">
         <div class="row-name">${P.name}${S.pets[k] > 1 ? ` <span class="lvtag">found ${S.pets[k]}x</span>` : ''}</div><div class="row-meta">${P.desc}</div>
         <div class="row-btns" style="margin-top:8px"><button class="sbtn${S.petOut === k ? '' : ' solid'}" data-act="petOut" data-k="${k}">${S.petOut === k ? 'Send home' : 'Take along'}</button></div></div></div>`
     : `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown pet</div>
@@ -806,7 +868,9 @@ async function makeShareCard() {
   if (S.petOut && CONFIG.pets[S.petOut]) {   // the pet that follows you, on the corner of the picture
     g.beginPath(); g.arc(105, 345, 46, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill();
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '56px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
-    g.fillText(CONFIG.pets[S.petOut].icon, 105, 348); g.textBaseline = 'alphabetic';
+    const P = CONFIG.pets[S.petOut];
+    if (P.svg) { const pimg = await svgImage(P.svg, 160); g.drawImage(pimg, 69, 309, 72, 72); } else g.fillText(P.icon, 105, 348);
+    g.textBaseline = 'alphabetic';
   }
   g.fillStyle = ink; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   fitFont(g, S.name, 700, 80, NUM, CW - 400); g.fillText(S.name, 410, 210);
@@ -815,15 +879,15 @@ async function makeShareCard() {
   fitFont(g, weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 700, 34, UI, CW - 400); g.fillText(weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 410, 368);
   // skills
   // skills in two columns, four rows
-  const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2;
+  const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2, rowH = Math.floor(585 / Math.ceil(Object.keys(SKILLS).length / 2));
   Object.keys(SKILLS).forEach((k, i) => {
-    const col = i % 2, row = Math.floor(i / 2), x0 = X + PAD + col * (cellW + GAP), top = 445 + row * 146;
+    const col = i % 2, row = Math.floor(i / 2), x0 = X + PAD + col * (cellW + GAP), top = 440 + row * rowH;
     const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) : 1;
-    if (row) { g.fillStyle = line; g.fillRect(x0, top - 16, cellW, 2); }
-    g.fillStyle = ink; g.textAlign = 'left'; g.font = `400 36px ${UI}`; g.fillText(SKILLS[k], x0, top + 52);
-    g.fillStyle = prim; g.textAlign = 'right'; g.font = `700 72px ${NUM}`; g.fillText(String(l), x0 + cellW, top + 58);
-    rr(g, x0, top + 80, cellW, 16, 8); g.fillStyle = track; g.fill();
-    if (w > 0) { rr(g, x0, top + 80, Math.max(16, cellW * w), 16, 8); g.fillStyle = prim; g.fill(); }
+    if (row) { g.fillStyle = line; g.fillRect(x0, top - 12, cellW, 2); }
+    g.fillStyle = ink; g.textAlign = 'left'; g.font = `400 32px ${UI}`; g.fillText(SKILLS[k], x0, top + 46);
+    g.fillStyle = prim; g.textAlign = 'right'; g.font = `700 60px ${NUM}`; g.fillText(String(l), x0 + cellW, top + 52);
+    rr(g, x0, top + 70, cellW, 14, 7); g.fillStyle = track; g.fill();
+    if (w > 0) { rr(g, x0, top + 70, Math.max(14, cellW * w), 14, 7); g.fillStyle = prim; g.fill(); }
   });
   // stats row
   const sy = 1030, colW = CW / 3;
@@ -914,7 +978,7 @@ function renderMain() {
 function renderNav() {
   const nav = $('#nav'), tk = $('#ticker');
   if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
-  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Fishing', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
     .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
   tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
   const L = S.log.length ? S.log : [{text: 'Nothing happened yet.', kind: ''}];
@@ -937,6 +1001,8 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
+  plot: A('plot', b => ({i: +b.dataset.i})), tendAll: A('tendAll'), buyPlot: A('buyPlot'),
+  eatMeal: A('eatMeal', b => ({i: +b.dataset.i})), eatMealAll: A('eatMealAll', b => ({i: +b.dataset.i})),
   fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },
   fightIdle: A('fightIdle'),
   activity: A('activity', b => ({a: b.dataset.a})),

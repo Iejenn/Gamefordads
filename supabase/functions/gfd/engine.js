@@ -10,7 +10,7 @@ const toast = t => { toasts.push(String(t)); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.18',
+  version: '0.19',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -130,6 +130,22 @@ const CONFIG = {
   hpBase: 10, hpPerLvl: 2,    // max health = 10 + 2 x Hitpoints level
   restBelow: 0.35,            // Fight idle skips a turn to rest when health is below this share (and there's no food to auto-eat)
   autoEatBelow: 0.5,          // auto-eat: below this share of max health your dad eats his best fish instead of attacking
+  // farming: monsters drop seeds, plots grow them in real time (alongside whatever your dad is doing),
+  // and a vegetable plus the matching fish cooks into a meal. Crop c pairs with fish 2c and 2c+1, and drops in areas 2c and 2c+1.
+  crops: [
+    {name: 'Potato', many: 'Potatoes',  icon: '🥔', req: 1,  growMin: 30,  xp: 40,   desc: 'Reliable. Like you.'},
+    {name: 'Carrot', many: 'Carrots',  icon: '🥕', req: 21, growMin: 60,  xp: 120,  desc: 'Good for your eyes. Allegedly.'},
+    {name: 'Garlic', many: 'Garlic',  icon: '🧄', req: 41, growMin: 120, xp: 300,  desc: 'Keeps vampires and coworkers away.'},
+    {name: 'Pumpkin', many: 'Pumpkins', icon: '🎃', req: 61, growMin: 240, xp: 700,  desc: 'Too big for the wheelbarrow.'},
+    {name: 'Truffle', many: 'Truffles', icon: '🍄', req: 81, growMin: 480, xp: 1500, desc: 'Dug up at 3am. Worth it.'},
+  ],
+  seedChance: 0.10,           // every kill: chance to drop that area's seed
+  harvestBase: 3, harvestRand: 3, harvestPerLvl: 1 / 25,   // vegetables per harvest = 3 + (0 to 2) + 1 per 25 Farming levels
+  plotCosts: [2000, 10000, 50000, 250000],                  // farm plots 2 to 5 (you start with 1)
+  // meals: fish i + its vegetable. Heal and cooking xp are multiplied, everything else works like cooking a fish.
+  meals: ['Shrimp & Chips', 'Sardine Hash', 'Herring Hotpot', 'Trout & Carrot Pie', 'Garlic Salmon', 'Garlic Tuna Steak',
+          'Lobster Pumpkin Bisque', 'Swordfish Pumpkin Curry', 'Truffle Shark Steak', 'Midnight Truffle Feast'],
+  mealHealMult: 2, mealXpMult: 1.5,
   // pets: super rare, one per non-combat skill, purely for bragging. odds = 1 in this many actions at level 0,
   // and every level makes it 1% likelier (about twice as likely at 99). Tuned so each takes ~2-3 months of normal play.
   pets: {
@@ -137,6 +153,8 @@ const CONFIG = {
     cooking:  {name: 'Toasty',               icon: '🍞', odds: 15000, per: 'cooking try', hint: 'Something smells faintly of burnt bread...',   desc: 'A slice of toast with a face. Burnt on one side, just like your cooking.'},
     trading:  {name: 'Rocky the Raccoon',    icon: '🦝', odds: 2000,  per: 'sale',        hint: 'Someone keeps rummaging through your junk...', desc: 'Handles your sales. Definitely not skimming. Probably.'},
     slayer:   {name: 'Honkers',              icon: '🪿', odds: 200,   per: 'Slayer task', hint: 'A familiar honk echoes after every task...',  desc: 'An Angry Goose who switched sides. Still angry.'},
+    farming:  {name: 'Mortimer the Mole',    icon: '🕳️', odds: 600,   per: 'harvest',     hint: 'Someone keeps leaving molehills in your plots...', desc: 'Digs up your garden. Takes the credit for the harvest.',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="25" rx="14" ry="12" fill="#5B4636"/><ellipse cx="20" cy="28" rx="8" ry="6" fill="#8A6F5A"/><ellipse cx="20" cy="25.5" rx="3.2" ry="2.4" fill="#F29AAE"/><path d="M13.5 20.5q2-2 4 0M22.5 20.5q2-2 4 0" stroke="#1d1d1d" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="10.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><ellipse cx="29.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><path d="M9.5 15a10.5 8.5 0 0 1 21 0z" fill="#F2B533"/><rect x="8" y="14" width="24" height="2.6" rx="1.2" fill="#D99A1E"/><circle cx="20" cy="10.5" r="2" fill="#FFF4C2"/></svg>'},
   },
   petPerLvl: 0.01,
   // slayer
@@ -153,7 +171,10 @@ const CONFIG = {
 const FISH = CONFIG.fish, AREAS = CONFIG.areas;
 // flat list of all 50 enemies; enemy id g = area * 5 + slot
 const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e)));
-const SKILLS = {fishing:'Fishing', cooking:'Cooking', attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', trading:'Trading'};
+const SKILLS = {fishing:'Fishing', cooking:'Cooking', farming:'Farming', attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', trading:'Trading'};
+const CROPS = CONFIG.crops;
+const vegOf = i => Math.floor(i / 2);             // fish i's vegetable (and area ri's seed)
+const mealHeal = i => FISH[i].heal * CONFIG.mealHealMult;
 const STYLES = [['attack', 'Accurate'], ['strength', 'Aggressive'], ['defence', 'Defensive']];
 const now = () => Date.now() + (typeof clockSkew === 'number' ? clockSkew : 0);   // on the phone: follow the server's clock
 const fmt = n => Math.floor(n).toLocaleString('en-US');
@@ -195,7 +216,9 @@ function freshState(name, look) {
     v: 2, name: name || 'Dad', look: Object.assign({}, DEFAULT_LOOK, look || {}),
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
-    xp: {fishing: 0, cooking: 0, attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, trading: 0}, style: 'attack',
+    xp: {fishing: 0, cooking: 0, farming: 0, attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, trading: 0}, style: 'attack',
+    seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
+    plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
     raw: Array(10).fill(0), cooked: Array(10).fill(0), pots: Array(10).fill(0),
     spot: 0, area: 0, tab: 'fish', lastFoe: null,
     activity: 'fish', actAt: t, paused: false,   // your dad does ONE idle thing at a time: fish, cook, trade or fight
@@ -203,7 +226,7 @@ function freshState(name, look) {
     task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false,
     pets: {}, petOut: null,   // pets you've found (skill -> times found) and the one following you
     started: t, lastSeen: t, activeAt: t,
-    stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0},
+    stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0, harvests: 0, meals: 0},
     loot: {}, kc: Array(50).fill(0),
     log: [{text: 'Welcome, dad. Your fishing rod is already in the water.', kind: ''}],
   };
@@ -218,6 +241,10 @@ function migrate(s) {
   m.xp = Object.assign(freshState().xp, s.xp);
   m.stats = Object.assign(freshState().stats, s.stats || {});
   m.raw = intArr(s.raw, 10); m.cooked = intArr(s.cooked, 10);
+  m.seeds = intArr(s.seeds, CONFIG.crops.length); m.veg = intArr(s.veg, CONFIG.crops.length); m.meals = intArr(s.meals, 10);
+  const plots = (Array.isArray(s.plots) ? s.plots : []).slice(0, CONFIG.plotCosts.length + 1).map(p => ({
+    c: p && Number.isInteger(p.c) && p.c >= 0 && p.c < CONFIG.crops.length ? p.c : null, at: p && Number.isFinite(+p.at) ? +p.at : 0}));
+  m.plots = plots.length ? plots : [{c: null, at: 0}];
   if (!Array.isArray(m.log)) m.log = [];
   m.capLevel = clamp(Math.floor(+m.capLevel || 0), 0, CONFIG.idleCosts.length);
   if (!['attack', 'strength', 'defence'].includes(m.style)) m.style = 'attack';
@@ -264,7 +291,7 @@ const idleWindowMs = () => (CONFIG.idleBaseMinutes + CONFIG.idleStepMinutes * S.
 const unlockedAreas = () => AREAS.filter(a => a.req <= combatLevel()).length;
 function dadTitle() { return titleFor(totalLevel()); }
 function titleFor(t) {
-  return t >= 800 ? 'Ultimate Dad' : t >= 680 ? 'Legendary Dad' : t >= 520 ? 'Veteran Dad' : t >= 360 ? 'Seasoned Dad' : t >= 200 ? 'Grill Master' : t >= 80 ? 'Weekend Warrior' : 'Rookie Dad'; }
+  return t >= 900 ? 'Ultimate Dad' : t >= 765 ? 'Legendary Dad' : t >= 585 ? 'Veteran Dad' : t >= 405 ? 'Seasoned Dad' : t >= 225 ? 'Grill Master' : t >= 90 ? 'Weekend Warrior' : 'Rookie Dad'; }
 const weapon = () => S.equipped >= 0 ? AREAS[S.equipped].weapon : null;
 const weaponBonus = () => weapon() ? weapon().dmg : 0;
 const tradeMult = () => CONFIG.tradeBase + CONFIG.tradePerLvl * lvl('trading');
@@ -299,16 +326,62 @@ function rollPet(k) {
   addLog(`${P.icon} ${P.name} has started following you! ${P.desc}`, 'lvl');
 }
 
+/* ---------- farming: plots grow in real time, next to whatever your dad is doing ---------- */
+const growMs = c => CROPS[c].growMin * 60000;
+const cropN = (c, n) => `${n} ${n === 1 ? CROPS[c].name : CROPS[c].many}`;
+const plotReady = p => p.c != null && now() >= p.at + growMs(p.c);
+// the best seed you have AND are allowed to plant
+const bestSeed = () => { for (let c = CROPS.length - 1; c >= 0; c--) if (S.seeds[c] > 0 && lvl('farming') >= CROPS[c].req) return c; return -1; };
+function plant(i) {
+  const c = bestSeed(), p = S.plots[i]; if (c < 0 || !p || p.c != null) return false;
+  S.seeds[c]--; S.plots[i] = {c, at: now()}; S.xp.farming += CROPS[c].xp;   // planting gives a little xp too
+  return c;
+}
+function harvest(i) {
+  const p = S.plots[i]; if (!p || !plotReady(p)) return null;
+  const C = CROPS[p.c], n = CONFIG.harvestBase + Math.floor(Math.random() * CONFIG.harvestRand) + Math.floor(lvl('farming') * CONFIG.harvestPerLvl);
+  S.veg[p.c] += n; S.xp.farming += n * C.xp; S.stats.harvests++; S.plots[i] = {c: null, at: 0};
+  rollPet('farming');
+  return {c: p.c, n, xp: n * C.xp};
+}
+// one tap on a plot: harvest it if it's ready, then (re)plant your best seed
+function tendPlot(i) {
+  const h = harvest(i), c = plant(i);
+  if (h) addLog(`Harvested ${cropN(h.c, h.n)}. +${fmt(h.xp)} Farming xp${c !== false ? `. Planted ${CROPS[c].name}.` : '.'}`);
+  else if (c !== false) addLog(`Planted ${CROPS[c].name}. Ready in ${dur(growMs(c))}.`);
+  return h ? [`+${h.n} ${CROPS[h.c].name}`, 'green'] : c !== false ? [`Planted ${CROPS[c].name}`, 'green'] : undefined;
+}
+function tendAll() {
+  let got = {}, planted = 0, xp = 0;
+  S.plots.forEach((p, i) => { const h = harvest(i); if (h) { got[h.c] = (got[h.c] || 0) + h.n; xp += h.xp; } if (plant(i) !== false) planted++; });
+  if (!Object.keys(got).length && !planted) return;
+  const txt = Object.keys(got).map(c => cropN(+c, got[c])).join(', ');
+  addLog(`${txt ? `Harvested ${txt}. +${fmt(xp)} Farming xp. ` : ''}${planted ? `Planted ${planted} plot${planted > 1 ? 's' : ''}.` : ''}`.trim());
+  return [Object.keys(got).length ? `+${fmt(xp)} xp` : `Planted ${planted}`, 'green'];
+}
+function buyPlot() {
+  const c = CONFIG.plotCosts[S.plots.length - 1]; if (c == null || S.coins < c) return;
+  S.coins -= c; S.plots.push({c: null, at: 0});
+  addLog(`Bought farm plot ${S.plots.length}.`, 'lvl'); toast(`New farm plot!`);
+  return [`-${fmt(c)} coins`, 'gold'];
+}
+
 /* ---------- idle: fishing, cooking and (optional) fighting, processed in time order ---------- */
 function fishTry(r) {
   const i = S.spot, f = FISH[i]; r.fishTries++; rollPet('fishing');
   if (Math.random() < catchChance(i)) { S.raw[i]++; S.xp.fishing += f.xp; S.stats.caught++; r.caught[f.name] = (r.caught[f.name] || 0) + 1; r.fishXp += f.xp; }
 }
+// with the matching vegetable in the pantry, the fish becomes a meal: heals double, 50% more xp
+const makesMeal = i => S.veg[vegOf(i)] > 0;
 function cookTry(r) {
   const i = cookPick(); if (i < 0) return;      // nothing to cook: the pan waits
-  const f = FISH[i]; S.raw[i]--; r.cookTries++; rollPet('cooking');
-  if (Math.random() < cookChance(i)) { S.cooked[i]++; S.xp.cooking += f.xp; S.stats.cooked++; r.cooked[f.name] = (r.cooked[f.name] || 0) + 1; r.cookXp += f.xp; }
-  else { S.stats.burnt++; r.burnt++; }
+  const f = FISH[i], meal = makesMeal(i); S.raw[i]--; r.cookTries++; rollPet('cooking');
+  if (Math.random() < cookChance(i)) {
+    const xp = Math.round(f.xp * (meal ? CONFIG.mealXpMult : 1)); S.xp.cooking += xp; S.stats.cooked++; r.cookXp += xp;
+    if (meal) { S.veg[vegOf(i)]--; S.meals[i]++; S.stats.meals++; r.cooked[CONFIG.meals[i]] = (r.cooked[CONFIG.meals[i]] || 0) + 1; }
+    else { S.cooked[i]++; r.cooked[f.name] = (r.cooked[f.name] || 0) + 1; }
+  }
+  else { S.stats.burnt++; r.burnt++; }            // a burnt fish is gone; the vegetable survives
 }
 function tradeTry(r) {
   const k = tradePick(); if (!k) return;        // nothing to sell: the stall waits
@@ -382,7 +455,7 @@ function rareAlert(ri) {
 function simFight(g) {
   const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence')), mh = maxHP();
   const mult = (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0));   // weapon and Slayer bonuses stack
-  const food = S.autoEat ? S.cooked.slice() : null, heals = FISH.map(f => f.heal);
+  const food = S.autoEat ? foodList() : null, heals = foodHeals();
   let ehp = E.hp, hp = S.hp, taken = 0, healed = 0; const ev = [], eaten = {};
   for (let round = 0; round < 200; round++) {
     // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round
@@ -417,6 +490,7 @@ function applyFight(sim) {
   const items = []; let rare = null, potion = false;
   if (Math.random() < E.potion) { S.pots[E.area]++; potion = true; items.push(AREAS[E.area].potion[0]); }
   if (Math.random() < CONFIG.junkChance) { addLoot('e' + g); items.push(E.junk[0]); }
+  if (Math.random() < CONFIG.seedChance) { S.seeds[vegOf(E.area)]++; items.push(CROPS[vegOf(E.area)].name + ' Seed'); }
   if (Math.random() < CONFIG.rareChance) { S.weapons[E.area]++; items.push(AREAS[E.area].weapon.name); rare = E.area; }
   S.stats.kills++; S.kc[g]++;
   let taskDone = null;
@@ -426,7 +500,8 @@ function applyFight(sim) {
 // takes eaten fish out of the bag (never more than you still have) and returns {fish name: count}
 function useFood(eaten) {
   const out = {}; let n = 0;
-  for (const i in (eaten || {})) { const k = Math.min(eaten[i], S.cooked[i] || 0); if (k > 0) { S.cooked[i] -= k; n += k; out[FISH[i].name] = k; } }
+  for (const j in (eaten || {})) { const arr = +j < 10 ? S.cooked : S.meals, i = +j % 10, k = Math.min(eaten[j], arr[i] || 0);
+    if (k > 0) { arr[i] -= k; n += k; out[foodName(+j)] = k; } }
   S.stats.eaten += n; return out;
 }
 const newFightTally = () => ({n: 0, w: 0, coins: 0, xp: 0, hx: 0, taken: 0, ko: 0, rest: 0, items: {}, foes: {}, rares: [], tasksDone: [], ate: {}});
@@ -448,7 +523,7 @@ function fightTallyText(fr, label) {
 }
 function idleFight(fr) {
   if (S.area >= unlockedAreas()) return;
-  const canEat = S.autoEat && S.cooked.some(n => n > 0);   // with auto-eat and food, the fight itself eats you back up
+  const canEat = S.autoEat && foodList().some(n => n > 0);   // with auto-eat and food, the fight itself eats you back up
   if (!canEat && S.hp < Math.ceil(maxHP() * CONFIG.restBelow)) { fr.rest++; return; }   // too hurt: rest this turn, health keeps coming back
   tally(fr, fightOnce(pickEnemy(S.area)));
 }
@@ -492,7 +567,19 @@ function eat(i, all) {
   addLog(n === 1 ? `You ate a ${f.name}. +${gained} health` : `Ate ${n} ${f.name}. +${fmt(gained)} health`);
   return [`+${fmt(gained)} health`, 'red'];
 }
-const eatBest = () => { const i = smartPick(S.cooked, FISH.map(f => f.heal)); return i >= 0 ? eat(i, false) : undefined; };
+// all food in one list: cooked fish 0-9, meals 10-19
+const foodList = () => S.cooked.concat(S.meals);
+const foodHeals = () => FISH.map(f => f.heal).concat(FISH.map((f, i) => mealHeal(i)));
+const foodName = j => j < 10 ? FISH[j].name : CONFIG.meals[j - 10];
+function eatMeal(i, all) {
+  const mh = maxHP(); if (S.hp >= mh) { addLog('Your health is already full.', 'warn'); return; }
+  let n = 0, gained = 0;
+  while (S.meals[i] > 0 && S.hp < mh && (all || n < 1)) { const g = Math.min(mealHeal(i), mh - S.hp); S.hp += g; gained += g; S.meals[i]--; n++; }
+  if (!n) return; S.stats.eaten += n;
+  addLog(n === 1 ? `You ate the ${CONFIG.meals[i]}. +${gained} health` : `Ate ${n} ${CONFIG.meals[i]}. +${fmt(gained)} health`);
+  return [`+${fmt(gained)} health`, 'red'];
+}
+const eatBest = () => { const j = smartPick(foodList(), foodHeals()); return j < 0 ? undefined : j < 10 ? eat(j, false) : eatMeal(j - 10, false); };
 function drink(ri) {
   const mh = maxHP(); if (!S.pots[ri]) return; if (S.hp >= mh) { addLog('Your health is already full.', 'warn'); return; }
   const before = S.hp; S.hp = Math.min(mh, S.hp + AREAS[ri].potion[1]); S.pots[ri]--;
@@ -615,7 +702,7 @@ function cleanLook(L) {
     beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1, 0), bg: n(L.bg, LOOKS.bg.length - 1, 0)};
 }
 const cleanName = s => (String(s || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16)) || 'Dad';
-const HEAL_ACTS = ['eat', 'eatAll', 'eatBest', 'drinkBest'];
+const HEAL_ACTS = ['eat', 'eatAll', 'eatBest', 'drinkBest', 'eatMeal', 'eatMealAll'];
 function doAction(action, a) {
   a = a && typeof a === 'object' ? a : {};
   // a fight that was being replayed: healing stops it, anything else lets it finish first
@@ -644,6 +731,10 @@ function doAction(action, a) {
     case 'sellWeapon': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = sellWeapon(i); break; }
     case 'autoEat': S.autoEat = !S.autoEat; addLog(S.autoEat ? `Auto-eat on: below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking, in fights and fight idle.` : 'Auto-eat off.'); break;
     case 'petOut': if (S.pets[a.k]) { S.petOut = S.petOut === a.k ? null : a.k; addLog(S.petOut ? `${CONFIG.pets[a.k].name} is following you now.` : `${CONFIG.pets[a.k].name} is taking a nap at home.`); } break;
+    case 'plot': { const i = intIn(a.i, 0, S.plots.length - 1); if (i != null) out.pop = tendPlot(i); break; }
+    case 'tendAll': out.pop = tendAll(); break;
+    case 'buyPlot': out.pop = buyPlot(); break;
+    case 'eatMeal': case 'eatMealAll': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = eatMeal(i, action === 'eatMealAll'); break; }
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
     default: out.unknown = true;
   }
