@@ -12,7 +12,7 @@ const addNews = (kind, text) => { news.push({kind, text}); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.21.1',
+  version: '0.22',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -20,7 +20,7 @@ const CONFIG = {
   // idle: fishing and cooking always run by themselves. Fight idle is optional.
   fishSeconds: 60,            // one fishing attempt every 60 seconds
   cookSeconds: 5,             // one cooking attempt every 5 seconds (always cooks your best raw fish, then back to fishing)
-  fightIdleMinutes: 5,        // Fight idle: one fight every 5 minutes
+  fightIdleMinutes: 1,        // Fight idle: one fight every minute (health and food are the real limit)
   idleBaseMinutes: 100,       // after you close the game, idle keeps going this long (1h 40m)...
   idleStepMinutes: 50,        // ...plus 50 minutes per Idle time upgrade (16h 40m when maxed)
   idleCosts: [500,780,1200,1900,3000,4700,7300,11000,18000,28000,44000,68000,110000,170000,260000,410000,640000,1000000],
@@ -179,11 +179,11 @@ const CONFIG = {
   // then build gear by hand. Material t comes from areas 2t and 2t+1. Building needs DIY level, wearing needs Defence level.
   diySeconds: 10,
   materials: [
-    {name: 'Cardboard',    icon: '📦', req: 1,  xp: 6},
-    {name: 'Duct Tape',    icon: '🩹', req: 21, xp: 15},
-    {name: 'Plywood',      icon: '🪵', req: 41, xp: 35},
-    {name: 'Sheet Metal',  icon: '⚙️', req: 61, xp: 80},
-    {name: 'Carbon Fibre', icon: '🧵', req: 81, xp: 170},
+    {name: 'Cardboard',    icon: '📦', req: 1,  xp: 18},
+    {name: 'Duct Tape',    icon: '🩹', req: 21, xp: 45},
+    {name: 'Plywood',      icon: '🪵', req: 41, xp: 105},
+    {name: 'Sheet Metal',  icon: '⚙️', req: 61, xp: 240},
+    {name: 'Carbon Fibre', icon: '🧵', req: 81, xp: 510},
   ],
   matValue: 1.15,             // a material sells for 15% more than the average junk it comes from
   gear: [                     // one row per material: [head, body], each [name, flavour text]
@@ -195,11 +195,11 @@ const CONFIG = {
   ],
   gearCost: {head: 10, body: 20},          // materials per piece
   gearXpMult: 2,                           // build xp = materials used x material xp x this
-  gearValue: 1.5,                          // a spare piece sells for 1.5x its materials
+  gearValue: 1.5,                          // value of a piece (only old spares from before the one-of-each rule get sold)
   armour: {head: [0.04, 0.06, 0.08, 0.09, 0.10], body: [0.06, 0.09, 0.12, 0.14, 0.15]},   // less damage taken (10/15/20/23/25% for a full set), front-loaded so cheap gear matters
   // enemies hit harder now that armour exists, so a dad in matching gear takes about what he took before
-  enemyHitMult: 1.25, enemyAccBonus: 0.03,
-  enemyHpPerArea: 0.15,          // enemy health x (1 + this x area number): Backyard stays as is, later areas get much tougher
+  enemyHitMult: 1.1, enemyAccBonus: 0.03,   // longer fights already cost more health, so the hit boost is modest
+  enemyHpPerArea: 0.25,          // enemy health x (1 + this x area number): Backyard stays as is, later areas get much tougher
   newsEvery: 5,               // other dads see your level-ups every 5 levels (plus 99), and every rare drop, pet and badge
 };
 
@@ -439,6 +439,7 @@ function build(sl, t) {
   if (!SLOTS.includes(sl) || !(t >= 0 && t < MATS.length)) return;
   const M = MATS[t], cost = CONFIG.gearCost[sl];
   if (lvl('diy') < M.req || S.mats[t] < cost) return;
+  if (S.gearInv[sl][t] >= 1) return;   // one of each piece: DIY is for gearing up, not for farming coins or xp
   S.mats[t] -= cost; S.gearInv[sl][t]++; S.stats.built++;
   const xp = cost * M.xp * CONFIG.gearXpMult; S.xp.diy += xp;
   let t2 = `Built a ${gearName(sl, t)}. +${fmt(xp)} DIY xp.`;

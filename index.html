@@ -369,11 +369,16 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.21.1"></script>
+<script src="engine.js?v=0.22"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.22', title: 'Fight idle every minute, tougher monsters', notes: [
+    '<b>Fight idle</b> now fights every minute instead of every 5. Your health and food decide how long he keeps going, so auto-eat and meals really pay off now.',
+    'Monsters have even more health (the Dark Hallway is over 3x what it used to be), but hit a bit less hard. Fights take longer, not more painful.',
+    '<b>DIY</b>: you can build each piece of gear <b>once</b>. Taking junk apart now gives 3x more DIY xp to make up for it.',
+  ]},
   {v: '0.21.1', title: 'Tougher monsters, working DIY', notes: [
     'The <b>Start DIY</b> button works now. It used to send your dad straight back to fishing. Sorry, dads.',
     'Monsters in later areas have more health: the Garage a little, the Dark Hallway more than double. Strong dads were two-hitting everything. Fights now get longer as you progress instead of shorter, so food, meals and armour matter more. The Backyard is unchanged.',
@@ -452,7 +457,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.21.1';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.22';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -833,7 +838,7 @@ function tradeTab() {
     ${S.activity === 'diy' ? progHTML('actBar', 'Next item in') : actBtn('diy', 'Start DIY', d ? '' : 'No junk')}
     <p class="small" style="margin-top:8px">${mats ? `Materials: ${mats}.` : 'No materials yet.'}</p>
     <button class="sbtn" style="margin-top:6px" data-act="sellMats">${S.sellMats ? 'Trading may sell materials: on' : 'Trading may sell materials: off'}</button></section>
-  <h3 class="sect">Build gear</h3><p class="small note">Building needs DIY level, wearing needs Defence level. Gear makes enemies hit you less. Spares sell for a profit.</p>
+  <h3 class="sect">Build gear</h3><p class="small note">Building needs DIY level, wearing needs Defence level. Gear makes enemies hit you less. You can build each piece once.</p>
   <div class="panel">${buildRows()}</div>
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
   ${up}${plotUpgrade()}`;
@@ -843,9 +848,9 @@ function buildRows() {
   return MATS.slice(0, visibleCount(MATS, L)).map((M, t) => {
     if (L < M.req) return `<div class="row"><span class="count dim">${M.icon}</span><div class="row-main"><div class="row-name muted">${M.name} gear</div><div class="row-meta">Opens at DIY ${M.req}</div></div></div>`;
     const btn = sl => { const cost = CONFIG.gearCost[sl], n = S.gearInv[sl][t], worn = S.wear[sl] === t;
-      return `<div class="build"><div class="row-name">${gearName(sl, t)}${n ? ` <span class="lvtag">x${n}</span>` : ''}</div>
+      return `<div class="build"><div class="row-name">${gearName(sl, t)}${n ? ' <span class="lvtag">built</span>' : ''}</div>
         <div class="row-meta">-${pct(CONFIG.armour[sl][t])} damage. ${cost} ${M.name}${canWear(t) ? '' : `, wear at Defence ${M.req}`}</div>
-        <div class="row-btns"><button class="sbtn solid" data-act="build" data-s="${sl}" data-t="${t}" ${S.mats[t] < cost ? 'disabled' : ''}>Build</button>
+        <div class="row-btns">${n ? '' : `<button class="sbtn solid" data-act="build" data-s="${sl}" data-t="${t}" ${S.mats[t] < cost ? 'disabled' : ''}>Build</button>`}
         ${n ? `<button class="sbtn" data-act="wear" data-s="${sl}" data-t="${t}" ${!worn && !canWear(t) ? 'disabled' : ''}>${worn ? 'Take off' : 'Wear'}</button>` : ''}</div></div>`; };
     return `<div class="row build-tier"><span class="count">${S.mats[t]}</span><div class="row-main"><div class="row-name">${M.icon} ${M.name}</div>${btn('head')}${btn('body')}</div></div>`;
   }).join('');
