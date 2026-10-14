@@ -53,7 +53,16 @@ export async function handle(body, sql, createEngine) {
       values (${p.id}, ${sc.name}, ${tx.json(sc.look)}, ${tx.json(sc.lv)}, ${sc.total}, ${sc.combat}, ${sc.kills ?? 0}, ${sc.tasks ?? 0}, ${sc.weapon ?? -1}, ${sc.pet ?? null}, now())
       on conflict (player_id) do update set name = excluded.name, look = excluded.look, lv = excluded.lv, total = excluded.total,
         combat = excluded.combat, kills = excluded.kills, tasks = excluded.tasks, weapon = excluded.weapon, pet = excluded.pet, updated_at = now()`;
+    // news for the other dads: rare drops, pets, badges and level milestones
+    if (E.news.length) {
+      await tx`insert into public.gfd_feed (player_id, name, kind, text)
+        select ${p.id}, ${S.name}, x.kind, x.text from jsonb_to_recordset(${tx.json(E.news.slice(0, 10))}) as x(kind text, text text)`;
+      if (Math.random() < 0.05) await tx`delete from public.gfd_feed where created_at < now() - interval '7 days'`;
+    }
+    const since = Math.max(0, Math.floor(+body.feedSince || 0));
+    const feed = await tx`select id::int as id, player_id, name, kind, text, (extract(epoch from created_at) * 1000)::float8 as t
+      from public.gfd_feed where id > ${since} and created_at > now() - interval '3 days' order by id desc limit 25`;
     const view = Object.assign({}, S); if (view.pending) view.pending = {g: view.pending.g};   // the phone never sees fights ahead of time
-    return {ok: true, player_id: p.id, state: view, toasts: E.toasts, arena: E.arenaMsg, pop: out.pop, fight: out.fight, serverNow: Date.now()};
+    return {ok: true, player_id: p.id, state: view, feed, toasts: E.toasts, arena: E.arenaMsg, pop: out.pop, fight: out.fight, serverNow: Date.now()};
   });
 }

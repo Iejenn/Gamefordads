@@ -3,6 +3,8 @@ export function createEngine(initialState) {
 let S = initialState, arenaMsg = undefined;
 const toasts = [];
 const toast = t => { toasts.push(String(t)); };
+const news = [];   // things the other dads get to see
+const addNews = (kind, text) => { news.push({kind, text}); };
 /* ============================================================
    GFD engine: ALL the game rules. The server (supabase/functions/gfd) runs this file to decide what
    happens; the phone loads the same file only to show numbers (hit chances, timers, levels).
@@ -10,7 +12,7 @@ const toast = t => { toasts.push(String(t)); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.19',
+  version: '0.20',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -164,6 +166,14 @@ const CONFIG = {
   slayerDmgPerLvl: 0.005,     // +0.5% damage per Slayer level against your task enemy
   extendMult: 1.5,            // extended tasks: 50% more kills, 50% more xp, 2 points instead of 1
   slayerCancelCost: 1, slayerExtendCost: 10, slayerPotionCost: 1, slayerPotionPack: 3,
+  // Neighbourhood Watch Badge: a pin on your shirt, bought step by step with Slayer points.
+  // bonus = extra damage AND extra hit chance against your Slayer task enemy
+  badges: [
+    {name: 'Bronze Badge', cost: 20,  bonus: 0.05, desc: 'Laminated at the library. Official-ish.'},
+    {name: 'Silver Badge', cost: 50,  bonus: 0.10, desc: 'The geese have started talking about you.'},
+    {name: 'Gold Badge',   cost: 100, bonus: 0.15, desc: 'The HOA now asks YOU for permission.'},
+  ],
+  newsEvery: 5,               // other dads see your level-ups every 5 levels (plus 99), and every rare drop, pet and badge
 };
 
 
@@ -223,7 +233,7 @@ function freshState(name, look) {
     spot: 0, area: 0, tab: 'fish', lastFoe: null,
     activity: 'fish', actAt: t, paused: false,   // your dad does ONE idle thing at a time: fish, cook, trade or fight
     weapons: Array(10).fill(0), equipped: -1,
-    task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false,
+    task: null, slayerPts: 0, extendOwned: false, extendOn: false, autoEat: false, badge: 0,
     pets: {}, petOut: null,   // pets you've found (skill -> times found) and the one following you
     started: t, lastSeen: t, activeAt: t,
     stats: {caught: 0, cooked: 0, burnt: 0, eaten: 0, kills: 0, knockouts: 0, tasks: 0, sold: 0, tradeCoins: 0, harvests: 0, meals: 0},
@@ -266,7 +276,7 @@ function migrate(s) {
   const loot = {}; for (const k in (m.loot || {})) if (/^(e\d+|r\d)$/.test(k)) loot[k] = Math.max(0, Math.floor(+m.loot[k] || 0)); m.loot = loot;
   if (m.task && !(m.task.e >= 0 && m.task.e < 50 && m.task.n > 0)) m.task = null;
   m.slayerPts = Math.max(0, Math.floor(+m.slayerPts || 0));
-  m.autoEat = !!m.autoEat;
+  m.autoEat = !!m.autoEat; m.badge = clamp(Math.floor(+m.badge || 0), 0, CONFIG.badges.length);
   const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
   if (!pets[m.petOut]) m.petOut = null;
   // v0.10: rare items became weapons. Any old rare in your bag is now that area's weapon.
@@ -303,7 +313,7 @@ const bestSpot = L => FISH.filter(f => f.req <= L).length - 1;
 // cooking always picks the best raw fish you're allowed to cook
 const cookPick = () => { for (let i = 9; i >= 0; i--) if (S.raw[i] > 0 && lvl('cooking') >= FISH[i].req) return i; return -1; };
 
-function addLog(text, kind = '') { S.log.unshift({text, kind}); S.log.length = Math.min(S.log.length, 30); }
+function addLog(text, kind = '') { S.log.unshift({text, kind, t: now()}); S.log.length = Math.min(S.log.length, 30); }
 
 // health: +1 per minute, also while the game is closed
 function regenTo(T) {
@@ -321,7 +331,7 @@ function rollPet(k) {
   if (Math.random() >= 1 / petOdds(k)) return;
   const P = CONFIG.pets[k];
   if (S.pets[k]) { S.pets[k]++; addLog(`You have a funny feeling you would have been followed... (${P.name} again)`, 'lvl'); return; }
-  S.pets[k] = 1; if (!S.petOut) S.petOut = k;
+  S.pets[k] = 1; if (!S.petOut) S.petOut = k; addNews('pet', `found a pet: ${P.name}!`);
   toast(`${P.icon} New pet: ${P.name}!`);
   addLog(`${P.icon} ${P.name} has started following you! ${P.desc}`, 'lvl');
 }
@@ -433,6 +443,7 @@ const pHit = (A, L) => clamp(CONFIG.hitBase + CONFIG.hitPerLvl * (A - L), CONFIG
 const pMaxHit = St => Math.round(CONFIG.dmgBase * (1 + CONFIG.dmgPerLvl * St));
 const defRed = D => Math.min(0.9, CONFIG.defPerLvl * D);
 const slayerBonus = () => CONFIG.slayerDmgPerLvl * lvl('slayer');
+const badgeBonus = () => S.badge ? CONFIG.badges[S.badge - 1].bonus : 0;
 const onTask = g => !!(S.task && S.task.e === g);
 // random encounter: on a Slayer task, your task enemy shows up more often in its own area
 function pickEnemy(ri) {
@@ -444,7 +455,7 @@ const lootInfo = k => ({name: ENEMIES[+k.slice(1)].junk[0], price: ENEMIES[+k.sl
 const itemsText = map => Object.entries(map).map(([n, c]) => c > 1 ? `${c} ${n}` : n).join(', ');
 // a weapon drop: auto-equip it if it beats what you're holding
 function rareAlert(ri) {
-  const w = AREAS[ri].weapon; toast(`Rare drop: ${w.icon} ${w.name}!`);
+  const w = AREAS[ri].weapon; toast(`Rare drop: ${w.icon} ${w.name}!`); addNews('rare', `got a rare drop: ${w.icon} ${w.name}!`);
   let t = `Rare drop! You found the ${w.name} (+${pct(w.dmg)} damage).`;
   if (w.dmg > weaponBonus()) { S.equipped = ri; t += ' Equipped it.'; }
   addLog(t, 'lvl');
@@ -454,18 +465,21 @@ function rareAlert(ri) {
 // ev = every step as ['p', damage] (you hit), ['e', damage] (it hits), ['h', health, fish] (you ate)
 function simFight(g) {
   const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence')), mh = maxHP();
-  const mult = (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0));   // weapon and Slayer bonuses stack
+  const task = onTask(g), hitP = Math.min(CONFIG.hitMax, pHit(A, E.lvl) + (task ? badgeBonus() : 0));   // the badge helps you hit your task enemy
+  const mult = (1 + weaponBonus()) * (1 + (task ? slayerBonus() : 0)) * (1 + (task ? badgeBonus() : 0));   // weapon, Slayer level and badge stack
   const food = S.autoEat ? foodList() : null, heals = foodHeals();
-  let ehp = E.hp, hp = S.hp, taken = 0, healed = 0; const ev = [], eaten = {};
+  let ehp = E.hp, hp = S.hp, taken = 0, healed = 0, ateLast = false; const ev = [], eaten = {};
   for (let round = 0; round < 200; round++) {
-    // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round
+    // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round.
+    // Never twice in a row: eat, swing, eat, swing. Otherwise a strong enemy just watches you eat.
     let ate = false;
-    if (food && hp < mh * CONFIG.autoEatBelow) {
+    if (food && !ateLast && hp < mh * CONFIG.autoEatBelow) {
       const i = smartPick(food, heals, hp);
       if (i >= 0) { const h = Math.min(heals[i], mh - hp); hp += h; healed += h; food[i]--; eaten[i] = (eaten[i] || 0) + 1; ev.push(['h', h, i]); ate = true; }
     }
+    ateLast = ate;
     if (!ate) {
-      const d = Math.random() < pHit(A, E.lvl) ? Math.round((1 + Math.floor(Math.random() * pMaxHit(St))) * mult) : 0;
+      const d = Math.random() < hitP ? Math.round((1 + Math.floor(Math.random() * pMaxHit(St))) * mult) : 0;
       ehp -= d; ev.push(['p', d]);
       if (ehp <= 0) break;
     }
@@ -629,6 +643,14 @@ function buyPotions() {
   return [`+${CONFIG.slayerPotionPack} ${AREAS[ri].potion[0]}`, 'red'];
 }
 
+function buyBadge() {
+  const B = CONFIG.badges[S.badge]; if (!B || S.slayerPts < B.cost) return;
+  S.slayerPts -= B.cost; S.badge++;
+  addLog(`You earned the ${B.name}! +${pct(B.bonus)} damage and hit chance against your task enemy. ${B.desc}`, 'lvl');
+  toast(`${B.name}!`); addNews('badge', `earned the Neighbourhood Watch ${B.name}!`);
+  return [`-${B.cost} points`, 'gold'];
+}
+
 /* ---------- shop ---------- */
 function equip(i) {
   if (!S.weapons[i]) return;
@@ -662,6 +684,7 @@ function checkLevelUps(before) {
     if (k === 'hitpoints') extra = ` Max health is now ${maxHP()}.`;
     if (k === 'slayer') extra = ` +${pct1(slayerBonus())} damage against your task enemy.`;
     toast(`${SKILLS[k]} level ${l}!`); unlocks.forEach(toast);
+    for (let x = before[k] + 1; x <= l; x++) if (x % CONFIG.newsEvery === 0 || x >= 99) addNews('lvl', `reached ${SKILLS[k]} level ${x}.`);
     addLog(`${SKILLS[k]} is now level ${l}.${extra}`, 'lvl');
   }
   const c = combatLevel();
@@ -735,6 +758,7 @@ function doAction(action, a) {
     case 'tendAll': out.pop = tendAll(); break;
     case 'buyPlot': out.pop = buyPlot(); break;
     case 'eatMeal': case 'eatMealAll': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = eatMeal(i, action === 'eatMealAll'); break; }
+    case 'buyBadge': out.pop = buyBadge(); break;
     case 'setLook': S.name = cleanName(a.name); S.look = cleanLook(a.look); break;
     default: out.unknown = true;
   }
@@ -744,9 +768,9 @@ function doAction(action, a) {
 // what the highscore board shows, worked out from the real state
 function scoreRow() {
   const lv = {}; for (const k in SKILLS) lv[k] = lvl(k);
-  return {name: S.name, look: S.look, lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
+  return {name: S.name, look: Object.assign({}, S.look, {badge: S.badge || 0}), lv, total: totalLevel(), combat: combatLevel(), kills: S.stats.kills, tasks: S.stats.tasks, weapon: S.equipped, pet: S.petOut};
 }
 
-return { get S() { return S; }, setS(v) { S = v; }, get arenaMsg() { return arenaMsg; }, toasts,
+return { get S() { return S; }, setS(v) { S = v; }, get arenaMsg() { return arenaMsg; }, toasts, news,
   tick, doAction, scoreRow, migrate, freshState, cleanName, cleanLook, CONFIG };
 }

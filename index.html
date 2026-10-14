@@ -332,6 +332,10 @@ nav button span{white-space:nowrap}
 .pbadge svg,.foe-ic svg{width:85%;height:85%}
 .pop.green{color:var(--energy)}
 .inl-pet svg{width:18px;height:18px;vertical-align:-4px}
+.k-news,#ticker li.k-news{color:#7357C6}
+@media (prefers-color-scheme: dark){.k-news,#ticker li.k-news{color:#B9A3F5}}
+#ticker .k-news b{font-weight:700}
+.badge-ic{width:18px;height:18px;vertical-align:-4px}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -348,11 +352,17 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.19"></script>
+<script src="engine.js?v=0.20"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.20', title: 'Badges, news and smarter eating', notes: [
+    'The <b>Neighbourhood Watch Badge</b> is in the Slayer store: Bronze, Silver and Gold. Extra damage and hit chance against your task enemy, and a shiny pin on your shirt for everyone to see.',
+    'You now see the other dads\' big moments in your log, in purple: rare drops, pets, badges and every 5th level. Rare drops and pets also pop up as a message.',
+    'Auto-eat never eats twice in a row anymore: eat, swing, eat, swing. No more snacking your way to a knockout.',
+    'The idle timer no longer sits full for a few seconds between rounds.',
+  ]},
   {v: '0.19', title: 'Farming!', notes: [
     'New skill: <b>Farming</b>. Monsters drop seeds, better areas drop better ones: Potato, Carrot, Garlic, Pumpkin and Truffle.',
     'Plant them on your farm (Food tab) and they grow in real time, even while your dad fishes or fights. Ready crops wait for you. One tap harvests and replants.',
@@ -413,7 +423,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.19';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.20';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -425,6 +435,14 @@ function shade(hex, a) { const n = parseInt(hex.slice(1), 16);
   const f = v => Math.round(v * (1 - a)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
 function isDark(hex) { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11) < 120; }
 
+const addNews = () => {};   // the rules call this; only the server collects news
+const BADGE_COLORS = ['', '#B8733A', '#BFC6D1', '#F2C230'];
+// the Neighbourhood Watch Badge: a little star pinned on the left of the shirt
+function badgePin(b) {
+  if (!(b > 0)) return ''; const c = BADGE_COLORS[b] || BADGE_COLORS[1];
+  return `<g transform="translate(22.5 54.5) scale(1.35)"><path d="M0 -3.6 L1.05 -1.1 L3.4 -1.1 L1.5 0.5 L2.2 3 L0 1.5 L-2.2 3 L-1.5 0.5 L-3.4 -1.1 L-1.05 -1.1Z" fill="${c}" stroke="${shade(c, .35)}" stroke-width=".55" stroke-linejoin="round"/>${b >= 3 ? '<circle cx="1.5" cy="-1.9" r=".6" fill="#fff"/>' : ''}</g>`;
+}
+const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0});
 function avatarSVG(L) {
   const skin = LOOKS.skin[L.skin] || LOOKS.skin[0], hair = LOOKS.hairColor[L.hairColor] || LOOKS.hairColor[0];
   const shirt = LOOKS.shirt[L.shirt] || LOOKS.shirt[0], bg = LOOKS.bg[L.bg] || LOOKS.bg[0], sd = shade(skin, .16);
@@ -459,7 +477,7 @@ ${top}
 <path d="M32 29 Q30.6 32.5 32.6 33" stroke="${sd}" stroke-width="1.3" fill="none" stroke-linecap="round"/>
 ${beard}
 ${L.beard === 'walrus' ? '' : `<path d="M29.2 37.8 Q32 39.8 34.8 37.8" stroke="${mouth}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`}
-${glasses}${cap}
+${glasses}${cap}${badgePin(L.badge)}
 </svg>`;
 }
 
@@ -530,7 +548,7 @@ function idleLine() {
 function renderTop() {
   if (!S || editing === 'setup') { $('#top').innerHTML = ''; return; }
   const mh = anim ? anim.mh : maxHP(), hpNow = anim ? animHp() : S.hp, coinsNow = anim ? anim.coins0 : S.coins;
-  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(S.look)}${petBadge(S.petOut, 'sm')}</div>
+  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(myLook())}${petBadge(S.petOut, 'sm')}</div>
     <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
     <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
     <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
@@ -540,13 +558,16 @@ function renderTop() {
 }
 // progress bars for the next fishing cast / cooking attempt / idle fight, updated every second
 function updateProgress() {
+  // the server only counts finished rounds, so between syncs we run the clock forward ourselves:
+  // when a round ends the bar starts the next one right away instead of sitting full until the server answers
+  const left = (at, ms) => { const e = now() - at; return e < ms ? ms - e : ms - (e % ms); };
   const set = (id, at, ms) => { const el = document.getElementById(id); if (!el) return;
-    el.style.width = clamp((now() - at) / ms * 100, 0, 100) + '%';
-    const lab = document.getElementById(id + 'T'); if (lab) lab.textContent = clock(at + ms - now()); };
+    el.style.width = clamp((ms - left(at, ms)) / ms * 100, 0, 100) + '%';
+    const lab = document.getElementById(id + 'T'); if (lab) lab.textContent = clock(left(at, ms)); };
   set('actBar', S.actAt, actMs(S.activity));
   let flip = false; document.querySelectorAll('.plotT[data-end]').forEach(el => { const left = +el.dataset.end - now(); if (left <= 0) flip = true; else el.textContent = ptime(left); });
   if (flip && !anim && !editing) setTimeout(renderMain, 0);
-  const h = document.getElementById('actBarH'); if (h) h.textContent = clock(S.actAt + actMs(S.activity) - now());
+  const h = document.getElementById('actBarH'); if (h) h.textContent = clock(left(S.actAt, actMs(S.activity)));
 }
 function skillHTML(k, compact) {
   const x = S.xp[k], l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo;
@@ -629,7 +650,7 @@ function arenaHTML() {
   const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
   const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
   return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
-    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(S.look)}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
+    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(myLook())}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
       <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
       <div class="fname"><span>${esc(S.name)}</span>${weapon() ? `<em class="wname">${weapon().name}</em>` : ''}<b id="youHpNum">${php}/${mh}</b></div>${E ? fst(pHit(lvl('attack'), E.lvl), youMax) : ''}</div>
     <div class="vs">vs</div>
@@ -722,7 +743,19 @@ function slayerTab() {
   <p class="small note" style="margin-top:10px">Slayer level gives +0.5% damage per level against your task enemy.</p>${petLine('slayer')}
   ${task}
   <h3 class="sect">Slayer store</h3><p class="small note">You have <b class="pts">${p}</b> Slayer point${p === 1 ? '' : 's'}. Tasks done: ${S.stats.tasks}.</p>
+  ${badgeCard(p)}
   <div class="panel">${store}</div>`;
+}
+function badgeCard(p) {
+  const B = CONFIG.badges, cur = S.badge ? B[S.badge - 1] : null, next = B[S.badge];
+  const pin = b => `<svg viewBox="17 49 11 11" class="badge-ic" aria-hidden="true">${badgePin(b)}</svg>`;
+  return `<div class="upgrade"><h3 class="sect">Neighbourhood Watch Badge</h3>
+    <p class="small">${cur ? `${pin(S.badge)} <b>${cur.name}</b>: +${pct(cur.bonus)} damage and hit chance against your task enemy. <i>${cur.desc}</i>`
+      : 'A pin on your shirt for keeping the neighbourhood safe. Gives extra damage and hit chance against your Slayer task enemy, and everyone can see it.'}</p>
+    ${next ? `<div class="costline" style="margin-top:8px"><span>Next: ${pin(S.badge + 1)} ${next.name}, +${pct(next.bonus)}</span><b>${next.cost} pts</b></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100, p / next.cost * 100)}%"></div></div>
+      <button class="btn" data-act="buyBadge" ${p < next.cost ? 'disabled' : ''}>${p < next.cost ? `Need ${next.cost - p} more points` : `Get the ${next.name}`}</button>`
+      : '<p class="small" style="margin-top:6px">Gold. The highest honour the neighbourhood has to give.</p>'}</div>`;
 }
 
 function tradeTab() {
@@ -770,7 +803,7 @@ function dadTab() {
   const sk = Object.keys(SKILLS).map(k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
     return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; }).join('');
   return `<article class="dcard"><div class="dhero" style="background:${LOOKS.bg[S.look.bg] || LOOKS.bg[0]}">
-      <div class="bigav">${avatarSVG(S.look)}${petBadge(S.petOut, 'big')}</div>
+      <div class="bigav">${avatarSVG(myLook())}${petBadge(S.petOut, 'big')}</div>
       <div><div class="dname">${esc(S.name)}</div><div class="dtitle">${dadTitle()}</div><div class="dtotal">Total level ${totalLevel()}, combat ${combatLevel()}</div>
       <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div></div></div>
     <div class="dskills">${sk}</div>
@@ -862,7 +895,7 @@ async function makeShareCard() {
   rr(g, X, 40, CW, H - 80, 44); g.fillStyle = '#fff'; g.fill();
   // hero band in the dad's chosen background color
   g.save(); rr(g, X, 40, CW, H - 80, 44); g.clip(); g.fillStyle = LOOKS.bg[S.look.bg] || LOOKS.bg[0]; g.fillRect(X, 40, CW, 370); g.restore();
-  const img = await svgImage(avatarSVG(S.look), 520);
+  const img = await svgImage(avatarSVG(myLook()), 520);
   rr(g, 90, 85, 280, 280, 44); g.fillStyle = '#fff'; g.fill();
   g.save(); rr(g, 100, 95, 260, 260, 36); g.clip(); g.drawImage(img, 100, 95, 260, 260); g.restore();
   if (S.petOut && CONFIG.pets[S.petOut]) {   // the pet that follows you, on the corner of the picture
@@ -981,9 +1014,9 @@ function renderNav() {
   nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Trade', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
     .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
   tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
-  const L = S.log.length ? S.log : [{text: 'Nothing happened yet.', kind: ''}];
-  tk.innerHTML = tickerOpen ? `<ul>${L.slice(0, 15).map(e => `<li class="k-${e.kind}">${esc(e.text)}</li>`).join('')}</ul>`
-    : `<p class="k-${L[0].kind}">${esc(L[0].text)}</p>`;
+  const L = logLines();
+  tk.innerHTML = tickerOpen ? `<ul>${L.slice(0, 20).map(e => `<li class="k-${e.kind}">${e.text}</li>`).join('')}</ul>`
+    : `<p class="k-${L[0].kind}">${L[0].text}</p>`;
 }
 function render() { try { renderTop(); renderMain(); renderNav(); } catch (e) { showCrash(e); } }
 function showCrash(e) {
@@ -1001,6 +1034,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
+  buyBadge: A('buyBadge'),
   plot: A('plot', b => ({i: +b.dataset.i})), tendAll: A('tendAll'), buyPlot: A('buyPlot'),
   eatMeal: A('eatMeal', b => ({i: +b.dataset.i})), eatMealAll: A('eatMealAll', b => ({i: +b.dataset.i})),
   fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },
@@ -1070,7 +1104,7 @@ document.addEventListener('input', e => { if (e.target.id === 'nameInput' && dra
    The server (Supabase Edge Function "gfd") owns every dad. The phone sends a cloud code plus an action
    like {action: 'fight'} and gets back the new state, plus toasts and fight hits to show. Nothing the phone
    says about coins, xp or levels is ever trusted. The highscore board is read straight from the database. */
-const cloud = {reason: 'checking', err: '', lastSync: 0, scores: [], scoresAt: 0, playerId: null, online: true};
+const cloud = {reason: 'checking', err: '', lastSync: 0, scores: [], scoresAt: 0, playerId: null, online: true, feed: [], feedMax: 0, inFlight: false};
 let hsSort = 'total', cloudMsg = '', reqQ = Promise.resolve(), clockSkew = 0;
 const MOVE_DEADLINE = Date.parse('2026-10-20T23:59:59Z');   // until then, old phone saves can still move to the server
 async function rpc(fn, args) {
@@ -1091,7 +1125,7 @@ const cleanCode = s => { const c = String(s || '').toUpperCase().replace(/[^A-Z0
 async function callServer(action, args, extra, code) {
   const r = await fetch(`${CONFIG.supabaseUrl}/functions/v1/gfd`, {method: 'POST',
     headers: {'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey, 'Content-Type': 'application/json'},
-    body: JSON.stringify(Object.assign({code: code || myCode(), action, args: args || {}}, extra || {}))});
+    body: JSON.stringify(Object.assign({code: code || myCode(), action, args: args || {}, feedSince: cloud.feedMax}, extra || {}))});
   let j = null; try { j = await r.json(); } catch (e) {}
   if (!j) throw {code: 'http_' + r.status};
   return j;
@@ -1113,6 +1147,7 @@ function applyServer(res, btn) {
     renderCloudBits(); return res;
   }
   cloud.reason = 'on'; cloud.err = ''; cloud.playerId = res.player_id;
+  takeFeed(res.feed);
   if (res.serverNow) clockSkew = res.serverNow - Date.now();       // timers follow the server's clock, not the phone's
   const tab = (S && S.tab) || lsGet(LS.tab) || 'fish';
   S = migrate(res.state) || res.state; S.tab = tab;   // fill in anything missing, so the screen never trips over a gap
@@ -1160,7 +1195,7 @@ function cleanScore(id, d) {
   const n = (v, max) => clamp(Math.floor(+v || 0), 0, max), lv = {};
   for (const k in SKILLS) lv[k] = n((d.lv || {})[k], 100) || 1;
   const L = d.look || {}, look = {skin: n(L.skin, LOOKS.skin.length - 1), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, LOOKS.hairColor.length - 1),
-    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1)};
+    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1), badge: n(L.badge, 3)};
   const w = Math.floor(+d.weapon);
   return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
     combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, pet: CONFIG.pets[d.pet] ? d.pet : null, at: +d.at || 0};
@@ -1211,6 +1246,22 @@ function installHTML() {
   return '';
 }
 
+// news from the other dads: rare drops, pets, badges and level milestones. Shown in the log in purple.
+function takeFeed(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+  const first = !cloud.feedMax, fresh = rows.filter(r => r && r.id > cloud.feedMax);
+  cloud.feedMax = Math.max(cloud.feedMax, ...rows.map(r => +r.id || 0));
+  cloud.feed = fresh.concat(cloud.feed).slice(0, 40);
+  if (!first) fresh.filter(r => r.player_id !== cloud.playerId && r.kind !== 'lvl').forEach(r => toast(`${r.name} ${r.text}`));
+}
+// your own log plus the other dads' news, newest first
+function logLines() {
+  const mine = S.log.map(e => ({text: esc(e.text), kind: e.kind, t: e.t || 0}));
+  const theirs = cloud.feed.filter(r => r.player_id !== cloud.playerId).map(r => ({text: `<b>${esc(r.name)}</b> ${esc(r.text)}`, kind: 'news', t: +r.t || 0}));
+  const all = mine.concat(theirs).sort((a, b) => b.t - a.t);
+  return all.length ? all : [{text: 'Nothing happened yet.', kind: '', t: 0}];
+}
+
 /* ---------- staying up to date ----------
    Browsers can keep running an old copy of the game after an update. version.json on GitHub says which
    version is newest: on opening we reload straight away, mid-game we show a tap-to-update bar. */
@@ -1255,8 +1306,9 @@ setInterval(() => {
   const hp0 = S.hp; regenTo(now()); renderTop(); if (!editing) updateProgress();
   if (S.hp !== hp0 && S.tab !== 'dad' && !anim) { const a = document.activeElement; if (!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'))) renderMain(); }
   if (document.hidden || anim) return;
-  const due = S.actAt + actMs(S.activity) < now() - 1000;
-  if (now() - cloud.lastSync > 20000 || (due && now() - cloud.lastSync > 5000)) { cloud.lastSync = now(); act('sync'); }
+  // ask the server: every 30s anyway, soon after a fishing/trading/fight round ends, every 15s while cooking (5s rounds)
+  const ms = actMs(S.activity), due = S.actAt + ms < now() - 800, gap = now() - cloud.lastSync;
+  if (!cloud.inFlight && (gap > 30000 || (due && gap > (ms >= 60000 ? 1500 : 15000)))) { cloud.lastSync = now(); cloud.inFlight = true; act('sync').finally(() => { cloud.inFlight = false; }); }
   if (S.tab === 'ranks' && now() - cloud.scoresAt > 60000) loadScores();
   if (Date.now() % 300000 < 1000) checkVersion(false);   // every 5 minutes
 }, 1000);
