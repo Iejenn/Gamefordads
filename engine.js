@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.24.2',
+  version: '0.24.3',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -281,7 +281,7 @@ function freshState(name, look) {
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
     xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, woodcutting: 0, brewing: 0, trading: 0, diy: 0}, style: 'attack',
-    logs: Array(10).fill(0), beers: Array(10).fill(0), tree: 0, brewPick: -1, seedPick: -1, buff: null, autoDrink: true,   // buff = {b: beer index, left: fights left}
+    logs: Array(10).fill(0), beers: Array(10).fill(0), tree: 0, brewPick: -1, seedPick: -1, cookSel: -1, buff: null, autoDrink: true,   // buff = {b: beer index, left: fights left}
     mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, hideGear: {head: false, body: false}, sellMats: false,
     seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
     plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
@@ -338,6 +338,7 @@ function migrate(s) {
   const wr = s.wear || {}; m.wear = {}; for (const sl of ['head', 'body']) { const t = Math.floor(+wr[sl]); m.wear[sl] = t >= 0 && t < 5 && m.gearInv[sl][t] > 0 ? t : -1; }
   m.logs = intArr(s.logs, 10); m.beers = intArr(s.beers, 10); m.tree = clamp(Math.floor(+m.tree || 0), 0, 9);
   m.brewPick = Number.isInteger(m.brewPick) && m.brewPick >= -1 && m.brewPick < 10 ? m.brewPick : -1;
+  m.cookSel = Number.isInteger(m.cookSel) && m.cookSel >= -1 && m.cookSel < 10 ? m.cookSel : -1;
   m.seedPick = Number.isInteger(m.seedPick) && m.seedPick >= -1 && m.seedPick < CONFIG.crops.length ? m.seedPick : -1;
   m.buff = m.buff && m.buff.b >= 0 && m.buff.b < 10 && m.buff.left > 0 ? {b: Math.floor(m.buff.b), left: Math.floor(m.buff.left)} : null;
   m.autoDrink = s.autoDrink !== false;   // on unless you switched it off
@@ -383,7 +384,8 @@ const catchChance = i => Math.min(CONFIG.catchMax, CONFIG.catchBase + CONFIG.cat
 const cookChance = i => Math.min(CONFIG.cookMax, CONFIG.cookBase + CONFIG.cookPerLvl * (lvl('cooking') - FISH[i].req));
 const bestSpot = L => FISH.filter(f => f.req <= L).length - 1;
 // cooking always picks the best raw fish you're allowed to cook
-const cookPick = () => { for (let i = 9; i >= 0; i--) if (S.raw[i] > 0 && lvl('cooking') >= FISH[i].req) return i; return -1; };
+const cookPick = () => { if (S.cookSel >= 0) return S.raw[S.cookSel] > 0 && lvl('cooking') >= FISH[S.cookSel].req ? S.cookSel : -1;
+  for (let i = 9; i >= 0; i--) if (S.raw[i] > 0 && lvl('cooking') >= FISH[i].req) return i; return -1; };   // the fish you picked, or your best
 
 function addLog(text, kind = '') { S.log.unshift({text, kind, t: now()}); S.log.length = Math.min(S.log.length, 30); }
 
@@ -556,7 +558,7 @@ function runIdle(t) {
     const T = S.actAt + actMs(S.activity); if (T > end) break;
     S.actAt = T; r.events++;
     // ran out of raw fish or things to sell: your dad goes back to fishing instead of standing around
-    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : S.activity === 'diy' ? 'No junk left to take apart, so your dad went back to fishing.'
+    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? (S.cookSel >= 0 ? `Out of raw ${FISH[S.cookSel].name}, so your dad went back to fishing.` : 'Out of raw fish to cook, so your dad went back to fishing.') : S.activity === 'diy' ? 'No junk left to take apart, so your dad went back to fishing.'
       : S.activity === 'brew' ? 'Out of logs or vegetables for that beer, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
     if (S.activity === 'fish') fishTry(r);
     else if (S.activity === 'cook') cookTry(r);
@@ -901,6 +903,7 @@ function doAction(action, a) {
     case 'activity': if (['fish', 'cook', 'trade', 'diy', 'wood', 'brew'].includes(a.a)) setActivity(a.a); break;
     case 'tree': { const i = intIn(a.i, 0, bestTree(lvl('woodcutting'))); if (i != null && i !== S.tree) { S.tree = i; addLog(`Now chopping the ${TREES[i].name}.`); } break; }
     case 'brewPick': { const i = intIn(a.i, -1, 9); if (i != null && (i < 0 || lvl('brewing') >= BEERS[i].req)) S.brewPick = i; break; }
+    case 'cookSel': { const i = intIn(a.i, -1, 9); if (i != null && (i < 0 || lvl('cooking') >= FISH[i].req)) S.cookSel = i; break; }
     case 'seedPick': { const i = intIn(a.i, -1, CROPS.length - 1); if (i != null && (i < 0 || lvl('farming') >= CROPS[i].req)) S.seedPick = i; break; }
     case 'autoDrink': S.autoDrink = !S.autoDrink; addLog(S.autoDrink ? 'Auto-drink on: when a beer runs out, your dad opens the next one.' : 'Auto-drink off.'); break;
     case 'drink': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = drinkBeer(i); break; }

@@ -414,11 +414,15 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.24.2"></script>
+<script src="engine.js?v=0.24.3"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.24.3', title: 'Pick your fish', notes: [
+    'Cooking has a <b>picker</b> too: cook your best fish, or choose one. Handy when you want a specific meal.',
+    'The <b>Beer</b> button also works during a fight now. The new beer counts from the next fight.',
+  ]},
   {v: '0.24.2', title: 'Beer on the Fight tab', notes: [
     'Beers are opened on the <b>Fight tab</b> now, next to Eat and Potion. Tap <b>Beer</b> to pick one from your cellar.',
     'New switch: <b>Auto-drink</b>. When your beer runs out your dad opens the next one himself. On by default.',
@@ -532,7 +536,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.24.2';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24.3';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -778,7 +782,14 @@ function cookCard() {
     meta += ` ${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds.`; }
   const raw = FISH.map((x, j) => S.raw[j] ? `${S.raw[j]} ${x.name}${lvl('cooking') < x.req ? ` (needs Cooking ${x.req})` : ''}` : '').filter(Boolean).join(', ');
   const veg = CROPS.map((C, j) => S.veg[j] ? cropN(j, S.veg[j]) : '').filter(Boolean).join(', ');
-  return `<section class="idlecard${on ? ' active' : ''}"><p class="stage-title">${title}</p><p class="stage-meta">${meta}</p>${petLine('cooking')}
+  const L = lvl('cooking'), picks = `<button class="pick" data-act="cookSel" data-i="-1" aria-pressed="${S.cookSel < 0}"><span class="pn">Best fish I have</span><span class="pm">Cooks your best raw fish first</span></button>`
+    + FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
+      return `<button class="pick" data-act="cookSel" data-i="${j}" aria-pressed="${S.cookSel === j}" ${locked ? 'disabled' : ''}><span class="pn">${x.name}${makesMeal(j) ? ` <span class="lvtag">${CONFIG.meals[j]}</span>` : ''}</span>
+        <span class="pm">${locked ? `Opens at Cooking ${x.req}` : `${S.raw[j]} raw. Heals ${makesMeal(j) ? mealHeal(j) + ' as a meal' : x.heal}`}</span></button>`; }).join('');
+  return `<section class="idlecard${on ? ' active' : ''}">
+    <details class="areapick"><summary><span class="ap-label">Cooking</span><b>${S.cookSel < 0 ? 'Best fish I have' : FISH[S.cookSel].name}</b><span class="ap-caret">&#9662;</span></summary><div class="panel">${picks}</div></details>
+    ${S.cookSel >= 0 && !S.raw[S.cookSel] ? `<p class="small hint">No raw ${FISH[S.cookSel].name} left. Pick another fish.</p>` : ''}
+    <p class="stage-title">${title}</p><p class="stage-meta">${meta}</p>${petLine('cooking')}
     ${on ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
     ${raw || veg ? `<p class="small" style="margin-top:8px">In the pantry: ${[raw, veg].filter(Boolean).join(', ')}.</p>` : ''}</section>`;
 }
@@ -827,8 +838,7 @@ function arenaHTML() {
 }
 function healBtnsHTML(hp) {
   const nb = S.beers.reduce((a, b) => a + b, 0);
-  const beer = anim ? `<button class="btn beer" disabled>Beer<small>${S.buff ? `${S.buff.left} fights left` : 'Not during a fight'}</small></button>`
-    : `<button class="btn beer${S.buff ? ' on' : ''}" data-act="beerMenu" ${nb || S.buff ? '' : 'disabled'}>Beer (${nb})<small>${S.buff ? `${BEERS[S.buff.b].name}, ${S.buff.left} left` : nb ? 'Tap to open one' : 'Brew some in the Yard'}</small></button>`;
+  const beer = `<button class="btn beer${S.buff ? ' on' : ''}" data-act="beerMenu" ${nb || S.buff ? '' : 'disabled'}>Beer (${nb})<small>${S.buff ? `${BEERS[S.buff.b].name}, ${S.buff.left} left` : nb ? 'Tap to open one' : 'Brew some in the Yard'}</small></button>`;
   if (anim) return `<button class="btn alt" disabled>Eat<small>${S.autoEat ? 'Auto-eat is on' : 'Not during a fight'}</small></button>
     ${beer}<button class="btn red" disabled>Potion<small>Not during a fight</small></button>`;
   const mh = maxHP(), food = foodList().reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
@@ -1030,7 +1040,7 @@ function ranksTab() {
 // what your dad has on: weapon, head and body
 function beerSheet() {
   const rows = BEERS.map((b, i) => S.beers[i] ? `<button class="pick" data-act="drinkS" data-i="${i}" aria-pressed="${!!(S.buff && S.buff.b === i)}"><span class="pn">${b.name} <span class="lvtag">x${S.beers[i]}</span></span><span class="pm">${buffText(i)} for ${CONFIG.beerFights} fights. <i>${b.desc}</i></span></button>` : '').join('');
-  openSheet(`<p class="news-kicker">Crack one open</p>${S.buff ? `<p class="small">Open now: <b>${BEERS[S.buff.b].name}</b>, ${buffText(S.buff.b)}, ${S.buff.left} fights left. A new beer replaces it.</p>` : '<p class="small">One beer at a time. It counts down per fight.</p>'}
+  openSheet(`<p class="news-kicker">Crack one open</p>${S.buff ? `<p class="small">Open now: <b>${BEERS[S.buff.b].name}</b>, ${buffText(S.buff.b)}, ${S.buff.left} fights left. A new beer replaces it.</p>` : '<p class="small">One beer at a time. It counts down per fight.</p>'}${anim ? '<p class="small"><b>Mid-fight:</b> picking a beer skips to the end of this fight. The beer counts from the next one.</p>' : ''}
     <div class="panel" style="margin-top:10px">${rows || '<div class="empty">The cellar is empty. Brew some in the Yard.</div>'}</div>`);
 }
 function petSheet(k) {
@@ -1297,7 +1307,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'), autoDrink: A('autoDrink'), beerMenu: () => { if (!anim) beerSheet(); }, drinkS: b => { closeShare(); act('drink', {i: +b.dataset.i}); }, seedPick: A('seedPick', b => ({i: +b.dataset.i})), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
+  buyBadge: A('buyBadge'), cookSel: A('cookSel', b => ({i: +b.dataset.i})), autoDrink: A('autoDrink'), beerMenu: () => beerSheet(), drinkS: b => { closeShare(); if (anim) finishAnim(); act('drink', {i: +b.dataset.i}); }, seedPick: A('seedPick', b => ({i: +b.dataset.i})), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
   actMenu: () => { if (!anim) actMenu(); },
   pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
     if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
