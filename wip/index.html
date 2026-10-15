@@ -994,7 +994,9 @@ function ranksTab() {
   const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
   return `<h2 class="pagetitle">Ranks</h2>
   <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dad${cloud.scores.length === 1 ? '' : 's'} on total level. ` : ''}Updates about once a minute while dads play.</p>
-  <div id="hsBox">${highscoresHTML()}</div>`;
+  <div id="hsBox">${highscoresHTML()}</div>
+  ${helpBox("What's on the Ranks", `<p>Every dad, ranked. Tap a category on the left: total level, combat, a skill or kills. Your own row is marked.</p>
+    <p>Only dads checked by the server show up, so no cheating. The board updates about once a minute while dads play.</p>`)}`;
 }
 // what your dad has on: weapon, head and body
 function petSheet(k) {
@@ -1050,6 +1052,10 @@ function dadTab() {
     return `<button class="tile${n ? '' : ' unknown'}${S.equipped === i ? ' on' : ''}" data-act="weaponInfo" data-i="${i}" ${n ? `style="background:${a.tint}"` : ''}>
       <span class="t-ic">${n ? a.weapon.icon : '?'}</span>${n > 1 ? `<span class="t-n">x${n}</span>` : ''}</button>`; }).join('')}</div>
   <p class="small note" style="margin-top:6px">Tap a tile for details. Pets and weapons are super rare.</p>
+  ${helpBox("What's on the Dad tab", `<p>Your <b>Dad card</b>: levels, title, weapon and armour. <b>Share card</b> makes an image to brag with.</p>
+    <p><b>Gear</b>: the weapon and armour you wear. The eye hides a piece on your dad, it still protects you.</p>
+    <p><b>Cloud code</b>: the only key to your dad. Keep it safe, type it on any phone to get him back.</p>
+    <p><b>Pets</b> and <b>weapons</b>: super rare collections. Tap a tile for details and odds.</p>`)}
   <details class="tools"><summary>Switch dad or start over</summary><div class="inner">
     <p class="small"><b>Got a cloud code from another phone?</b> Type it here to play that dad on this phone.</p>
     <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -1228,6 +1234,7 @@ function renderMain() {
     ? '<div class="upgrade" style="margin-top:40px;text-align:center"><p class="small"><b>Can\'t reach the server.</b> GFD needs internet: your dad lives on the server now.</p><button class="btn" style="width:100%;margin-top:12px" data-act="cloudRetry">Try again</button></div>'
     : '<p class="small" style="margin-top:40px;text-align:center">Loading your dad...</p>'; return; }
   m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: fightTab, yard: yardTab, trade: tradeTab, ranks: ranksTab, dad: dadTab}[S.tab] || fishTab)();
+  const hb = m.querySelector(':scope > details.help'); if (hb) m.prepend(hb);   // "what's on this page" always sits at the top
   updateProgress();
 }
 function renderNav() {

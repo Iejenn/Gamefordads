@@ -19,6 +19,6 @@ Branch `wip-brewery`. GitHub Pages only publishes `main`, so nothing here is liv
 - Pets grid shows 8 tiles automatically; share image = 2 columns of 6 skills.
 
 ## Still to do before shipping
-1. "What's on this page" dropdown at the TOP of Dad, Food, Fight, Shed, Ranks (Food/Fight/Shed already have a "?" box at the bottom: move it to the top and complete it; write new ones for Dad and Ranks).
+1. DONE: every tab has its "?" explanation at the top (render() moves it up; Dad + Ranks got their own). Optional polish: make Food/Fight/Shed texts list everything on the page.
 2. What's New entry 0.24, set versions to 0.24 (engine CONFIG + UI_VERSION + script ?v=), version.json.
 3. Rebuild supabase/functions/gfd/engine.js from wip/engine.js, deploy, live check, then copy wip/index.html + wip/engine.js to the root and push main.
