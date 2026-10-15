@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14313B">
+<title>GFD - Game for Dads</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GFD">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E4EBE7; --surface:#FFFFFF; --surface-2:#F1F5F2; --ink:#14313B; --muted:#56696E; --line:#CBD6D1;
+  --primary:#2C6E7F; --primary-ink:#FFFFFF; --energy:#3E9B4F; --hp:#D9483A; --gold:#B9810B; --gold-bg:#F2B533;
+  --track:#D5DED9;
+  --font-ui:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num:"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1B20; --surface:#152830; --surface-2:#1B323A; --ink:#E3EDE9; --muted:#93AAA6; --line:#264149;
+    --primary:#62B4C6; --primary-ink:#0E1B20; --energy:#5BC06B; --hp:#F06A57; --gold:#F2B533; --gold-bg:#F2B533;
+    --track:#22393F; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1B20; --surface:#152830; --surface-2:#1B323A; --ink:#E3EDE9; --muted:#93AAA6; --line:#264149;
+  --primary:#62B4C6; --primary-ink:#0E1B20; --energy:#5BC06B; --hp:#F06A57; --gold:#F2B533; --gold-bg:#F2B533;
+  --track:#22393F; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--gold-bg);outline-offset:2px}
+#app{height:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+@media (min-width:480px){#app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+
+/* header */
+#top{padding:10px 14px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+#top:empty{display:none}
+.who{display:flex;align-items:center;gap:10px}
+.who .av{position:relative;width:42px;height:42px;flex:none}
+.who .av>svg{border-radius:10px}
+.who .av svg,.bigav svg,.preview svg{display:block;width:100%;height:100%}
+.who .name{font-weight:700;line-height:1.15;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .title{font-size:13px;color:var(--muted)}
+.coins{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--font-num);font-size:22px;font-weight:700;color:var(--gold)}
+.coins svg{width:20px;height:20px}
+.bars{margin-top:10px;display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:8px}
+.bicon svg{width:18px;height:18px;display:block}
+.bar.energy .bicon{color:var(--energy)} .bar.hp .bicon{color:var(--hp)}
+.track{height:11px;background:var(--track);border-radius:3px;overflow:hidden}
+.fill{height:100%;transition:width .25s}
+.bar.energy .fill{background:var(--energy)} .bar.hp .fill{background:var(--hp)}
+.idleline{margin-top:7px;padding-left:28px;font-size:13px;font-weight:700;color:var(--primary)}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.barnum{font-variant-numeric:tabular-nums;font-family:var(--font-num);font-size:18px;font-weight:700;min-width:86px;text-align:right;align-self:start;line-height:1.1}
+.barnum small{font-size:13px;color:var(--muted);font-weight:500}
+
+/* main */
+main{flex:1;overflow-y:auto;padding:16px 14px 28px;-webkit-overflow-scrolling:touch}
+.skill{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end}
+.skill h2{margin:0;font-size:22px;line-height:1.1}
+.xpline{font-size:13px;color:var(--muted)}
+.lvl{font-family:var(--font-num);font-size:46px;line-height:.85;font-weight:700;color:var(--primary)}
+.xpbar{grid-column:1/-1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;margin-top:8px}
+.xpbar div{height:100%;background:var(--primary)}
+.skill.compact h2{font-size:17px}
+.skill.compact .lvl{font-size:32px}
+.skill.compact .xpline{font-size:12px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.duo.quad{gap:12px 18px}
+.duo.quad .lvl{font-size:28px}
+.duo.quad h2{font-size:16px}
+.styles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 8px}
+.chip.style{min-height:50px;border-radius:12px;padding:4px 6px;font-weight:700;line-height:1.15}
+.chip.style small{display:block;font-weight:400;font-size:12px;opacity:.85}
+
+.stage{margin:20px 0 26px}
+.stage-title{margin:0;font-size:19px;font-weight:700}
+.stage-meta{margin:2px 0 0;color:var(--muted);font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{min-height:58px;border-radius:12px;border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);font-weight:700;font-size:18px;line-height:1.1;padding:6px 10px}
+.btn small{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.btn.alt{background:transparent;color:var(--primary)}
+.btn.wide{grid-column:1/-1}
+.btn.idle{background:transparent;color:var(--ink);border-style:dashed}
+.btn.idle.on{border-style:solid;background:var(--surface-2);color:var(--primary)}
+.sbtn.idle{border-style:dashed}
+.sbtn.idle.on{border-style:solid;background:var(--surface-2)}
+.arena{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;margin:18px 0 6px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fighter{min-width:0}
+.portrait{position:relative;aspect-ratio:1;width:100%;max-width:120px;margin:0 auto;border-radius:16px;overflow:visible;transition:opacity .3s,filter .3s}
+.portrait>svg{display:block;width:100%;height:100%;border-radius:16px}
+.portrait.foe{display:flex;align-items:center;justify-content:center}
+.emo{font-size:58px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.portrait.down{opacity:.35;filter:grayscale(1)}
+.portrait.hurt{animation:hurt .18s}
+@keyframes hurt{0%,100%{transform:translateX(0)}30%{transform:translateX(-4px)}70%{transform:translateX(4px)}}
+.vs{align-self:center;font-family:var(--font-num);font-weight:700;color:var(--muted);font-size:18px;padding-bottom:30px}
+.hpbar{height:9px;margin:9px auto 0;max-width:120px;background:#C62A1E;border-radius:3px;overflow:hidden}
+.hpbar div{height:100%;background:#3FAE49;transition:width .15s}
+.fname{display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:5px;font-size:14px;line-height:1.2}
+.fname span{font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fname b{font-family:var(--font-num);font-size:16px;color:var(--muted)}
+.arena-msg{grid-column:1/-1;margin:4px 0 0;text-align:center;font-weight:700;min-height:21px;font-size:15px}
+.k-muted{color:var(--muted);font-weight:400}
+.splat{position:absolute;width:42px;height:42px;transform:translate(-50%,-50%);pointer-events:none;z-index:2;animation:splat .75s ease-out forwards}
+.splat svg{position:absolute;inset:0;width:100%;height:100%}
+.splat.hit polygon{fill:#C62A1E;stroke:#6E1209;stroke-width:1.6}
+.splat.heal polygon{fill:#2E9E48;stroke:#145a24;stroke-width:1.6}
+.splat.miss polygon{fill:#2F6FD6;stroke:#173E85;stroke-width:1.6}
+.splat span{position:relative;display:flex;align-items:center;justify-content:center;height:100%;font-family:var(--font-num);font-weight:700;font-size:18px;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.5)}
+@keyframes splat{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}28%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%)}}
+.stage.tight{margin-top:8px}
+.rate{font-family:var(--font-num);font-weight:700;font-size:17px;white-space:nowrap}
+.rare{color:var(--gold)}
+.small.note{margin:-4px 0 10px}
+.odds{margin:10px 0 0;padding:10px 12px;background:var(--surface-2);border-radius:10px;font-size:14px}
+.odds p{margin:0}
+.odds.sep{margin:0 0 22px}
+.odds p+p{margin-top:3px}
+.odds .why{color:var(--muted);font-size:13px;margin-top:6px}
+.small.kc{margin:-12px 0 24px}
+.btn.red{border-color:var(--hp);color:var(--hp);background:transparent}
+.btn:disabled,.sbtn:disabled{opacity:.4}
+.btn:not(:disabled):active,.sbtn:not(:disabled):active{transform:translateY(1px)}
+.hint{font-size:14px;color:var(--muted);margin:10px 0 0}
+.hint+.sect{margin-top:16px}
+
+.sect{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:22px}
+.pick{display:block;width:100%;text-align:left;background:none;border:0;padding:12px 14px 12px 18px;position:relative}
+.pick+.pick{border-top:1px solid var(--line)}
+.pick .pn{font-weight:700;display:block}
+.pick .pm{font-size:13px;color:var(--muted);display:block}
+.pick[aria-pressed="true"]{background:var(--surface-2)}
+.pick[aria-pressed="true"]::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:5px;border-radius:0 4px 4px 0;background:var(--primary)}
+.pick:disabled .pn{color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;padding:11px 12px 11px 14px}
+.row+.row{border-top:1px solid var(--line)}
+.row-main{flex:1;min-width:0}
+.row-name{font-weight:700}
+.row-meta{font-size:13px;color:var(--muted)}
+.count{font-family:var(--font-num);font-size:20px;font-weight:700;min-width:34px;text-align:right}
+.row-btns{display:flex;gap:6px}
+.sbtn{min-height:40px;min-width:52px;padding:0 10px;border-radius:9px;border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-weight:700;font-size:14px}
+.sbtn.solid{background:var(--primary);color:var(--primary-ink)}
+.empty{padding:16px 14px;color:var(--muted);font-size:15px}
+.empty button{margin-top:8px}
+
+/* shop */
+.upgrade{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:22px}
+.upgrade .big{font-family:var(--font-num);font-size:36px;font-weight:700;line-height:1;margin:6px 0 2px}
+.upgrade .big span{color:var(--energy)}
+.costline{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin:12px 0 6px}
+.costline b{color:var(--gold);font-family:var(--font-num);font-size:18px}
+.upgrade .track .fill{background:var(--gold-bg)}
+.upgrade .btn{width:100%;margin-top:14px}
+
+/* dad card */
+.dcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.dhero{display:flex;align-items:center;gap:14px;padding:16px;color:#14313B}
+.bigav{position:relative;width:96px;height:96px;border-radius:16px;border:3px solid #fff;flex:none}
+.bigav>svg{border-radius:13px}
+.dname{font-family:var(--font-num);font-size:30px;line-height:1;font-weight:700;word-break:break-word}
+.dtitle{font-weight:700;margin-top:6px}
+.dtotal{font-size:14px}
+.dskills{padding:2px 16px;display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+.dskill{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:10px 0}
+.dskill:nth-child(n+3){border-top:1px solid var(--line)}
+.dskill .lv{font-family:var(--font-num);font-size:26px;font-weight:700;color:var(--primary);line-height:1}
+.dskill .mini{grid-column:1/-1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+.dskill .mini div{height:100%;background:var(--primary)}
+.dstats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.dstats div{padding:12px 6px;text-align:center}
+.dstats div+div{border-left:1px solid var(--line)}
+.dstats b{display:block;font-family:var(--font-num);font-size:20px}
+.dstats span{font-size:12px;color:var(--muted)}
+.dfoot{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+.dfoot b{font-family:var(--font-num);font-size:16px;color:var(--ink)}
+.stack{display:grid;gap:10px}
+details.tools{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 14px;margin-top:16px}
+details.tools summary{padding:14px 0;font-weight:700;cursor:pointer}
+details.tools .inner{padding-bottom:16px;display:grid;gap:10px}
+textarea{width:100%;min-height:84px;font:13px/1.3 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink);resize:vertical}
+.small{font-size:13px;color:var(--muted);margin:0}
+
+/* editor / setup */
+.brand{text-align:center;margin:8px 0 18px}
+.brand h1{font-family:var(--font-num);font-size:88px;line-height:.9;margin:0;color:var(--primary);letter-spacing:1px}
+.brand p{margin:6px 0 0;font-size:17px;color:var(--muted)}
+.preview{width:128px;height:128px;border-radius:20px;overflow:hidden;margin:0 auto 6px;border:3px solid var(--surface)}
+.field{margin:16px 0}
+.field .lab{display:block;font-weight:700;margin-bottom:7px}
+input[type=text]{width:100%;min-height:48px;font:inherit;font-size:17px;padding:0 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.sw{display:flex;flex-wrap:wrap;gap:9px}
+.dot{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);padding:0}
+.dot[aria-pressed="true"]{outline:3px solid var(--primary);outline-offset:2px}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--line);background:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
+
+/* ticker + nav */
+#ticker{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:var(--surface-2);font-size:14px;padding:8px 14px;min-height:40px}
+#ticker[hidden]{display:none}
+#ticker p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ticker ul{list-style:none;margin:0;padding:0;max-height:38vh;overflow:auto}
+#ticker li{padding:5px 0}
+#ticker li+li{border-top:1px dashed var(--line);color:var(--muted)}
+.k-lvl{color:var(--gold);font-weight:700}
+.k-warn{color:var(--hp)}
+nav{display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line)}
+nav:empty{display:none}
+nav button{background:none;border:0;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);position:relative}
+nav button svg{width:24px;height:24px}
+nav button[aria-current="page"]{color:var(--primary);font-weight:700}
+nav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--primary)}
+
+/* feedback */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+.pop{position:absolute;transform:translate(-50%,0);font-family:var(--font-num);font-weight:700;font-size:20px;color:var(--primary);white-space:nowrap;animation:rise .9s ease-out forwards;text-shadow:0 1px 0 var(--surface),0 -1px 0 var(--surface)}
+.pop.gold{color:var(--gold)} .pop.green{color:var(--energy)} .pop.red{color:var(--hp)}
+@keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-46px)}}
+.toast{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);background:var(--gold-bg);color:#231804;font-family:var(--font-num);font-weight:700;font-size:21px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.2);z-index:50;white-space:nowrap;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.6);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.sheet{position:absolute;inset:0;z-index:70;background:rgba(8,18,22,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px}
+.sheet img{display:block;max-width:100%;max-height:64vh;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.sheet p{margin:0;color:#fff;font-size:14px;text-align:center}
+.sheet .stack{width:100%;max-width:340px}
+.sheet .btn.alt{background:var(--surface)}
+.idlecard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:16px 0 0}
+.idlecard+.idlecard{margin-top:10px}
+.prog{display:flex;align-items:center;gap:10px;margin-top:10px}
+.prog-track{flex:1;height:10px;background:var(--track);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;width:0;background:var(--primary);transition:width 1s linear}
+.prog-t{font-size:13px;color:var(--muted);white-space:nowrap}
+.prog-t b{font-family:var(--font-num);font-size:15px;color:var(--ink)}
+.idlecard + .small.note{margin:10px 0 20px}
+.taskline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;width:100%;margin:12px 0 0;padding:10px 14px;border:1.5px solid var(--gold-bg);border-radius:12px;background:transparent;text-align:left}
+.taskline span{font-size:13px;color:var(--muted)}
+.taskline b{font-family:var(--font-num);font-size:17px}
+.foe-row{display:flex;gap:12px;padding:12px 14px;align-items:flex-start}
+.foe-row+.foe-row{border-top:1px solid var(--line)}
+.foe-row.task{box-shadow:inset 4px 0 0 var(--gold-bg)}
+.foe-row .row-meta+.row-meta{margin-top:3px}
+.foe-ic{flex:none;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.foe-ic.big{width:64px;height:64px;font-size:38px;border-radius:14px}
+.lvtag{font-size:12px;font-weight:400;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap}
+.lvtag.task{color:var(--gold);border-color:var(--gold-bg)}
+.hpbar.empty{background:var(--track)}
+.hpbar.empty div{background:var(--track)}
+.taskhead{display:flex;align-items:center;gap:14px;margin:8px 0 12px}
+.taskhead .big{margin:0}
+.big .of{font-size:22px;color:var(--muted)}
+.pts{font-family:var(--font-num);font-size:18px;color:var(--gold)}
+.upgrade .track .fill{background:var(--gold-bg)}
+.st{display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 7px;border-radius:999px;background:var(--surface-2);font-family:var(--font-num);font-weight:600;font-size:15px;line-height:1.3;white-space:nowrap;vertical-align:middle}
+.st svg{width:14px;height:14px;flex:none}
+.st.hp svg{color:var(--hp)}
+.st.gold svg{color:var(--gold)}
+.stats-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:7px 0 5px}
+.kc-tag{font-size:12px;color:var(--muted);margin-left:auto}
+.legend .st{padding:2px 6px;margin:0 2px}
+.fstats{display:flex;justify-content:center;gap:5px;margin-top:6px}
+.fstats .st{font-size:14px;padding:1px 7px 1px 6px}
+.odds .st{padding:1px 5px;font-size:13px}
+.wbadge{position:absolute;right:-6px;bottom:-6px;width:36px;height:36px;border-radius:50%;background:var(--surface);border:2px solid var(--gold-bg);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.wname{display:block;font-style:normal;font-size:12px;color:var(--gold);font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dweapon{margin-top:6px;font-size:14px;font-weight:700;background:rgba(255,255,255,.55);border-radius:8px;padding:3px 8px;display:inline-block}
+.foe-ic.dim{background:var(--surface-2);opacity:.6}
+.row-name.muted{color:var(--muted)}
+.warnbox{border-color:var(--gold-bg);border-width:1.5px}
+.warnbox textarea{margin-top:8px}
+.hs-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;scrollbar-width:none}
+.chip.hs{flex:none;min-height:34px;padding:0 12px;font-size:14px}
+.hs-row{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.hs-row+.hs-row{border-top:1px solid var(--line)}
+.hs-row.me{background:var(--surface-2)}
+.hs-rank{font-family:var(--font-num);font-weight:700;font-size:18px;width:22px;text-align:center;color:var(--muted)}
+.hs-row:nth-child(1) .hs-rank{color:var(--gold)}
+.hs-av{position:relative;width:40px;height:40px;flex:none}
+.hs-av>svg{border-radius:10px}
+.hs-av svg{display:block;width:100%;height:100%}
+.hs-val{font-family:var(--font-num);font-weight:700;font-size:22px;color:var(--primary)}
+.idlecard.active{border-color:var(--primary);box-shadow:inset 4px 0 0 var(--primary)}
+.small.note.doing{margin:14px 0 0;font-size:14px}
+.idleline b{font-family:var(--font-num)}
+.cloudbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.linkbtn{display:inline-flex;align-items:center;text-decoration:none}
+#cloudLine b{font-weight:700;color:var(--ink)}
+.linkbtn.dl{display:flex;align-items:center;justify-content:center;text-decoration:none}
+#cloudLine:empty{display:none}
+.codebox{display:flex;align-items:center;gap:10px;margin-top:6px}
+.code{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:700;letter-spacing:.5px;background:var(--surface-2);border-radius:8px;padding:9px 10px;word-break:break-all}
+#cloudCodeBox{font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
+nav button span{white-space:nowrap}
+.pagetitle{margin:0 0 6px;font-size:22px}
+.newscard{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px 18px 16px;width:100%;max-width:380px;max-height:78vh;overflow-y:auto;box-shadow:0 14px 36px rgba(0,0,0,.35)}
+.sheet .newscard .news-kicker{margin:0 0 8px;font-family:var(--font-num);font-weight:700;font-size:24px;color:var(--primary);text-align:left}
+.newscard h2{font-size:16px;margin:12px 0 6px}
+.newscard ul{margin:0;padding-left:20px}
+.newscard li{margin:0 0 7px;font-size:15px;line-height:1.4}
+.updatebar{display:block;width:100%;margin-top:8px;padding:9px 12px;border:0;border-radius:10px;background:var(--gold-bg);color:#231804;font-weight:700;font-size:14px;text-align:left}
+.pbadge{position:absolute;left:-6px;bottom:-6px;width:34px;height:34px;border-radius:50%;background:var(--surface);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:19px;z-index:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.pbadge.sm{width:22px;height:22px;font-size:12px;left:-5px;bottom:-5px;border-width:1.5px}
+.pbadge.big{width:40px;height:40px;font-size:23px;left:-10px;bottom:-10px}
+.foe-ic.pet{background:var(--surface-2)}
+.small.petline{margin-top:6px;color:var(--muted)}
+.trio{grid-template-columns:1fr 1fr 1fr;gap:10px 12px}
+.trio .skill.compact h2{font-size:14px}.trio .skill.compact .lvl{font-size:26px}.trio .xpline{font-size:11px}
+.farmhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.plot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);min-height:96px}
+.plot b{font-size:14px}.plot small{font-size:12px;color:var(--muted)}
+.plot-ic{font-size:30px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.plot.empty{border-style:dashed;background:transparent}.plot.empty .plot-ic{font-family:var(--font-num);color:var(--primary)}
+.plot.ready{border-color:var(--energy);background:color-mix(in srgb,var(--energy) 14%,var(--surface))}
+.plot.ready b{color:var(--energy)}
+.lvtag.meal{color:var(--energy);border-color:var(--energy)}
+.pbadge svg,.foe-ic svg{width:85%;height:85%}
+.pop.green{color:var(--energy)}
+.inl-pet svg{width:18px;height:18px;vertical-align:-4px}
+.k-news,#ticker li.k-news{color:#7357C6}
+@media (prefers-color-scheme: dark){.k-news,#ticker li.k-news{color:#B9A3F5}}
+#ticker .k-news b{font-weight:700}
+.badge-ic{width:18px;height:18px;vertical-align:-4px}
+.dgroup{grid-column:1/-1;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 -4px}
+.dgroup:first-child{margin-top:0}
+.gear-row{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.gear-row+.gear-row{border-top:1px solid var(--line)}
+.gear-ic{width:40px;height:40px;flex:none;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.gear-ic svg{width:36px;height:30px}
+.build{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.build .row-btns{margin-top:6px}
+.count.dim{opacity:.5}
+.hs-wrap{display:flex;gap:10px;align-items:flex-start}
+.hs-rail{display:flex;flex-direction:column;gap:6px;width:96px;flex:none;position:sticky;top:0}
+.hs-cat{width:100%;padding:8px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;text-align:left}
+.hs-cat[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.hs-list{flex:1;min-width:0}
+.hs-list .hs-row{padding:10px 8px;gap:8px}
+.hs-list .hs-av{width:34px;height:34px}
+.hs-list .row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eye-btn{float:right;width:32px;height:32px;margin:-4px -4px 0 8px;padding:5px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted)}
+.eye-btn[aria-pressed="true"]{color:var(--hp);border-color:var(--hp)}
+.eye-btn svg{width:100%;height:100%}
+details.help{margin:14px 0 4px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+details.help summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+details.help summary::-webkit-details-marker,details.fold summary::-webkit-details-marker,details.areapick summary::-webkit-details-marker{display:none}
+.q{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.help-body{padding:0 12px 10px;font-size:14px;line-height:1.45}.help-body p{margin:6px 0}
+details.fold{margin:12px 0}details.fold>summary{list-style:none;cursor:pointer;font-weight:700;padding:8px 2px;color:var(--ink)}
+details.fold>summary::after{content:' \25BE';color:var(--muted)}details.fold[open]>summary::after{content:' \25B4'}
+details.fold.inrow{margin:0;padding:0 14px 8px}
+details.areapick{margin-bottom:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+details.areapick summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:10px 12px}
+.ap-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.ap-meta{font-size:13px;color:var(--muted)}.ap-caret{margin-left:auto;color:var(--muted)}
+details.areapick[open]{padding-bottom:8px}details.areapick .panel{margin:0 8px}
+.actions .btn.idle{grid-column:span 1}
+button.idleline{display:block;width:100%;text-align:left;border:0;background:transparent;padding:0;cursor:pointer}
+.il-caret{color:var(--muted);font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tiles.five{grid-template-columns:repeat(5,1fr)}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:74px;padding:8px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer}
+.tiles.five .tile{min-height:58px}
+.tile.on{border-color:var(--gold);box-shadow:inset 0 0 0 1.5px var(--gold)}
+.tile.unknown{background:var(--surface-2)}.tile.unknown .t-ic{color:var(--muted);font-family:var(--font-num);font-size:22px}
+.t-ic{font-size:28px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}.t-ic svg{width:34px;height:34px}
+.t-name{font-size:12px;font-weight:700;color:var(--ink)}.tile.unknown .t-name{color:var(--muted);font-weight:400}
+.t-n{position:absolute;top:3px;right:5px;font-size:11px;font-weight:700;color:var(--muted)}
+.sheet-ic{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:36px;background:var(--surface-2);margin-bottom:6px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.sheet-ic svg{width:48px;height:48px}.sheet-ic.unknown{color:var(--muted);font-family:var(--font-num)}
+.newscard h2{margin:4px 0}.newscard p{color:var(--ink);text-align:left}
+.pantry{display:flex;flex-wrap:wrap;gap:6px;padding:12px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line)}
+.pantry .sbtn{flex-basis:100%}
+.pchip{padding:5px 9px;border-radius:999px;background:var(--surface-2);font-size:13px}.pchip b{margin-left:2px}
+.pchip.meal{background:color-mix(in srgb,var(--energy) 16%,var(--surface));}
+.switch{width:46px;height:26px;border-radius:13px;border:0;background:var(--line);position:relative;cursor:pointer;flex:none}
+.switch span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.switch.on{background:var(--primary)}.switch.on span{left:23px}
+.act-pick[aria-pressed="true"]{border-color:var(--primary)}
+.pchip.beer{border:1.5px solid transparent;cursor:pointer}.pchip.beer.on{border-color:var(--gold)}
+.beerline{flex-basis:100%;margin:6px 0 4px}
+.beer-table div{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
+#rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
+#rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
+@media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top"></header>
+  <main id="main"></main>
+  <button id="ticker" type="button" aria-expanded="false" hidden></button>
+  <nav id="nav" aria-label="Game sections"></nav>
+</div>
+<div id="fx" aria-hidden="true"></div>
+<div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
+
+<script src="engine.js?v=0.24-wip"></script>
+<script>
+/* ---------- What's New ----------
+   Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
+const CHANGELOG = [
+  {v: '0.23', title: 'A tidier game', notes: [
+    '<b>Fight tab:</b> pick your area at the top, and the Fight button sits right under the arena. Enemy list and the fine print fold away.',
+    'Tap the <b>Idle line</b> at the top of the screen to switch what your dad is doing, from any tab.',
+    'Pets and weapons are now a tile collection on the Dad tab. Tap a tile for details (and pet odds).',
+    'The pantry is a compact list with one Eat button. Fishing spots and explanations fold away behind a tap.',
+  ]},
+  {v: '0.22.2', title: 'Faster farming, fair fights', notes: [
+    '<b>Farming</b> is a lot faster: Potato 10 minutes up to Truffle 45 minutes. Each vegetable gives a bit less xp, and monsters drop seeds more often (15%).',
+    '<b>Trading</b> now sells your cheapest stuff first.',
+    'The enemy list on the Fight tab shows the right health again (it still showed the old numbers).',
+    'Switching apps during a fight no longer spoils the result before the replay is done.',
+  ]},
+  {v: '0.22.1', title: 'Hide your gear', notes: [
+    'Don\'t like the look of a Bucket Helmet? Tap the <b>eye</b> next to your gear on the Dad tab to hide it on your dad, the share image and the Ranks. It still protects you.',
+  ]},
+  {v: '0.22', title: 'Fight idle every minute, tougher monsters', notes: [
+    '<b>Fight idle</b> now fights every minute instead of every 5. Your health and food decide how long he keeps going, so auto-eat and meals really pay off now.',
+    'Monsters have even more health (the Dark Hallway is over 3x what it used to be), but hit a bit less hard. Fights take longer, not more painful.',
+    '<b>DIY</b>: you can build each piece of gear <b>once</b>. Taking junk apart now gives 3x more DIY xp to make up for it.',
+  ]},
+  {v: '0.21.1', title: 'Tougher monsters, working DIY', notes: [
+    'The <b>Start DIY</b> button works now. It used to send your dad straight back to fishing. Sorry, dads.',
+    'Monsters in later areas have more health: the Garage a little, the Dark Hallway more than double. Strong dads were two-hitting everything. Fights now get longer as you progress instead of shorter, so food, meals and armour matter more. The Backyard is unchanged.',
+  ]},
+  {v: '0.21', title: 'DIY and gear!', notes: [
+    'New skill: <b>DIY</b>, in the new <b>Shed</b> tab (was Trade). Your dad takes monster junk apart into materials: Cardboard, Duct Tape, Plywood, Sheet Metal and Carbon Fibre.',
+    'Build <b>gear</b> from them: helmets and body armour, from a Cardboard Box Helmet up to a Kevlar BBQ Apron. Gear shows on your dad and makes enemies hit you less. Wearing better gear needs Defence levels.',
+    'Heads up: enemies hit about 25% harder now. In gear that matches your area you take about the same as before. Without gear, you feel it.',
+    'Materials and spare gear can be sold. Trading only sells your materials if you allow it in the Shed.',
+    'A 6th pet is somewhere in the shed. It bumps into things.',
+    'The Ranks now have a list of categories on the left instead of the long row of buttons, and skills are grouped: combat, food, shed.',
+  ]},
+  {v: '0.20', title: 'Badges, news and smarter eating', notes: [
+    'The <b>Neighbourhood Watch Badge</b> is in the Slayer store: Bronze, Silver and Gold. Extra damage and hit chance against your task enemy, and a shiny pin on your shirt for everyone to see.',
+    'You now see the other dads\' big moments in your log, in purple: rare drops, pets, badges and every 5th level. Rare drops and pets also pop up as a message.',
+    'Auto-eat never eats twice in a row anymore: eat, swing, eat, swing. No more snacking your way to a knockout.',
+    'The idle timer no longer sits full for a few seconds between rounds.',
+  ]},
+  {v: '0.19', title: 'Farming!', notes: [
+    'New skill: <b>Farming</b>. Monsters drop seeds, better areas drop better ones: Potato, Carrot, Garlic, Pumpkin and Truffle.',
+    'Plant them on your farm (Food tab) and they grow in real time, even while your dad fishes or fights. Ready crops wait for you. One tap harvests and replants.',
+    'Fish plus the matching vegetable cooks into a <b>meal</b>: Shrimp & Chips, Herring Hotpot, Midnight Truffle Feast... Meals heal double and give 50% more Cooking xp. Cooking does this by itself.',
+    'You start with one plot. Buy up to four more in the Trade tab.',
+    'And somewhere in the garden lurks a fifth pet. He has a hat.',
+  ]},
+  {v: '0.18.2', title: 'Pets hotfix', notes: [
+    'The pets update briefly stopped existing dads from saving. Fixed: nothing was lost, and idle time was caught up afterwards.',
+  ]},
+  {v: '0.18.1', title: 'Smoother updates', notes: [
+    'Updating could leave the game stuck on some phones, because the browser kept half of the old version around. Updates now always load completely fresh.',
+    'If the screen ever fails to draw, you now get a Reload button instead of a frozen game. Your dad was safe on the server the whole time.',
+  ]},
+  {v: '0.18', title: 'Pets!', notes: [
+    'Four super rare pets to collect, one per non-combat skill: something by the fishing spots, something that smells of burnt toast, someone rummaging through your junk, and a very familiar honk after Slayer tasks.',
+    'Each skill screen shows your odds right now. They improve a little with every level. Expect months, not days.',
+    'Found one? It follows you around: on your avatar, the Dad card, your share image, in fights and on the Ranks. Your collection lives on the Dad tab.',
+  ]},
+  {v: '0.17', title: 'Auto-eat', notes: [
+    'New <b>Auto-eat</b> toggle on the Fight tab. When your health drops below 50%, your dad eats his best fish instead of attacking that round. The enemy still swings, so eating costs a turn.',
+    'Works in <b>fight idle</b> too: your dad eats instead of resting, as long as there\'s food in the bag. Fish in the morning, fight in the afternoon.',
+    'Green splats in the fight show what he ate. Eat and Potion buttons are locked during a fight now: auto-eat does the eating there.',
+  ]},
+  {v: '0.16.2', title: 'Fight screen fixes', notes: [
+    'A beaten enemy now stays beaten on screen, instead of popping back to full health after the fight.',
+    'Your health during a fight now keeps ticking up like it does on the server, so the number no longer jumps when the next fight starts.',
+  ]},
+  {v: '0.16.1', title: 'Always the newest version', notes: [
+    'GFD now checks for updates by itself and reloads to the newest version. No more playing on an old copy that can\'t save.',
+    'Played on an old version after the server move? That progress didn\'t count, sorry. Your real dad is safe on the server.',
+  ]},
+  {v: '0.16', title: 'Your dad moved to the server', notes: [
+    'Every catch, fight, drop and coin is now decided on the server, not on your phone. No more cheating: the <b>Ranks</b> are 100% honest.',
+    'Your progress came along. Nothing lost.',
+    'Your <b>cloud code</b> is now the only key to your dad. Copy it from the Dad tab and keep it safe: type it on any phone and he\'s back. The old long save codes are gone.',
+    'You need internet to play. While your phone is off, your dad keeps fishing on the server for as long as your idle time lasts.',
+  ]},
+  {v: '0.15', title: 'Ranks, fast cooking and this very popup', notes: [
+    'Highscores moved to their own tab: <b>Ranks</b>. Plenty of room for every dad in the neighbourhood.',
+    'Cooking is much faster: one try every <b>5 seconds</b> instead of a minute. Cook your whole catch in no time, then your dad goes back to fishing by himself.',
+    "This <b>What's New</b> popup. You'll see it once after every update, so you always know what changed.",
+  ]},
+  {v: '0.14', title: 'Cloud saves', notes: [
+    'Your dad now saves to the cloud. Find your <b>cloud code</b> on the Dad tab and copy it somewhere safe: type it on any phone and your dad comes back.',
+    'Live highscores for all dads.',
+  ]},
+];
+const verNum = v => String(v || '0').split('.').reduce((a, x, i) => a + (+x || 0) / Math.pow(1000, i), 0);
+function showWhatsNew(sinceV, all) {
+  const list = all ? CHANGELOG : sinceV ? CHANGELOG.filter(c => verNum(c.v) > verNum(sinceV)) : CHANGELOG.slice(0, 2);
+  if (!list.length) return;
+  const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', "What's new");
+  el.innerHTML = `<div class="newscard"><p class="news-kicker">What's new in GFD</p>
+    ${list.map(c => `<section><h2>v${c.v}: ${c.title}</h2><ul>${c.notes.map(n => `<li>${n}</li>`).join('')}</ul></section>`).join('')}
+    <button class="btn" style="width:100%;margin-top:6px" data-act="closeShare">Got it</button></div>`;
+  $('#app').appendChild(el);
+  lsSet(LS.seen, CONFIG.version);
+}
+
+const UI_VERSION = '0.24-wip';   // must match CONFIG.version in engine.js (bump both with every update)
+const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
+if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
+  if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
+}
+const $ = s => document.querySelector(s);
+
+/* ---------- avatar ---------- */
+function shade(hex, a) { const n = parseInt(hex.slice(1), 16);
+  const f = v => Math.round(v * (1 - a)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+function isDark(hex) { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11) < 120; }
+
+const addNews = () => {};   // the rules call this; only the server collects news
+const BADGE_COLORS = ['', '#B8733A', '#BFC6D1', '#F2C230'];
+// the Neighbourhood Watch Badge: a little star pinned on the left of the shirt
+function badgePin(b) {
+  if (!(b > 0)) return ''; const c = BADGE_COLORS[b] || BADGE_COLORS[1];
+  return `<g transform="translate(22.5 54.5) scale(1.35)"><path d="M0 -3.6 L1.05 -1.1 L3.4 -1.1 L1.5 0.5 L2.2 3 L0 1.5 L-2.2 3 L-1.5 0.5 L-3.4 -1.1 L-1.05 -1.1Z" fill="${c}" stroke="${shade(c, .35)}" stroke-width=".55" stroke-linejoin="round"/>${b >= 3 ? '<circle cx="1.5" cy="-1.9" r=".6" fill="#fff"/>' : ''}</g>`;
+}
+const shownGear = sl => S.wear && S.wear[sl] >= 0 && !(S.hideGear && S.hideGear[sl]) ? S.wear[sl] : -1;   // hidden gear still protects, it just isn't drawn
+const myLook = () => Object.assign({}, S.look, {badge: S.badge || 0, head: shownGear('head'), body: shownGear('body')});
+// DIY gear drawings, tier 0-4: cardboard, duct tape, plywood, sheet metal, carbon fibre
+const GEAR_SVG = {
+  head: [
+    '<rect x="17.5" y="5" width="29" height="19" rx="1" fill="#C89A63" stroke="#9C7443" stroke-width="1"/><path d="M17.5 9.5 H46.5" stroke="#9C7443" stroke-width=".8"/><rect x="29.5" y="5" width="5" height="19" fill="#E8D7A8" opacity=".9"/>',
+    '<path d="M18.8 22 C18.8 13.5 24.5 9.5 32 9.5 C39.5 9.5 45.2 13.5 45.2 22Z" fill="#A9B0B6"/><path d="M21 17 H43 M20 20 H44 M23.5 13.5 H40.5" stroke="#8C949A" stroke-width="1.2"/><path d="M18.3 21.2 L46 21.2 C49 21.2 51.5 22.2 51.5 23.6 L18.3 23.6Z" fill="#8C949A"/>',
+    '<path d="M19 21 C19 12 24.5 8 32 8 C39.5 8 45 12 45 21Z" fill="#D7B07A"/><path d="M16.5 20.5 H47.5 V23.4 H16.5Z" fill="#B88C55"/><path d="M24 11 C27 13 28 17 27.5 20.5 M36 9.5 C37.5 12 38.5 15.5 38 20.5" stroke="#B88C55" stroke-width=".8" fill="none"/><rect x="30.5" y="8" width="3" height="13" fill="#C49862"/>',
+    '<path d="M19.5 22.5 L22.5 6.5 H41.5 L44.5 22.5Z" fill="#9AA4AC" stroke="#6E777E" stroke-width="1"/><rect x="21.5" y="5" width="21" height="2.6" rx="1" fill="#7E878E"/><path d="M20.6 17 H43.4" stroke="#6E777E" stroke-width=".8"/><path d="M20 21 C17 25 17.5 30 19.5 32" stroke="#6E777E" stroke-width="1.2" fill="none"/>',
+    '<path d="M18.5 23 C18 12 24 7.5 32 7.5 C40 7.5 46 12 45.5 23 L42 23 C41 17 37 14.5 32 14.5 C27 14.5 23 17 22 23Z" fill="#2B2F33"/><path d="M22.5 22 C23.5 17.5 27 15.3 32 15.3 C37 15.3 40.5 17.5 41.5 22" stroke="#4E555B" stroke-width="1.2" fill="none"/><path d="M24 10 L37 20 M29 8.4 L42 17.5 M20.6 14 L31 22" stroke="#40464B" stroke-width=".7"/><path d="M31 7.6 H33 V14.5 H31Z" fill="#D9483A"/>',
+  ],
+  body: [
+    '<path d="M14 64 L15 50 C20 47 25 46.5 32 46.5 C39 46.5 44 47 49 50 L50 64Z" fill="#C89A63" stroke="#9C7443" stroke-width=".9"/><path d="M15 56 H49" stroke="#9C7443" stroke-width=".8"/><rect x="29.5" y="47" width="5" height="17" fill="#E8D7A8" opacity=".85"/>',
+    '<path d="M12.5 64 C12.5 52 20 47 32 47 C44 47 51.5 52 51.5 64Z" fill="#A9B0B6"/><path d="M16 53 L30 64 M24 48.5 L41 64 M36 48 L50 60 M14 59 L20 64" stroke="#8C949A" stroke-width="2.2"/><path d="M27 47 V64 M37 47 V64" stroke="#C9D0D6" stroke-width="1"/>',
+    '<path d="M13 64 C12 55 13 50 16 48 H48 C51 50 52 55 51 64Z" fill="#B98A52"/><path d="M13.5 53 H50.5 M13 59 H51" stroke="#6E5233" stroke-width="1.6"/><path d="M22 48 V64 M32 48 V64 M42 48 V64" stroke="#9C7443" stroke-width=".6"/><path d="M20 48 L18.5 45 M44 48 L45.5 45" stroke="#6E5233" stroke-width="1.6"/>',
+    '<path d="M20 47.5 L25 50 M44 47.5 L39 50" stroke="#5A3E2B" stroke-width="1.6"/><circle cx="32" cy="56" r="10.5" fill="#9AA4AC" stroke="#6E777E" stroke-width="1"/><circle cx="32" cy="56" r="6.8" fill="none" stroke="#6E777E" stroke-width=".7"/><rect x="28" y="54.8" width="8" height="2.4" rx="1.2" fill="#6E777E"/>',
+    '<path d="M27 47.5 L25 44.5 M37 47.5 L39 44.5" stroke="#2B2F33" stroke-width="1.6"/><path d="M21.5 64 L21.5 52 C21.5 49 23.5 47.5 26.5 47.5 H37.5 C40.5 47.5 42.5 49 42.5 52 L42.5 64Z" fill="#2B2F33"/><path d="M32 61.5 C29 59.5 29.5 56.5 31 54.5 C31 56.5 32.5 57 32.5 55.5 C34.5 57.5 35 60 32 61.5Z" fill="#F07A2A"/>',
+  ],
+};
+function avatarSVG(L) {
+  const skin = LOOKS.skin[L.skin] || LOOKS.skin[0], hair = LOOKS.hairColor[L.hairColor] || LOOKS.hairColor[0];
+  const shirt = LOOKS.shirt[L.shirt] || LOOKS.shirt[0], bg = LOOKS.bg[L.bg] || LOOKS.bg[0], sd = shade(skin, .16);
+  const sides = `<path d="M19.3 28 C18.8 22 19.6 19 21 17.5 L22 28Z" fill="${hair}"/><path d="M44.7 28 C45.2 22 44.4 19 43 17.5 L42 28Z" fill="${hair}"/>`;
+  let top = '', cap = '';
+  const head = Number.isInteger(L.head) && L.head >= 0 ? GEAR_SVG.head[L.head] : '', body = Number.isInteger(L.body) && L.body >= 0 ? GEAR_SVG.body[L.body] : '';
+  if (L.hair === 'mohawk') top = `<path d="M20.2 24 C20 17 25 13.6 32 13.6 C39 13.6 44 17 43.8 24 C41.5 19.5 37.5 17.5 32 17.5 C26.5 17.5 22.5 19.5 20.2 24Z" fill="${hair}" opacity=".25"/><path d="M26.6 18 L27.2 9.5 L29.2 11.8 L30.2 3.4 L32.2 9 L34 3.8 L34.9 10.6 L37 8.2 L37.4 18 C35.6 16.6 33.8 16.1 32 16.1 C30.2 16.1 28.4 16.6 26.6 18Z" fill="${hair}"/>`;
+  if (L.hair === 'short') top = `<path d="M19.3 27 C18.5 16 23.5 11.5 32 11.5 C40.5 11.5 45.5 16 44.7 27 C43.6 21.5 41 19 37 18.6 C33 18.2 29 19.4 25 18.8 C22 19.6 20.2 22.5 19.3 27Z" fill="${hair}"/>`;
+  if (L.hair === 'messy') top = `<path d="M19 27 C17.5 18 21 12.5 26 11 L27 7.5 L30 10.5 L33 7 L35.2 10.6 L39.5 8.2 L39.8 12.4 C44.2 14.6 46.5 20 45 27 C43.5 22 40 19.5 35 20.5 L33 18 L30 20.5 C26 19 21.5 21 19 27Z" fill="${hair}"/>`;
+  if (L.hair === 'thinning') top = sides + `<path d="M29 13.4 C31 12.6 33 12.6 35 13.4 C33 14.4 31 14.4 29 13.4Z" fill="${hair}"/>`;
+  if (L.hair === 'bald') top = `<ellipse cx="26.5" cy="17" rx="3.6" ry="2" fill="#fff" opacity=".35"/>`;
+  if (L.hair === 'cap') { top = sides; const cd = shade(shirt, .28);
+    cap = `<path d="M18.8 22 C18.8 13.5 24.5 9.5 32 9.5 C39.5 9.5 45.2 13.5 45.2 22Z" fill="${shirt}"/><path d="M18.3 21.2 L46 21.2 C49 21.2 51.5 22.2 51.5 23.6 L18.3 23.6Z" fill="${cd}"/><circle cx="32" cy="9.8" r="1.4" fill="${cd}"/>`; }
+  if (head) { top = L.hair === 'bald' ? '' : sides; cap = head; }   // a helmet hides the hair and any cap
+  let beard = '';
+  const jaw = 'M19.6 29 C19.8 40 25 44.5 32 44.5 C39 44.5 44.2 40 44.4 29 C42.8 34.5 40 36.3 36.5 35.6 C34.5 35.2 33 34.6 32 34.6 C31 34.6 29.5 35.2 27.5 35.6 C24 36.3 21.2 34.5 19.6 29Z';
+  if (L.beard === 'full') beard = `<path d="${jaw}" fill="${hair}"/>`;
+  if (L.beard === 'stubble') beard = `<path d="M19.8 29.5 A12.5 14 0 0 0 44.2 29.5 C42.6 34.2 39.8 36 36.4 35.4 C34.6 35.1 33.2 34.5 32 34.5 C30.8 34.5 29.4 35.1 27.6 35.4 C24.2 36 21.4 34.2 19.8 29.5Z" fill="${hair}" opacity=".3"/>`;
+  if (L.beard === 'mustache') beard = `<path d="M25.6 36.4 C27 33.6 30.2 33.4 32 34.6 C33.8 33.4 37 33.6 38.4 36.4 C36.8 37.1 34.6 36.7 32 35.9 C29.4 36.7 27.2 37.1 25.6 36.4Z" fill="${hair}"/>`;
+  if (L.beard === 'handlebar') beard = `<path d="M23.6 32.6 C22.4 35.4 24.2 37.6 27 37 C28.8 36.6 30.6 35.8 32 36.3 C33.4 35.8 35.2 36.6 37 37 C39.8 37.6 41.6 35.4 40.4 32.6 C40.6 34.4 39.4 35.3 37.8 34.9 C35.8 34.4 33.8 33.4 32 34.2 C30.2 33.4 28.2 34.4 26.2 34.9 C24.6 35.3 23.4 34.4 23.6 32.6Z" fill="${hair}"/>`;
+  if (L.beard === 'walrus') beard = `<path d="M24.8 35.8 C25 33.4 28.4 32.8 32 33.8 C35.6 32.8 39 33.4 39.2 35.8 C39.4 38.4 38.6 40.4 37.8 40.6 C37.2 39.2 36 38.6 34.6 38.8 C33.6 38.9 32.8 38.6 32 38.2 C31.2 38.6 30.4 38.9 29.4 38.8 C28 38.6 26.8 39.2 26.2 40.6 C25.4 40.4 24.6 38.4 24.8 35.8Z" fill="${hair}"/>`;
+  const mouth = (L.beard === 'full' && isDark(hair)) ? '#F1D3C4' : '#6E3528';
+  const glasses = L.glasses ? `<g fill="#fff" fill-opacity=".18" stroke="#1E2427" stroke-width="1.3"><rect x="23" y="25" width="8" height="6" rx="2"/><rect x="33" y="25" width="8" height="6" rx="2"/><path d="M31 27.5 H33 M23 27 L19.8 26 M41 27 L44.2 26" fill="none"/></g>` : '';
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar">
+<rect width="64" height="64" fill="${bg}"/>
+<path d="M10 64 C10 51 19 45 32 45 C45 45 54 51 54 64Z" fill="${shirt}"/>
+${body}
+<rect x="27" y="36" width="10" height="11" rx="3" fill="${sd}"/>
+<path d="M27.5 45 L32 50.5 L36.5 45Z" fill="${sd}"/>
+<circle cx="19.5" cy="29" r="3.2" fill="${skin}"/><circle cx="44.5" cy="29" r="3.2" fill="${skin}"/>
+<ellipse cx="32" cy="27" rx="12.5" ry="14" fill="${skin}"/>
+${top}
+<path d="M24.6 24.4 Q27 23.2 29.4 24.4 M34.6 24.4 Q37 23.2 39.4 24.4" stroke="${hair}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<circle cx="27" cy="28" r="1.7" fill="#1D1D1D"/><circle cx="37" cy="28" r="1.7" fill="#1D1D1D"/>
+<path d="M32 29 Q30.6 32.5 32.6 33" stroke="${sd}" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+${beard}
+${L.beard === 'walrus' ? '' : `<path d="M29.2 37.8 Q32 39.8 34.8 37.8" stroke="${mouth}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`}
+${glasses}${cap}${badgePin(L.badge)}
+</svg>`;
+}
+
+/* ---------- icons ---------- */
+const ICON = {
+  yard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M12 3l6 8h-3l4 5H5l4-5H6z"/></svg>`,
+  coin: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/></svg>`,
+  bolt: `<svg viewBox="0 0 24 24"><path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="currentColor"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24"><path d="M12 21s-8.5-5.2-8.5-11.2A4.6 4.6 0 0 1 12 7.2a4.6 4.6 0 0 1 8.5 2.6C20.5 15.8 12 21 12 21z" fill="currentColor"/></svg>`,
+  dad: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg>`,
+  fish: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2.5 12c3.2-5 9.5-6.2 14.5-2l4.5-3.2v10.4L17 14c-5 4.2-11.3 3-14.5-2z"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>`,
+  pan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="13.5" r="6.5"/><path d="M15.6 9.8 22 5.5"/></svg>`,
+  sword: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5 9 15M20.5 3.5h-4.2M20.5 3.5v4.2M6.5 12.5l5 5M4 20l3.5-3.5"/></svg>`,
+  target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>`,
+  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6M10 17h4"/></svg>`,
+  shop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 9h16l-1.2 11H5.2z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke-linecap="round"/></svg>`,
+};
+
+
+/* ---------- state: the server owns your dad. S is just the last copy it sent us ---------- */
+let S = null;                 // null until there's a dad
+let draft = null, editing = false, tickerOpen = false, resetArmed = 0, ioMsg = '';
+let anim = null, arenaMsg = null;   // anim = fight being replayed; arenaMsg = last result under the arena
+let arenaEnd = null;               // how the last fight ended on screen (so a beaten enemy stays beaten)
+const animHp = () => clamp(anim.cur + (S.hp - anim.hp0), 0, anim.mh);
+const LS = {code: 'gfd_code', cache: 'gfd_cache', tab: 'gfd_tab', copied: 'gfd_code_copied', seen: 'gfd_seen', legacy: 'gfd_save_v1', moved: 'gfd_moved'};
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, String(v)); } catch (e) {} };
+const myCode = () => lsGet(LS.code);
+// keeps a copy on the phone so the game opens instantly; the server's copy is the real one
+function save() { if (S) lsSet(LS.cache, JSON.stringify(S)); }
+
+/* ---------- feedback ---------- */
+const toastQ = []; let toastBusy = false;
+function toast(text) { toastQ.push(text); if (!toastBusy) nextToast(); }
+function nextToast() { const t = toastQ.shift(); if (!t) { toastBusy = false; return; } toastBusy = true;
+  const el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
+  $('#app').appendChild(el); setTimeout(() => { el.remove(); nextToast(); }, toastQ.length > 1 ? 1100 : 1800); }
+function pop(text, btn, color = '') {
+  if (!btn || !btn.isConnected) return; const r = btn.getBoundingClientRect();
+  const el = document.createElement('div'); el.className = 'pop ' + color; el.textContent = text;
+  el.style.left = (r.left + r.width / 2) + 'px'; el.style.top = (r.top - 8) + 'px';
+  $('#fx').appendChild(el); setTimeout(() => el.remove(), 950);
+}
+
+
+// eating or drinking mid-fight ends it: you keep the damage taken so far, the enemy gets away, no rewards
+function stopFight() {
+  if (!anim) return; clearInterval(anim.timer);
+  S.hp = animHp(); arenaEnd = {g: anim.g, ehp: anim.ehp}; anim = null;   // the heal request that follows makes the server stop the fight
+}
+
+/* ---------- rendering ---------- */
+function regenText(v, max, at) {
+  if (v >= max) return 'Full';
+  const next = Math.max(0, at + CONFIG.regenMs - now()), full = (max - v - 1) * CONFIG.regenMs + next;
+  return `+1 in ${clock(next)}, full in ${dur(full)}`;
+}
+function barHTML(kind, icon, v, max, sub, label) {
+  return `<div class="bar ${kind}" aria-label="${label} ${v} of ${max}"><span class="bicon">${icon}</span>
+  <div><div class="track"><div class="fill" style="width:${Math.min(100, v / max * 100)}%"></div></div><div class="sub">${sub}</div></div>
+  <div class="barnum">${fmt(v)}<small>/${fmt(max)}</small></div></div>`;
+}
+function idleLine() {
+  const a = S.activity, c = cookPick(), tk = tradePick();
+  const what = a === 'diy' ? 'taking junk apart' : a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
+  return `Idle: ${what}, next in <b id="actBarH"></b>`;
+}
+function actMenu() {
+  const pick = (a, label, why, detail) => { const on = S.activity === a;
+    return `<button class="pick act-pick" data-act="pickAct" data-a="${a}" aria-pressed="${on}" ${!on && why ? 'disabled' : ''}>
+      <span class="pn">${label}${on ? ' <span class="lvtag">doing now</span>' : ''}</span><span class="pm">${!on && why ? why : detail}</span></button>`; };
+  const c = cookPick(), k = tradePick(), d = dismantlePick();
+  openSheet(`<p class="news-kicker">What should your dad do?</p><p class="small">One thing at a time. The farm grows next to it either way.</p>
+    <div class="panel" style="margin-top:10px">
+      ${pick('fish', 'Fishing', '', `${FISH[S.spot].name} spot, one cast a minute`)}
+      ${pick('cook', 'Cooking', c < 0 ? 'No raw fish you can cook' : '', c >= 0 ? `Next: ${makesMeal(c) ? CONFIG.meals[c] : FISH[c].name}` : '')}
+      ${pick('trade', 'Trading', k ? '' : 'Nothing to sell', k ? `Next: ${lootInfo(k).name}` : '')}
+      ${pick('wood', 'Woodcutting', '', `${TREES[S.tree].name}, one log a minute`)}
+      ${pick('brew', 'Brewing', brewPickNow() < 0 ? 'Need a log and a vegetable' : '', brewPickNow() >= 0 ? `Next: ${BEERS[brewPickNow()].name}` : '')}
+      ${pick('diy', 'DIY', d ? '' : 'No junk to take apart', d ? `Next: ${lootInfo(d).name}` : '')}
+      ${pick('fight', 'Fight idle', S.hp <= 0 ? 'Knocked out, heal first' : '', `${AREAS[S.area].place}, one fight a minute`)}
+    </div>`);
+}
+function renderTop() {
+  if (!S || editing === 'setup') { $('#top').innerHTML = ''; return; }
+  const mh = anim ? anim.mh : maxHP(), hpNow = anim ? animHp() : S.hp, coinsNow = anim ? anim.coins0 : S.coins;
+  $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(myLook())}${petBadge(S.petOut, 'sm')}</div>
+    <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
+    <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
+    <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, (anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt)) + (S.buff ? ` · 🍺 ${S.buff.left}` : ''), 'Health')}</div>
+    <button class="idleline" data-act="actMenu" aria-label="Change what your dad is doing">${idleLine()} <span class="il-caret">&#9662;</span></button>
+    ${updateReady ? `<button class="updatebar" data-act="reloadApp">New version ${esc(updateReady)} is ready. Tap to update</button>` : ''}`;
+  updateProgress();
+}
+// progress bars for the next fishing cast / cooking attempt / idle fight, updated every second
+function updateProgress() {
+  // the server only counts finished rounds, so between syncs we run the clock forward ourselves:
+  // when a round ends the bar starts the next one right away instead of sitting full until the server answers
+  const left = (at, ms) => { const e = now() - at; return e < ms ? ms - e : ms - (e % ms); };
+  const set = (id, at, ms) => { const el = document.getElementById(id); if (!el) return;
+    el.style.width = clamp((ms - left(at, ms)) / ms * 100, 0, 100) + '%';
+    const lab = document.getElementById(id + 'T'); if (lab) lab.textContent = clock(left(at, ms)); };
+  set('actBar', S.actAt, actMs(S.activity));
+  let flip = false; document.querySelectorAll('.plotT[data-end]').forEach(el => { const left = +el.dataset.end - now(); if (left <= 0) flip = true; else el.textContent = ptime(left); });
+  if (flip && !anim && !editing) setTimeout(renderMain, 0);
+  const h = document.getElementById('actBarH'); if (h) h.textContent = clock(left(S.actAt, actMs(S.activity)));
+}
+function skillHTML(k, compact) {
+  const x = S.xp[k], l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo;
+  const w = l < 100 ? (x - lo) / (hi - lo) * 100 : 100;
+  return `<section class="skill${compact ? ' compact' : ''}"><div><h2>${SKILLS[k]}</h2>
+    <div class="xpline">${l < 100 ? `${fmt(hi - x)} xp to level ${l + 1}` : 'Max level'}</div></div>
+    <div class="lvl" aria-label="Level ${l}">${l}</div><div class="xpbar"><div style="width:${w}%"></div></div></section>`;
+}
+// show what's unlocked plus the next locked thing as a goal, nothing more
+const visibleCount = (list, level) => Math.min(list.length, list.filter(x => x.req <= level).length + 1);
+const progHTML = (id, label) => `<div class="prog"><div class="prog-track"><div class="prog-fill" id="${id}"></div></div><span class="prog-t">${label} <b id="${id}T"></b></span></div>`;
+
+// a "switch to this" button for an idle activity that isn't running
+const actBtn = (a, label, why) => `<button class="btn alt" style="width:100%;margin-top:10px" data-act="activity" data-a="${a}" ${why ? 'disabled' : ''}>${label}<small>${why || `Stops ${ACT[S.activity]}`}</small></button>`;
+const doingNow = () => `<p class="small note doing">Right now your dad is <b>${ACT[S.activity]}</b>.</p>`;
+// a little pet badge in the corner of an avatar
+const petBadge = (k, cls = '') => k && CONFIG.pets[k] ? `<span class="pbadge ${cls}" title="${esc(CONFIG.pets[k].name)}">${CONFIG.pets[k].svg || CONFIG.pets[k].icon}</span>` : '';
+// a small folding explanation, so the screen stays calm but the "why" is one tap away
+const helpBox = (title, html) => `<details class="help"><summary><span class="q">?</span> ${title}</summary><div class="help-body">${html}</div></details>`;
+// a popup card on top of the game (same look as What's New); tapping outside or a button closes it
+function openSheet(html) {
+  closeShare(); const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog');
+  el.innerHTML = `<div class="newscard">${html}<button class="sbtn" style="width:100%;margin-top:10px" data-act="closeShare">Close</button></div>`;
+  $('#app').appendChild(el);
+}
+function petLine(k) {   // under each pet skill: only once you have him (the odds live in the pet collection)
+  const P = CONFIG.pets[k];
+  if (!S.pets[k]) return '';
+  return `<p class="small petline">${`${P.svg ? `<span class="inl-pet">${P.svg}</span>` : P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.`}</p>`;
+}
+const ptime = ms => { const m = Math.ceil(Math.max(0, ms) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
+const icon = x => x.svg || x.icon;
+function plotTile(p, i) {
+  if (p.c == null) { const c = bestSeed();
+    return `<button class="plot empty" data-act="plot" data-i="${i}" ${c < 0 ? 'disabled' : ''}><span class="plot-ic">+</span><b>Plant</b><small>${c >= 0 ? CROPS[c].name : 'No seeds'}</small></button>`; }
+  const C = CROPS[p.c], end = p.at + growMs(p.c), ready = now() >= end;
+  return `<button class="plot${ready ? ' ready' : ''}" data-act="plot" data-i="${i}"><span class="plot-ic">${C.icon}</span><b>${ready ? 'Harvest!' : C.name}</b>
+    <small>${ready ? C.name + ' is ready' : `<span class="plotT" data-end="${end}">${ptime(end - now())}</span>`}</small></button>`;
+}
+function farmCard() {
+  const anyReady = S.plots.some(plotReady), seeds = CROPS.map((C, c) => S.seeds[c] ? `${S.seeds[c]} ${C.name} seed${S.seeds[c] > 1 ? 's' : ''}${lvl('farming') < C.req ? ` (needs Farming ${C.req})` : ''}` : '').filter(Boolean).join(', ');
+  return `<section class="idlecard farm"><div class="farmhead"><p class="stage-title">Farm</p><span class="lvtag">Farming ${lvl('farming')}</span></div>
+    <div class="plots">${S.plots.map(plotTile).join('')}</div>
+    ${anyReady && S.plots.length > 1 ? '<button class="btn" style="width:100%;margin-top:10px" data-act="tendAll">Harvest and replant all</button>' : ''}
+    <p class="small" style="margin-top:8px">${seeds ? `In the seed bag: ${seeds}.` : `No seeds yet. Every monster can drop one (${rate(CONFIG.seedChance)}), better areas drop better seeds.`}</p>
+    ${petLine('farming')}
+</section>`;
+}
+function cookCard() {
+  const c = cookPick(), on = S.activity === 'cook';
+  let title = 'Nothing to cook', meta = 'Catch some fish first.';
+  if (c >= 0) { const C = CROPS[vegOf(c)], meal = CONFIG.meals[c];
+    if (makesMeal(c)) { title = `${on ? 'Cooking' : 'Next'}: ${FISH[c].name} + ${C.name} = ${meal}`; meta = `Meals heal double (${mealHeal(c)} instead of ${FISH[c].heal}) and give 50% more xp.`; }
+    else { title = `${on ? 'Cooking' : 'Next'}: ${FISH[c].name}`; meta = `With a ${C.name} it would become ${meal}, healing ${mealHeal(c)} instead of ${FISH[c].heal}.`; }
+    meta += ` ${pct(1 - cookChance(c))} burn chance, one try every ${CONFIG.cookSeconds} seconds.`; }
+  const raw = FISH.map((x, j) => S.raw[j] ? `${S.raw[j]} ${x.name}${lvl('cooking') < x.req ? ` (needs Cooking ${x.req})` : ''}` : '').filter(Boolean).join(', ');
+  const veg = CROPS.map((C, j) => S.veg[j] ? cropN(j, S.veg[j]) : '').filter(Boolean).join(', ');
+  return `<section class="idlecard${on ? ' active' : ''}"><p class="stage-title">${title}</p><p class="stage-meta">${meta}</p>${petLine('cooking')}
+    ${on ? progHTML('actBar', 'Next try in') : actBtn('cook', 'Start cooking', c < 0 ? 'No raw fish' : '')}
+    ${raw || veg ? `<p class="small" style="margin-top:8px">In the pantry: ${[raw, veg].filter(Boolean).join(', ')}.</p>` : ''}</section>`;
+}
+function fishTab() {
+  const i = S.spot, f = FISH[i], L = lvl('fishing'), full = S.hp >= maxHP();
+  const spots = FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
+    return `<button class="pick" data-act="spot" data-i="${j}" aria-pressed="${j === i}" ${locked ? 'disabled' : ''}>
+      <span class="pn">${x.name}</span><span class="pm">${locked ? `Opens at Fishing ${x.req}` : `${pct(catchChance(j))} catch, ${x.xp} xp, heals ${x.heal} when cooked`}</span></button>`; }).join('');
+  // pantry: a compact list, best first (meals above plain fish). Eating happens with one button or auto-eat.
+  const food = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0].flatMap(j => [S.meals[j] ? `<span class="pchip meal">${CONFIG.meals[j]} <b>${S.meals[j]}</b></span>` : '',
+    S.cooked[j] ? `<span class="pchip">${FISH[j].name} <b>${S.cooked[j]}</b></span>` : '']).join('');
+  const bi = smartPick(foodList(), foodHeals());
+  return `<div class="duo trio">${skillHTML('fishing', true)}${skillHTML('farming', true)}${skillHTML('cooking', true)}</div>
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'fish' ? ' active' : ''}"><p class="stage-title">${S.activity === 'fish' ? 'Fishing' : 'Fish'} at the ${f.name} spot</p>
+    <p class="stage-meta">${pct(catchChance(i))} catch chance, one cast every ${CONFIG.fishSeconds} seconds.</p>${petLine('fishing')}
+    ${S.activity === 'fish' ? progHTML('actBar', 'Next cast in') : actBtn('fish', 'Go fishing', '')}</section>
+  ${farmCard()}
+  ${cookCard()}
+  <h3 class="sect">Pantry</h3>
+  <div class="pantry">${food || '<p class="small">Nothing to eat yet. Cooked fish heals you, meals heal double.</p>'}
+    ${food ? `<button class="sbtn solid" style="margin-top:8px" data-act="eatBest" ${bi < 0 || full ? 'disabled' : ''}>${full ? 'Health is full' : `Eat ${foodName(bi)} (+${foodHeals()[bi]})`}</button>` : ''}</div>
+  <details class="fold"><summary>Change fishing spot</summary><p class="small note">A better fish every 10 Fishing levels. Better fish give more xp and heal more.</p><div class="panel">${spots}</div></details>
+  ${helpBox('How food works', `<p>Your dad does <b>one thing at a time</b>: fishing, cooking, trading, DIY or fight idle. The farm grows next to it. Idle keeps going for up to ${dur(idleWindowMs())} after you close the game.</p>
+    <p><b>Cooking</b> always takes your best raw fish. With the matching vegetable it becomes a <b>meal</b>: heals double, 50% more xp.</p>
+    <p><b>Farming:</b> monsters drop seeds (${rate(CONFIG.seedChance)} per kill), better areas drop better seeds. Crops grow on their own and wait for you when ready. More plots in the Shed.</p>`)}`;
+}
+
+function arenaHTML() {
+  const A = AREAS[S.area], mh = anim ? anim.mh : maxHP(), php = anim ? animHp() : S.hp;
+  const g = anim ? anim.g : (S.lastFoe != null && ENEMIES[S.lastFoe].area === S.area ? S.lastFoe : null), E = g != null ? ENEMIES[g] : null;
+  const ehp = anim ? anim.ehp : !E ? 0 : arenaEnd && arenaEnd.g === g ? arenaEnd.ehp : E.hp;   // after a fight: show how it ended
+  const tb = E && onTask(g) ? badgeBonus() : 0;   // the badge only counts against your task enemy
+  const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0)) * (1 + tb)) : 0, eMax = E ? enemyMax(E) : 0;
+  const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
+  const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
+  return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
+    <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(myLook())}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
+      <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
+      <div class="fname"><span>${esc(S.name)}</span>${weapon() ? `<em class="wname">${weapon().name}</em>` : ''}<b id="youHpNum">${php}/${mh}</b></div>${E ? fst(Math.min(CONFIG.hitMax, pHit(lvl('attack'), E.lvl) + tb), youMax) : ''}</div>
+    <div class="vs">vs</div>
+    <div class="fighter"><div class="portrait foe${E && ehp <= 0 ? ' down' : ''}" id="foeBox" style="background:${A.tint}"><span class="emo" aria-hidden="true">${E ? E.icon : '❔'}</span></div>
+      <div class="hpbar${E ? '' : ' empty'}"><div id="foeHp" style="width:${E ? ehp / E.hp * 100 : 100}%"></div></div>
+      <div class="fname"><span>${E ? E.name : 'Who knows?'}</span><b id="foeHpNum">${E ? `${ehp}/${E.hp}` : '?'}</b></div>${E ? fst(Math.min(0.95, E.acc + CONFIG.enemyAccBonus), eMax) : ''}</div>
+    <p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p></section>`;
+}
+function healBtnsHTML(hp) {
+  if (anim) return `<button class="btn alt" disabled>Eat<small>${S.autoEat ? 'Auto-eat is on' : 'Not during a fight'}</small></button>
+    <button class="btn red" disabled>Potion<small>Not during a fight</small></button>`;
+  const mh = maxHP(), food = foodList().reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
+  const fi = smartPick(foodList(), foodHeals(), hp), pi = smartPick(S.pots, AREAS.map(a => a.potion[1]), hp);
+  return `<button class="btn alt" data-act="eatBest" ${fi < 0 || hp >= mh ? 'disabled' : ''}>Eat (${food})<small>${fi >= 0 ? `${foodName(fi)}, heals ${foodHeals()[fi]}` : 'No food'}</small></button>
+    <button class="btn red" data-act="drinkBest" ${pi < 0 || hp >= mh ? 'disabled' : ''}>Potion (${pots})<small>${pi >= 0 ? `${AREAS[pi].potion[0]}, heals ${AREAS[pi].potion[1]}` : 'None yet'}</small></button>`;
+}
+function taskBanner() {
+  if (!S.task) return '';
+  const E = ENEMIES[S.task.e];
+  return `<button class="taskline" data-act="tab" data-t="slayer"><span>Slayer task</span><b>${S.task.done}/${S.task.n} ${plural(E.name, S.task.n)}</b><span>${AREAS[E.area].place}</span></button>`;
+}
+function fightTab() {
+  const A0 = AREAS[S.area], C = combatLevel(), A = lvl('attack'), St = lvl('strength'), D = lvl('defence'), mh = maxHP();
+  const areas = AREAS.slice(0, visibleCount(AREAS, C)).map((a, j) => { const locked = C < a.req;
+    return `<button class="pick" data-act="area" data-i="${j}" aria-pressed="${j === S.area}" ${locked ? 'disabled' : ''}>
+      <span class="pn">${a.place}</span><span class="pm">${locked ? `Opens at combat level ${a.req}` : `${a.enemies.map(e => e.icon).join(' ')} Made for combat level ${a.req} to ${a.req + 9}`}</span></button>`; }).join('');
+  const styles = STYLES.map(([k, name]) => `<button class="chip style" data-act="style" data-s="${k}" aria-pressed="${S.style === k}">${name}<small>Trains ${SKILLS[k]}</small></button>`).join('');
+  const foes = A0.enemies.map((e0, k) => { const g = S.area * 5 + k, e = ENEMIES[g], eMax = enemyMax(e);   // ENEMIES has the scaled health
+    return `<div class="foe-row${onTask(g) ? ' task' : ''}"><span class="foe-ic" style="background:${A0.tint}">${e.icon}</span><div class="row-main">
+      <div class="row-name">${e.name} <span class="lvtag">level ${e.lvl}</span>${onTask(g) ? ' <span class="lvtag task">task</span>' : ''}</div>
+      <div class="row-meta">${e.blurb}</div>
+      <div class="stats-row"><span class="st hp" title="Health">${ICON.heart}${e.hp}</span><span class="st" title="Max hit after your Defence">${ICON.sword}${eMax}</span>
+        <span class="st gold" title="Coins">${ICON.coin}${fmt(Math.max(1, Math.round(e.coins * 0.6)))}-${fmt(Math.round(e.coins * 1.4))}</span><span class="kc-tag">Beaten ${fmt(S.kc[g])}</span></div>
+      <div class="row-meta">Drops ${e.junk[0]} ${rate(CONFIG.junkChance)}, ${A0.potion[0]} ${rate(e.potion)}, ${CROPS[vegOf(S.area)].name} Seed ${rate(CONFIG.seedChance)}</div></div></div>`; }).join('');
+  let hint = '';
+  if (S.hp <= 0) hint = 'Knocked out. Eat, drink a potion or rest. Health comes back 1 per minute.';
+  else if (S.hp < Math.ceil(mh * CONFIG.restBelow)) hint = 'Health is low. One bad fight could knock you out.';
+  return `<details class="areapick"><summary><span class="ap-label">Area</span><b>${A0.place}</b><span class="ap-meta">combat ${A0.req} to ${A0.req + 9}</span><span class="ap-caret">&#9662;</span></summary>
+    <p class="small note" style="margin:8px 2px">A new area opens every 10 combat levels (combat level ${C}).</p><div class="panel">${areas}</div></details>
+  ${arenaHTML()}
+  <section class="stage tight"><div class="actions">
+    <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim || fightAsked ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
+    <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
+    <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat ? `${foodList().reduce((a, b) => a + b, 0)} food in the bag` : `Eat below ${pct(CONFIG.autoEatBelow)} health`}</small></button>
+    <button class="btn idle${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Back to fishing' : `1 fight a minute`}</small></button></div>
+    ${beerLine()}
+    ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
+    ${hint ? `<p class="hint">${hint}</p>` : ''}</section>
+  ${taskBanner()}
+  <h3 class="sect">Your fighting</h3>
+  <div class="duo quad">${skillHTML('attack', true)}${skillHTML('strength', true)}${skillHTML('defence', true)}${skillHTML('hitpoints', true)}</div>
+  <div class="styles" role="group" aria-label="Combat style">${styles}</div>
+  <details class="fold"><summary>Slayer: level ${lvl('slayer')}, ${S.slayerPts} point${S.slayerPts === 1 ? '' : 's'}</summary>${slayerTab()}</details>
+  <details class="fold"><summary>Enemies in ${A0.place}</summary>
+    <p class="small note">Each fight is a random one of these five${S.task && ENEMIES[S.task.e].area === S.area ? `. Your task enemy shows up ${pct(CONFIG.slayerEncounter)} of the time while on task` : ''}. Any of them can drop the ${A0.weapon.icon} ${A0.weapon.name} (${rate(CONFIG.rareChance)}).</p>
+    <p class="small note legend"><span class="st hp">${ICON.heart}</span> health <span class="st">${ICON.sword}</span> max hit, after your Defence <span class="st gold">${ICON.coin}</span> coins</p>
+    <div class="panel">${foes}</div></details>
+  ${helpBox('How fights work', `
+    <p><b>Style:</b> fight xp goes to the skill your style trains. Hitpoints gets a third as much on top.</p>
+    <p><b>Attack ${A}:</b> 60% hit chance against an enemy your level, plus 2% per level above it, minus 2% per level below.</p>
+    <p><b>Strength ${St}:</b> +${Math.round(CONFIG.dmgPerLvl * St * 100)}% damage, you hit 1 to ${pMaxHit(St)} with bare hands.</p>
+    <p><b>Weapon:</b> ${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage, so you hit up to ${Math.round(pMaxHit(St) * (1 + weaponBonus()))}.` : 'none yet. Every area has a rare weapon drop.'}</p>
+    <p><b>Defence ${D}:</b> you take ${pct1(defRed(D))} less damage${armourRed() ? `, plus ${pct(armourRed())} from your gear` : ''}.</p>
+    <p><b>Hitpoints ${lvl('hitpoints')}:</b> ${mh} max health, +1 every minute.</p>
+    <p><b>Slayer ${lvl('slayer')}:</b> +${pct1(slayerBonus())} damage against your task enemy.</p>
+    <p><b>Eating:</b> Eat and Potion pick the biggest heal that won't go over your max health. During a fight only auto-eat can eat: below ${pct(CONFIG.autoEatBelow)} health your dad eats instead of attacking that round, never twice in a row. Green splats show what he ate.</p>
+    <p class="why">In the fight screen, <span class="st">${ICON.target}</span> is the chance to hit and <span class="st">${ICON.sword}</span> the max hit. A blue 0 is a miss, or a hit fully blocked by your Defence.</p>`)}`;
+}
+
+// the YARD: chop wood, brew beer, drink beer (the buff lasts a number of fights)
+const beerLine = () => S.buff ? `<p class="small beerline">🍺 <b>${BEERS[S.buff.b].name}</b>: ${buffText(S.buff.b)}, ${S.buff.left} fight${S.buff.left === 1 ? '' : 's'} left</p>` : '';
+function yardTab() {
+  const L = lvl('woodcutting'), BL = lvl('brewing'), T = TREES[S.tree], bi = brewPickNow(), shown = S.brewPick >= 0 ? S.brewPick : bi;
+  const trees = TREES.slice(0, visibleCount(TREES, L)).map((x, j) => { const locked = L < x.req;
+    return `<button class="pick" data-act="tree" data-i="${j}" aria-pressed="${j === S.tree}" ${locked ? 'disabled' : ''}><span class="pn">${x.name}</span>
+      <span class="pm">${locked ? `Opens at Woodcutting ${x.req}` : `${x.xp} xp a log. ${x.desc}`}</span></button>`; }).join('');
+  const picks = `<button class="pick" data-act="brewPick" data-i="-1" aria-pressed="${S.brewPick < 0}"><span class="pn">Best I can make</span><span class="pm">Picks the best beer you have ingredients for</span></button>`
+    + BEERS.slice(0, visibleCount(BEERS, BL)).map((b, i) => { const locked = BL < b.req;
+      return `<button class="pick" data-act="brewPick" data-i="${i}" aria-pressed="${S.brewPick === i}" ${locked ? 'disabled' : ''}><span class="pn">${b.name}</span>
+        <span class="pm">${locked ? `Opens at Brewing ${b.req}` : `${buffText(i)}. Needs ${TREES[i].name} log + ${CROPS[vegOf(i)].name}`}</span></button>`; }).join('');
+  const logs = TREES.map((x, i) => S.logs[i] ? `${S.logs[i]} ${x.name}` : '').filter(Boolean).join(', ');
+  const cellar = BEERS.map((b, i) => S.beers[i] ? `<button class="pchip beer${S.buff && S.buff.b === i ? ' on' : ''}" data-act="drink" data-i="${i}">${b.name} <b>${S.beers[i]}</b></button>` : '').join('');
+  const B = shown >= 0 ? BEERS[shown] : null;
+  return `${helpBox("What's in the Yard", `<p><b>Woodcutting</b> gives logs, one a minute from the best tree you can chop. <b>Brewing</b> turns 1 log + 1 vegetable into a beer, one every ${CONFIG.brewSeconds} seconds.</p>
+      <p><b>Beer</b> buffs your next ${CONFIG.beerFights} fights (also fight idle). One at a time. When it runs out your dad opens the same kind again, or else his best one. Tap a beer in the cellar to switch.</p>
+      <div class="beer-table">${BEERS.map((b, i) => `<div><b>${b.name}</b> <span class="lvtag">Brewing ${b.req}</span><br>${buffText(i)}. ${TREES[i].name} log + ${CROPS[vegOf(i)].name}. <i>${b.desc}</i></div>`).join('')}</div>`)}
+  <div class="duo">${skillHTML('woodcutting', true)}${skillHTML('brewing', true)}</div>
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'wood' ? ' active' : ''}"><p class="stage-title">${S.activity === 'wood' ? 'Chopping' : 'Chop'} the ${T.name}</p>
+    <p class="stage-meta">One log every ${CONFIG.woodSeconds} seconds. <i>${T.desc}</i></p>${petLine('woodcutting')}
+    ${S.activity === 'wood' ? progHTML('actBar', 'Next log in') : actBtn('wood', 'Start chopping', '')}
+    <p class="small" style="margin-top:8px">${logs ? `Log pile: ${logs}.` : 'No logs yet.'}</p></section>
+  <section class="idlecard${S.activity === 'brew' ? ' active' : ''}">
+    <details class="areapick"><summary><span class="ap-label">Brewing</span><b>${S.brewPick < 0 ? 'Best I can make' : BEERS[S.brewPick].name}</b><span class="ap-caret">&#9662;</span></summary><div class="panel">${picks}</div></details>
+    <p class="stage-meta">${B ? `Next: <b>${B.name}</b> (${buffText(shown)}). Needs 1 ${TREES[shown].name} log + 1 ${CROPS[vegOf(shown)].name}, you have ${S.logs[shown]} and ${S.veg[vegOf(shown)]}.` : 'Nothing to brew: you need a log and the matching vegetable.'}</p>${petLine('brewing')}
+    ${S.activity === 'brew' ? progHTML('actBar', 'Next beer in') : actBtn('brew', 'Start brewing', bi < 0 ? 'Need a log and a vegetable' : '')}</section>
+  <h3 class="sect">Cellar</h3>
+  <div class="pantry">${S.buff ? beerLine() : '<p class="small" style="flex-basis:100%;margin:0 0 4px">No beer open. Tap one to crack it open.</p>'}${cellar || '<p class="small">The cellar is empty. Brew something.</p>'}</div>
+  <details class="fold"><summary>Change tree</summary><div class="panel">${trees}</div></details>`;
+}
+function slayerTab() {
+  const T = S.task, E = T ? ENEMIES[T.e] : null;
+  const task = T
+    ? `<div class="upgrade"><h3 class="sect">Current task${T.ext ? ' (extended)' : ''}</h3>
+        <div class="taskhead"><span class="foe-ic big" style="background:${AREAS[E.area].tint}">${E.icon}</span><div>
+          <div class="big">${T.done}<span class="of">/${T.n}</span></div><div class="row-name">${plural(E.name, T.n)}</div></div></div>
+        <div class="track"><div class="fill" style="width:${T.done / T.n * 100}%"></div></div>
+        <p class="small" style="margin-top:8px">Found in ${AREAS[E.area].place}, level ${E.lvl}. While on this task it shows up ${pct(CONFIG.slayerEncounter)} of the time there, and you deal +${pct1(slayerBonus())} damage to it.</p>
+        <p class="small">When done: +${fmt(Math.round(T.n * E.xp * CONFIG.slayerXpPerKill))} Slayer xp and ${T.ext ? 2 : 1} Slayer point${T.ext ? 's' : ''}.</p>
+        <button class="btn" data-act="goTask">Go to ${AREAS[E.area].place}</button></div>`
+    : `<div class="upgrade"><h3 class="sect">No task</h3><p class="small">The Slayer master picks an enemy from your best area or the one below it. Beat enough of them for Slayer xp and a point.</p>
+        <button class="btn" data-act="newTask">Get a task</button></div>`;
+  const best = Math.max(0, unlockedAreas() - 1), p = S.slayerPts;
+  const item = (name, meta, cost, act, label, ok) => `<div class="row"><div class="row-main"><div class="row-name">${name}</div><div class="row-meta">${meta}</div></div>
+      <button class="sbtn solid" data-act="${act}" ${ok ? '' : 'disabled'}>${label}</button></div>`;
+  const store = item('Cancel task', `${CONFIG.slayerCancelCost} point. Drop your current task and get a new one.`, CONFIG.slayerCancelCost, 'cancelTask', 'Cancel', T && p >= CONFIG.slayerCancelCost)
+    + (S.extendOwned
+      ? `<div class="row"><div class="row-main"><div class="row-name">Task extension</div><div class="row-meta">Owned. New tasks are 50% bigger, give 50% more xp and 2 points.</div></div>
+         <button class="switch${S.extendOn ? ' on' : ''}" data-act="toggleExtend" role="switch" aria-checked="${S.extendOn}" aria-label="Task extension"><span></span></button></div>`
+      : item('Task extension', `${CONFIG.slayerExtendCost} points, unlock once. New tasks get 50% more kills, 50% more xp and 2 points.`, CONFIG.slayerExtendCost, 'buyExtend', 'Buy', p >= CONFIG.slayerExtendCost))
+    + item(`${CONFIG.slayerPotionPack} ${AREAS[best].potion[0]}`, `${CONFIG.slayerPotionCost} point. Potions from your best area, heal ${AREAS[best].potion[1]} each.`, CONFIG.slayerPotionCost, 'buyPotions', 'Buy', p >= CONFIG.slayerPotionCost);
+  return `${skillHTML('slayer')}
+${petLine('slayer')}
+  ${task}
+  <h3 class="sect">Slayer store</h3><p class="small note">You have <b class="pts">${p}</b> Slayer point${p === 1 ? '' : 's'}. Tasks done: ${S.stats.tasks}.</p>
+  ${badgeCard(p)}
+  <div class="panel">${store}</div>`;
+}
+function badgeCard(p) {
+  const B = CONFIG.badges, cur = S.badge ? B[S.badge - 1] : null, next = B[S.badge];
+  const pin = b => `<svg viewBox="17 49 11 11" class="badge-ic" aria-hidden="true">${badgePin(b)}</svg>`;
+  return `<div class="upgrade"><h3 class="sect">Neighbourhood Watch Badge</h3>
+    <p class="small">${cur ? `${pin(S.badge)} <b>${cur.name}</b>: +${pct(cur.bonus)} damage and hit chance against your task enemy. <i>${cur.desc}</i>`
+      : 'A pin on your shirt for keeping the neighbourhood safe. Gives extra damage and hit chance against your Slayer task enemy, and everyone can see it.'}</p>
+    ${next ? `<div class="costline" style="margin-top:8px"><span>Next: ${pin(S.badge + 1)} ${next.name}, +${pct(next.bonus)}</span><b>${next.cost} pts</b></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100, p / next.cost * 100)}%"></div></div>
+      <button class="btn" data-act="buyBadge" ${p < next.cost ? 'disabled' : ''}>${p < next.cost ? `Need ${next.cost - p} more points` : `Get the ${next.name}`}</button>`
+      : '<p class="small" style="margin-top:6px">Gold. The highest honour the neighbourhood has to give.</p>'}</div>`;
+}
+
+function tradeTab() {
+  const next = CONFIG.idleCosts[S.capLevel], total = CONFIG.idleCosts.length, w = idleWindowMs(), w2 = w + CONFIG.idleStepMinutes * 60000;
+  const up = next == null
+    ? `<div class="upgrade"><h3 class="sect">Idle time</h3><div class="big"><span>${dur(w)}</span></div><p class="small">Maxed out. Respect.</p></div>`
+    : `<div class="upgrade"><h3 class="sect">Idle time upgrade ${S.capLevel + 1} of ${total}</h3>
+      <div class="big">${dur(w)} &#8594; <span>${dur(w2)}</span></div>
+      <p class="small">How long your dad keeps going after you close the game.</p>
+      <div class="costline"><span>${fmt(Math.min(S.coins, next))} of ${fmt(next)}</span><b>${fmt(next)} coins</b></div>
+      <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
+      <button class="btn" data-act="buyIdle" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy upgrade'}</button></div>`;
+  const k = tradePick(), m = tradeMult(), d = dismantlePick();
+  const stock = sellables().sort((x, y) => lootInfo(x[0]).price - lootInfo(y[0]).price).map(([x, n]) => {   // same order Trading sells in: cheapest first
+    const it = lootInfo(x), get = Math.max(1, Math.round(it.price * m));
+    return `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${it.name}</div>
+      <div class="row-meta">You get ${fmt(get)} each, ${fmt(get * n)} for all</div></div></div>`; }).join('');
+  const mats = MATS.map((M, t) => S.mats[t] ? `${S.mats[t]} ${M.name}` : '').filter(Boolean).join(', ');
+  return `<div class="duo">${skillHTML('trading', true)}${skillHTML('diy', true)}</div>
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'trade' ? ' active' : ''}"><p class="stage-title">${k ? `${S.activity === 'trade' ? 'Selling' : 'Sell'} ${lootInfo(k).name}` : 'Nothing to sell'}</p>
+    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, cheapest first.` : 'Monster junk and spare gear land here. Weapons are never sold for you.'} You get ${pct(m)} of the value.</p>${petLine('trading')}
+    ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
+  <section class="idlecard${S.activity === 'diy' ? ' active' : ''}"><p class="stage-title">${d ? `${S.activity === 'diy' ? 'Taking apart' : 'Take apart'} ${lootInfo(d).name}` : 'No junk to take apart'}</p>
+    <p class="stage-meta">${d ? `Gives 1 ${MATS[matOf(ENEMIES[+d.slice(1)].area)].name}. One item every ${CONFIG.diySeconds} seconds, cheapest junk first.` : 'Beat monsters for junk, then take it apart here for materials.'}</p>${petLine('diy')}
+    ${S.activity === 'diy' ? progHTML('actBar', 'Next item in') : actBtn('diy', 'Start DIY', d ? '' : 'No junk')}
+    <p class="small" style="margin-top:8px">${mats ? `Materials: ${mats}.` : 'No materials yet.'}</p>
+    <button class="sbtn" style="margin-top:6px" data-act="sellMats">${S.sellMats ? 'Trading may sell materials: on' : 'Trading may sell materials: off'}</button></section>
+  <h3 class="sect">Build gear</h3>
+  <div class="panel">${buildRows()}</div>
+  <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
+  ${up}${plotUpgrade()}
+  ${helpBox('How the shed works', `<p><b>Trading</b> sells monster junk for coins, cheapest first. Weapons and the gear you wear are never sold.</p>
+    <p><b>DIY</b> takes junk apart into materials (cheapest junk first). Better areas give better materials.</p>
+    <p><b>Gear:</b> building needs DIY level, wearing needs Defence level. Each piece can be built once. Gear makes enemies hit you less.</p>`)}`;
+}
+function buildRows() {
+  const L = lvl('diy'), open = MATS.filter(M => L >= M.req).length;   // tiers you can build
+  const tier = (M, t) => {
+    const btn = sl => { const cost = CONFIG.gearCost[sl], n = S.gearInv[sl][t], worn = S.wear[sl] === t;
+      return `<div class="build"><div class="row-name">${gearName(sl, t)}${n ? ' <span class="lvtag">built</span>' : ''}</div>
+        <div class="row-meta">-${pct(CONFIG.armour[sl][t])} damage. ${n ? '' : `Costs ${cost} ${M.name}. `}${canWear(t) ? '' : `Wear at Defence ${M.req}.`}</div>
+        <div class="row-btns">${n ? '' : `<button class="sbtn solid" data-act="build" data-s="${sl}" data-t="${t}" ${S.mats[t] < cost ? 'disabled' : ''}>Build</button>`}
+        ${n ? `<button class="sbtn" data-act="wear" data-s="${sl}" data-t="${t}" ${!worn && !canWear(t) ? 'disabled' : ''}>${worn ? 'Take off' : 'Wear'}</button>` : ''}</div></div>`; };
+    return `<div class="row build-tier"><div class="row-main"><div class="row-name">${M.icon} ${M.name} gear <span class="lvtag">you have ${S.mats[t]} ${M.name}</span></div>${btn('head')}${btn('body')}</div></div>`;
+  };
+  const cur = Math.max(0, open - 1), next = MATS[open];
+  return tier(MATS[cur], cur)
+    + (next ? `<div class="row"><span class="count dim">${next.icon}</span><div class="row-main"><div class="row-name muted">${next.name} gear</div><div class="row-meta">Opens at DIY ${next.req}</div></div></div>` : '')
+    + (cur > 0 ? `<details class="fold inrow"><summary>Earlier gear</summary>${MATS.slice(0, cur).map(tier).join('')}</details>` : '');
+}
+function plotUpgrade() {
+  const next = CONFIG.plotCosts[S.plots.length - 1], total = CONFIG.plotCosts.length + 1;
+  if (next == null) return `<div class="upgrade"><h3 class="sect">Farm plots</h3><div class="big"><span>${S.plots.length}</span></div><p class="small">Every plot bought. A proper allotment.</p></div>`;
+  return `<div class="upgrade"><h3 class="sect">Farm plot ${S.plots.length + 1} of ${total}</h3>
+    <div class="big">${S.plots.length} &#8594; <span>${S.plots.length + 1}</span></div>
+    <p class="small">Another plot grows crops next to the others. More veg, more meals, more Farming xp.</p>
+    <div class="costline"><span>${fmt(Math.min(S.coins, next))} of ${fmt(next)}</span><b>${fmt(next)} coins</b></div>
+    <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
+    <button class="btn" data-act="buyPlot" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy plot'}</button></div>`;
+}
+function ranksTab() {
+  const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
+  return `<h2 class="pagetitle">Ranks</h2>
+  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dad${cloud.scores.length === 1 ? '' : 's'} on total level. ` : ''}Updates about once a minute while dads play.</p>
+  <div id="hsBox">${highscoresHTML()}</div>`;
+}
+// what your dad has on: weapon, head and body
+function petSheet(k) {
+  const P = CONFIG.pets[k], got = S.pets[k];
+  openSheet(got ? `<div class="sheet-ic">${P.svg || P.icon}</div><h2>${P.name}</h2><p>${P.desc}</p>
+      <p class="small">${got > 1 ? `Found ${got} times. ` : ''}From ${SKILLS[k]}.</p>
+      <button class="btn" style="width:100%;margin-top:10px" data-act="petOutS" data-k="${k}">${S.petOut === k ? 'Send home' : 'Take along'}</button>`
+    : `<div class="sheet-ic unknown">?</div><h2>Unknown pet</h2><p>${P.hint}</p>
+      <p class="small">Found while doing ${SKILLS[k]}: right now 1 in ${fmt(petOdds(k))} per ${P.per}. Every ${SKILLS[k]} level makes it a bit likelier.</p>`);
+}
+function weaponSheet(i) {
+  const a = AREAS[i], w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
+  openSheet(n ? `<div class="sheet-ic" style="background:${a.tint}">${w.icon}</div><h2>${w.name}</h2><p>${w.desc}</p>
+      <p class="small">+${pct(w.dmg)} damage.${n > 1 ? ` You have ${n}.` : ''} Drops in ${a.place}.</p>
+      <div class="row-btns" style="margin-top:10px"><button class="btn" data-act="equipW" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
+      <button class="btn alt" data-act="sellW" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell spare<small>${fmt(w.price)} coins</small></button></div>`
+    : `<div class="sheet-ic unknown">?</div><h2>Unknown weapon</h2><p class="small">Drops in ${a.place}, ${rate(CONFIG.rareChance)} per kill. Any enemy there can drop it.</p>`);
+}
+function gearBlock() {
+  const w = weapon(), row = (ic, name, eff, empty) => `<div class="gear-row"><span class="gear-ic">${ic}</span><div class="row-main"><div class="row-name${name ? '' : ' muted'}">${name || empty}</div>${eff ? `<div class="row-meta">${eff}</div>` : ''}</div></div>`;
+  const eye = sl => { const hid = S.hideGear && S.hideGear[sl];   // eye = shown on your dad, crossed eye = hidden (armour still counts)
+    return `<button class="eye-btn" data-act="hideGear" data-s="${sl}" aria-pressed="${!!hid}" aria-label="${hid ? 'Show' : 'Hide'} on your dad" title="${hid ? 'Hidden on your dad: tap to show' : 'Shown on your dad: tap to hide'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>${hid ? '<path d="M3 3l18 18"/>' : ''}</svg></button>`; };
+  const piece = sl => { const t = S.wear[sl]; return t >= 0
+    ? row(`<svg viewBox="${sl === 'head' ? '14 2 38 30' : '8 42 48 22'}">${GEAR_SVG[sl][t]}</svg>`, gearName(sl, t) + eye(sl), `-${pct(CONFIG.armour[sl][t])} damage taken.${S.hideGear && S.hideGear[sl] ? ' Hidden on your dad.' : ''} ${gearDesc(sl, t)}`)
+    : row('❔', '', '', sl === 'head' ? 'Nothing on your head. Build something in the Shed.' : 'Just a shirt. Build something in the Shed.'); };
+  return `<h3 class="sect" style="margin-top:22px">Gear</h3><div class="panel">
+    ${row(w ? w.icon : '✊', w ? w.name : 'Bare hands', w ? `+${pct(w.dmg)} damage` : 'Weapons are rare drops. Collection below.')}${piece('head')}${piece('body')}</div>`;
+}
+function dadTab() {
+  const days = Math.floor((now() - S.started) / 86400000) + 1;
+  const one = k => { const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) * 100 : 100;
+    return `<div class="dskill"><span>${SKILLS[k]}</span><span class="lv">${l}</span><div class="mini"><div style="width:${w}%"></div></div></div>`; };
+  const sk = SKILL_GROUPS.map(([g, ks]) => `<div class="dgroup">${g}</div>${ks.map(one).join('')}`).join('');
+  return `<article class="dcard"><div class="dhero" style="background:${LOOKS.bg[S.look.bg] || LOOKS.bg[0]}">
+      <div class="bigav">${avatarSVG(myLook())}${petBadge(S.petOut, 'big')}</div>
+      <div><div class="dname">${esc(S.name)}</div><div class="dtitle">${dadTitle()}</div><div class="dtotal">Total level ${totalLevel()}, combat ${combatLevel()}</div>
+      <div class="dweapon">${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage` : 'Bare hands'}</div>
+      ${armourRed() ? `<div class="dweapon">Armour: -${pct(armourRed())} damage taken</div>` : ''}</div></div>
+    <div class="dskills">${sk}</div>
+    <div class="dstats"><div><b>${fmt(S.coins)}</b><span>Coins</span></div><div><b>${fmt(S.stats.kills)}</b><span>Kills</span></div><div><b>${fmt(S.stats.tasks)}</b><span>Slayer tasks</span></div></div>
+    <div class="dfoot"><b>GFD</b><span>Fighting in ${AREAS[Math.max(0, unlockedAreas() - 1)].place}, day ${days}</span></div></article>
+  <div class="stack"><button class="btn" data-act="share">Share card<small>Makes an image of your dad and skills</small></button>
+  <button class="btn alt" data-act="edit">Change name and look</button></div>
+  <div id="cloudLine" style="margin-top:14px">${cloudLine()}</div>
+  ${installHTML()}
+  ${gearBlock()}
+  <h3 class="sect" style="margin-top:22px">Pets ${Object.keys(S.pets).length}/${Object.keys(CONFIG.pets).length}</h3>
+  <div class="tiles">${Object.entries(CONFIG.pets).map(([k, P]) => `<button class="tile${S.pets[k] ? '' : ' unknown'}${S.petOut === k ? ' on' : ''}" data-act="petInfo" data-k="${k}">
+    <span class="t-ic">${S.pets[k] ? (P.svg || P.icon) : '?'}</span><span class="t-name">${S.pets[k] ? P.name.split(' ')[0] : SKILLS[k]}</span></button>`).join('')}</div>
+  <h3 class="sect" style="margin-top:18px">Weapons ${S.weapons.filter(n => n > 0).length}/${AREAS.length}</h3>
+  <div class="tiles five">${AREAS.map((a, i) => { const n = S.weapons[i];
+    return `<button class="tile${n ? '' : ' unknown'}${S.equipped === i ? ' on' : ''}" data-act="weaponInfo" data-i="${i}" ${n ? `style="background:${a.tint}"` : ''}>
+      <span class="t-ic">${n ? a.weapon.icon : '?'}</span>${n > 1 ? `<span class="t-n">x${n}</span>` : ''}</button>`; }).join('')}</div>
+  <p class="small note" style="margin-top:6px">Tap a tile for details. Pets and weapons are super rare.</p>
+  <details class="tools"><summary>Switch dad or start over</summary><div class="inner">
+    <p class="small"><b>Got a cloud code from another phone?</b> Type it here to play that dad on this phone.</p>
+    <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="sbtn" data-act="cloudLoad">Load cloud code</button>
+    <p class="small k-warn" id="cloudMsg">${esc(cloudMsg)}</p>
+    <p class="small" style="margin-top:6px">Start over makes a brand new dad with a new cloud code. Your current dad stays safe on the server: copy his cloud code first if you ever want him back.</p>
+    <button class="sbtn" style="border-color:var(--hp);color:var(--hp)" data-act="reset">${resetArmed > now() ? 'Tap again to make a new dad' : 'Start over'}</button>
+    <button class="sbtn" data-act="whatsNew">GFD v${CONFIG.version}: what's new?</button></div></details>`;
+}
+
+function editorHTML(setup) {
+  const sw = (key, list) => list.map((c, i) => `<button class="dot" style="background:${c}" data-act="look" data-k="${key}" data-v="${i}" aria-pressed="${draft.look[key] === i}" aria-label="${key} ${i + 1}"></button>`).join('');
+  const ch = key => LOOKS[key].map(v => `<button class="chip" data-act="look" data-k="${key}" data-v="${v}" aria-pressed="${draft.look[key] === v}">${LOOK_NAMES[key][v]}</button>`).join('');
+  return `${setup ? '<div class="brand"><h1>GFD</h1><p>Game for Dads</p></div>' : ''}
+  <div class="preview" id="preview">${avatarSVG(draft.look)}</div>
+  <div class="field"><label class="lab" for="nameInput">Dad name</label><input type="text" id="nameInput" maxlength="16" value="${esc(draft.name)}" autocomplete="off"></div>
+  <div class="field"><span class="lab">Skin</span><div class="sw">${sw('skin', LOOKS.skin)}</div></div>
+  <div class="field"><span class="lab">Hair</span><div class="sw">${ch('hair')}</div></div>
+  <div class="field"><span class="lab">Hair color</span><div class="sw">${sw('hairColor', LOOKS.hairColor)}</div></div>
+  <div class="field"><span class="lab">Face fuzz</span><div class="sw">${ch('beard')}</div></div>
+  <div class="field"><span class="lab">Glasses</span><div class="sw">
+    <button class="chip" data-act="look" data-k="glasses" data-v="0" aria-pressed="${!draft.look.glasses}">No</button>
+    <button class="chip" data-act="look" data-k="glasses" data-v="1" aria-pressed="${!!draft.look.glasses}">Yes</button></div></div>
+  <div class="field"><span class="lab">Shirt${draft.look.hair === 'cap' ? ' and cap' : ''}</span><div class="sw">${sw('shirt', LOOKS.shirt)}</div></div>
+  <div class="field"><span class="lab">Card background</span><div class="sw">${sw('bg', LOOKS.bg)}</div></div>
+  <div class="stack" style="margin-top:22px">${setup
+    ? '<button class="btn" data-act="start">Start playing</button>'
+    : '<button class="btn" data-act="saveLook">Save look</button><button class="btn alt" data-act="cancelLook">Cancel</button>'}</div>
+  ${setup ? setupRescue() : ''}`;
+}
+// on the "make your dad" screen: ways back in for anyone whose dad went missing
+function setupRescue() {
+  const grace = now() < MOVE_DEADLINE;
+  return `<h3 class="sect" style="margin-top:26px">Lost your dad?</h3>
+  <div class="upgrade"><p class="small"><b>Have a cloud code?</b> Type it here and your dad comes back.</p>
+    <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="margin-top:8px">
+    <button class="btn" style="width:100%;margin-top:10px" data-act="cloudLoad">Get my dad back</button>
+    <p class="small k-warn" id="cloudMsg" style="margin-top:8px">${esc(cloudMsg)}</p></div>
+  ${grace ? `<details class="tools" ${ioMsg ? 'open' : ''}><summary>Only have an old save code?</summary><div class="inner">
+    <p class="small">Paste the long save code from the old version (it starts with GFD1.). This works until ${new Date(MOVE_DEADLINE).toLocaleDateString('en-GB', {day: 'numeric', month: 'long'})}.</p>
+    <textarea id="importBox" placeholder="Paste save code"></textarea>
+    <button class="sbtn" data-act="importOld">Load save code</button>
+    ${ioMsg ? `<p class="small k-warn">${esc(ioMsg)}</p>` : ''}</div></details>` : ''}`;
+}
+const levelSum = st => Object.keys(SKILLS).reduce((a, k) => a + levelOf((st.xp || {})[k] || 0), 0);
+/* ---------- share card ----------
+   Draws the dad card onto a canvas (1080x1350, fits Discord nicely) instead of screenshotting the page,
+   so the image is always cropped to just the card and looks the same on every phone. */
+let downloadsApi = null, shareBlob = null;
+if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { downloadsApi = d; }).catch(() => {});
+
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function svgImage(svg, size) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+  i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', `<svg width="${size}" height="${size}" `)); }); }
+function fitFont(g, text, weight, size, family, maxW) { let s = size; do { g.font = `${weight} ${s}px ${family}`; s -= 2; } while (g.measureText(text).width > maxW && s > 20); }
+
+async function makeShareCard() {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const NUM = 'Fredoka, "Atkinson Hyperlegible", system-ui, sans-serif', UI = '"Atkinson Hyperlegible", system-ui, sans-serif';
+  try { await Promise.all(['700 80px Fredoka', '600 56px Fredoka', '700 40px "Atkinson Hyperlegible"', '400 34px "Atkinson Hyperlegible"'].map(f => document.fonts.load(f))); } catch (e) {}
+  const ink = '#14313B', muted = '#56696E', line = '#D5DED9', prim = '#2C6E7F', track = '#E1E8E4';
+  const X = 40, CW = W - 80, PAD = 70;
+  g.fillStyle = '#E4EBE7'; g.fillRect(0, 0, W, H);
+  rr(g, X, 40, CW, H - 80, 44); g.fillStyle = '#fff'; g.fill();
+  // hero band in the dad's chosen background color
+  g.save(); rr(g, X, 40, CW, H - 80, 44); g.clip(); g.fillStyle = LOOKS.bg[S.look.bg] || LOOKS.bg[0]; g.fillRect(X, 40, CW, 370); g.restore();
+  const img = await svgImage(avatarSVG(myLook()), 520);
+  rr(g, 90, 85, 280, 280, 44); g.fillStyle = '#fff'; g.fill();
+  g.save(); rr(g, 100, 95, 260, 260, 36); g.clip(); g.drawImage(img, 100, 95, 260, 260); g.restore();
+  if (S.petOut && CONFIG.pets[S.petOut]) {   // the pet that follows you, on the corner of the picture
+    g.beginPath(); g.arc(105, 345, 46, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill();
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '56px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    const P = CONFIG.pets[S.petOut];
+    if (P.svg) { const pimg = await svgImage(P.svg, 160); g.drawImage(pimg, 69, 309, 72, 72); } else g.fillText(P.icon, 105, 348);
+    g.textBaseline = 'alphabetic';
+  }
+  g.fillStyle = ink; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  fitFont(g, S.name, 700, 80, NUM, CW - 400); g.fillText(S.name, 410, 210);
+  g.font = `700 40px ${UI}`; g.fillText(dadTitle(), 410, 272);
+  g.font = `400 34px ${UI}`; g.fillText(`Total level ${totalLevel()}, combat ${combatLevel()}`, 410, 318);
+  fitFont(g, weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 700, 34, UI, CW - 400); g.fillText(weapon() ? `${weapon().icon} ${weapon().name}` : 'Bare hands', 410, 368);
+  // skills
+  // skills in two columns, four rows
+  const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2, rowH = Math.floor(585 / Math.ceil(Object.keys(SKILLS).length / 2));
+  const cols = [['attack', 'strength', 'defence', 'hitpoints', 'slayer', 'diy'], ['fishing', 'farming', 'cooking', 'woodcutting', 'brewing', 'trading']];
+  cols.forEach((list, col) => list.forEach((k, row) => {
+    const i = row * 2 + col, x0 = X + PAD + col * (cellW + GAP), top = 440 + row * rowH;
+    const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) : 1;
+    if (row) { g.fillStyle = line; g.fillRect(x0, top - 12, cellW, 2); }
+    g.fillStyle = ink; g.textAlign = 'left'; g.font = `400 32px ${UI}`; g.fillText(SKILLS[k], x0, top + 46);
+    g.fillStyle = prim; g.textAlign = 'right'; g.font = `700 60px ${NUM}`; g.fillText(String(l), x0 + cellW, top + 52);
+    rr(g, x0, top + 70, cellW, 14, 7); g.fillStyle = track; g.fill();
+    if (w > 0) { rr(g, x0, top + 70, Math.max(14, cellW * w), 14, 7); g.fillStyle = prim; g.fill(); }
+  }));
+  // stats row
+  const sy = 1030, colW = CW / 3;
+  g.fillStyle = line; g.fillRect(X, sy, CW, 2); g.fillRect(X + colW, sy, 2, 160); g.fillRect(X + colW * 2, sy, 2, 160); g.fillRect(X, sy + 160, CW, 2);
+  [[fmt(S.coins), 'Coins'], [fmt(S.stats.kills), 'Kills'], [fmt(S.stats.tasks), 'Slayer tasks']].forEach(([v, lab], i) => {
+    const cx = X + colW * i + colW / 2; g.textAlign = 'center';
+    g.fillStyle = ink; fitFont(g, v, 600, 56, NUM, colW - 30); g.fillText(v, cx, sy + 85);
+    g.fillStyle = muted; g.font = `400 30px ${UI}`; g.fillText(lab, cx, sy + 132);
+  });
+  // footer
+  const days = Math.floor((now() - S.started) / 86400000) + 1;
+  g.textAlign = 'left'; g.fillStyle = prim; g.font = `700 52px ${NUM}`; g.fillText('GFD', X + PAD, sy + 252);
+  g.textAlign = 'right'; g.fillStyle = muted; g.font = `400 30px ${UI}`; g.fillText(`Game for Dads, day ${days}`, W - X - PAD, sy + 248);
+  return c;
+}
+async function openShare(btn) {
+  btn.disabled = true;
+  try {
+    const c = await makeShareCard();
+    shareBlob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const file = shareBlob && new File([shareBlob], 'gfd-dad-card.png', {type: 'image/png'});
+    const canShare = !!(file && navigator.canShare && navigator.canShare({files: [file]}));
+    const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Share your dad card');
+    el.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="Your dad card">
+      <p>Long-press the image to save or share it.</p>
+      <div class="stack">${canShare ? '<button class="btn" data-act="shareNative">Share</button>' : ''}
+      ${downloadsApi ? '<button class="btn' + (canShare ? ' alt' : '') + '" data-act="saveImg">Save image</button>' : `<a class="btn${canShare ? ' alt' : ''} linkbtn dl" href="${c.toDataURL('image/png')}" download="gfd-dad-card.png">Save image</a>`}
+      <button class="btn alt" data-act="closeShare">Close</button></div>`;
+    $('#app').appendChild(el);
+  } catch (e) { toast("Couldn't make the image"); }
+  btn.disabled = false;
+}
+const closeShare = () => { const s = document.querySelector('.sheet'); if (s) s.remove(); };
+
+/* ---------- fight replay ---------- */
+const SPLAT_PTS = (() => { const p = []; for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2 - Math.PI / 2, r = k % 2 ? 13 : 19;
+  p.push((20 + Math.cos(a) * r).toFixed(1) + ',' + (20 + Math.sin(a) * r).toFixed(1)); } return p.join(' '); })();
+function splat(sel, d, kind) {   // red splat with the damage, blue 0 for a miss, green +health when your dad eats
+  const box = document.querySelector(sel); if (!box) return;
+  const el = document.createElement('div'); el.className = 'splat ' + (kind === 'heal' ? 'heal' : d ? 'hit' : 'miss');
+  el.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><polygon points="${SPLAT_PTS}"/></svg><span>${kind === 'heal' ? '+' + d : d}</span>`;
+  el.style.left = (50 + Math.random() * 30 - 15) + '%'; el.style.top = (48 + Math.random() * 24 - 12) + '%';
+  box.appendChild(el); setTimeout(() => el.remove(), 750);
+  if (d && kind !== 'heal') { box.classList.remove('hurt'); void box.offsetWidth; box.classList.add('hurt'); }
+}
+function startAnim(a) {
+  arenaEnd = null;
+  anim = Object.assign(a, {i: 0, cur: a.hp0, ehp: ENEMIES[a.g].hp});
+  renderTop(); renderMain();
+  anim.timer = setInterval(stepAnim, replayStep(a.ev.length));
+}
+function stepAnim() {
+  const a = anim; if (!a) return;
+  if (a.i >= a.ev.length + 2) { finishAnim(); return; }   // two beats of pause on the final hit
+  if (a.i < a.ev.length) {
+    const [who, d] = a.ev[a.i], E = ENEMIES[a.g];
+    if (who === 'p') { a.ehp = Math.max(0, a.ehp - d); splat('#foeBox', d); }
+    else if (who === 'h') { a.cur = Math.min(a.mh, a.cur + d); splat('#youBox', d, 'heal'); }   // ate a fish: green +health
+    else { a.cur = Math.max(0, a.cur - d); splat('#youBox', d); }
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.style.width = v + '%'; };
+    const txt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const php = animHp();
+    set('youHp', php / a.mh * 100); set('foeHp', a.ehp / E.hp * 100);
+    txt('youHpNum', `${php}/${a.mh}`); txt('foeHpNum', `${a.ehp}/${E.hp}`);
+    if (a.ehp <= 0) document.getElementById('foeBox')?.classList.add('down');
+    if (php <= 0) document.getElementById('youBox')?.classList.add('down');
+    renderTop();
+  }
+  a.i++;
+}
+function finishAnim() {   // replay done (or skipped): tell the server, which makes the fight count
+  const a = anim; if (!a) return; clearInterval(a.timer); anim = null;
+  let cur = a.hp0, ehp = ENEMIES[a.g].hp;                  // a skip jumps to the end: run every step
+  for (const [who, d] of a.ev) { if (who === 'e') cur = Math.max(0, cur - d); else if (who === 'h') cur = Math.min(a.mh, cur + d); else ehp = Math.max(0, ehp - d); }
+  S.hp = clamp(cur + (S.hp - a.hp0), 0, a.mh); arenaEnd = {g: a.g, ehp};
+  render(); act('fightEnd', {}, document.querySelector('[data-act="fight"]'));
+}
+
+function renderMain() {
+  const m = $('#main');
+  if (editing) { m.innerHTML = editorHTML(editing === 'setup'); return; }
+  if (!S) { m.innerHTML = cloud.reason === 'offline'
+    ? '<div class="upgrade" style="margin-top:40px;text-align:center"><p class="small"><b>Can\'t reach the server.</b> GFD needs internet: your dad lives on the server now.</p><button class="btn" style="width:100%;margin-top:12px" data-act="cloudRetry">Try again</button></div>'
+    : '<p class="small" style="margin-top:40px;text-align:center">Loading your dad...</p>'; return; }
+  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: fightTab, yard: yardTab, trade: tradeTab, ranks: ranksTab, dad: dadTab}[S.tab] || fishTab)();
+  updateProgress();
+}
+function renderNav() {
+  const nav = $('#nav'), tk = $('#ticker');
+  if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['yard', 'Yard', ICON.yard], ['trade', 'Shed', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
+    .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
+  tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
+  const L = logLines();
+  tk.innerHTML = tickerOpen ? `<ul>${L.slice(0, 20).map(e => `<li class="k-${e.kind}">${e.text}</li>`).join('')}</ul>`
+    : `<p class="k-${L[0].kind}">${L[0].text}</p>`;
+}
+function render() { try { renderTop(); renderMain(); renderNav(); } catch (e) { showCrash(e); } }
+function showCrash(e) {
+  const m = document.getElementById('main'); if (!m) return;
+  m.innerHTML = `<div class="upgrade" style="margin-top:40px;text-align:center"><p class="small"><b>Something went wrong showing the game.</b> Your dad is safe on the server.</p>
+    <button class="btn" style="width:100%;margin-top:12px" data-act="hardReload">Reload GFD</button>
+    <p class="small" style="margin-top:8px;opacity:.6">${String((e && e.message) || e).replace(/[<>&]/g, '').slice(0, 140)}</p></div>`;
+}
+
+/* ---------- input: every button asks the server ---------- */
+const A = (action, args) => b => act(action, typeof args === 'function' ? args(b) : args, b);
+const handlers = {
+  spot: A('spot', b => ({i: +b.dataset.i})),
+  eat: A('eat', b => ({i: +b.dataset.i})),
+  eatAll: A('eatAll', b => ({i: +b.dataset.i})),
+  eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
+  petOut: A('petOut', b => ({k: b.dataset.k})),
+  buyBadge: A('buyBadge'), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
+  actMenu: () => { if (!anim) actMenu(); },
+  pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
+    if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
+  petInfo: b => petSheet(b.dataset.k), weaponInfo: b => weaponSheet(+b.dataset.i),
+  equipW: b => { closeShare(); act('equip', {i: +b.dataset.i}); }, sellW: b => { closeShare(); act('sellWeapon', {i: +b.dataset.i}); },
+  petOutS: b => { closeShare(); act('petOut', {k: b.dataset.k}); }, hideGear: A('hideGear', b => ({s: b.dataset.s})),
+  plot: A('plot', b => ({i: +b.dataset.i})), tendAll: A('tendAll'), buyPlot: A('buyPlot'),
+  eatMeal: A('eatMeal', b => ({i: +b.dataset.i})), eatMealAll: A('eatMealAll', b => ({i: +b.dataset.i})),
+  fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },
+  fightIdle: A('fightIdle'),
+  activity: A('activity', b => ({a: b.dataset.a})),
+  area: b => { arenaMsg = null; arenaEnd = null; act('area', {i: +b.dataset.i}, b); },
+  style: A('style', b => ({s: b.dataset.s})),
+  newTask: A('newTask'), cancelTask: A('cancelTask'), buyExtend: A('buyExtend'), toggleExtend: A('toggleExtend'), buyPotions: A('buyPotions'),
+  goTask: b => { if (!S.task) return; S.tab = 'fight'; lsSet(LS.tab, 'fight'); act('area', {i: ENEMIES[S.task.e].area}, b).then(() => { $('#main').scrollTop = 0; }); },
+  equip: A('equip', b => ({i: +b.dataset.i})),
+  sellWeapon: A('sellWeapon', b => ({i: +b.dataset.i})),
+  buyIdle: A('buyIdle'),
+  tab: b => { S.tab = b.dataset.t; lsSet(LS.tab, S.tab); if (S.tab === 'ranks') loadScores();
+    if (editing === 'edit') editing = false; tickerOpen = false; ioMsg = ''; render(); $('#main').scrollTop = 0; },
+  edit: () => { draft = {name: S.name, look: Object.assign({}, S.look)}; editing = 'edit'; render(); $('#main').scrollTop = 0; },
+  look: b => { const k = b.dataset.k, v = b.dataset.v;
+    draft.look[k] = k === 'glasses' ? v === '1' : (k === 'hair' || k === 'beard') ? v : +v; renderMain(); },
+  saveLook: b => { editing = false; act('setLook', {name: draft.name, look: draft.look}, b); render(); },
+  cancelLook: () => { editing = false; render(); },
+  start: b => { if (!myCode()) lsSet(LS.code, newCloudCode()); lsSet(LS.seen, CONFIG.version);
+    b.disabled = true; act('create', {name: draft.name.trim() || 'Dad', look: draft.look}, b); },
+  share: b => openShare(b),
+  closeShare: () => closeShare(),
+  shareNative: () => { if (!shareBlob) return;
+    navigator.share({files: [new File([shareBlob], 'gfd-dad-card.png', {type: 'image/png'})], title: 'My GFD dad'})
+      .catch(e => { if (e && e.name !== 'AbortError') toast('Long-press the image instead'); }); },
+  saveImg: () => { if (!downloadsApi || !shareBlob) return;
+    downloadsApi.save({filename: 'gfd-dad-card.png', data: shareBlob}).then(() => toast('Image saved'))
+      .catch(e => { if (e && e.code !== 'declined') toast('Long-press the image instead'); }); },
+  reset: () => { if (resetArmed > now()) { resetArmed = 0; lsSet(LS.code, null); lsSet(LS.cache, null); lsSet(LS.copied, null);
+      S = null; draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); return; }
+    resetArmed = now() + 4000; renderMain(); setTimeout(() => { if (S && S.tab === 'dad' && !editing) renderMain(); }, 4100); },
+  whatsNew: () => showWhatsNew(null, true),
+  hsSort: b => { hsSort = b.dataset.s; renderCloudBits(); },
+  build: A('build', b => ({s: b.dataset.s, t: +b.dataset.t})), wear: A('wear', b => ({s: b.dataset.s, t: +b.dataset.t})), sellMats: A('sellMats'),
+  cloudRetry: () => act('sync'),
+  cloudLoad: () => { const box = $('#cloudCodeBox'); loadByCode(box ? box.value : ''); },
+  importOld: () => importOldCode($('#importBox') ? $('#importBox').value : ''),
+  copyCloud: () => { const code = myCode(); if (!code) return;
+    const done = () => { lsSet(LS.copied, now()); toast('Cloud code copied'); renderCloudBits(); };
+    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(done).catch(() => {
+      const t = document.createElement('textarea'); t.value = code; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); done(); } catch (e) { toast(code); } t.remove(); }); },
+  reloadApp: () => freshReload(updateReady),
+  hardReload: () => freshReload(),
+  install: () => { if (!installEvt) return; installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); },
+};
+let fightAsked = false;
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('sheet')) { closeShare(); return; }
+  if (e.target.closest('#ticker')) { tickerOpen = !tickerOpen; renderNav(); return; }
+  const b0 = e.target.closest('[data-act]');
+  if (anim) {
+    if (e.target.closest('#arena')) { finishAnim(); return; }             // tap the fight: skip to the end
+    if (!b0 || b0.disabled || b0.dataset.act === 'fight') return;         // Fight is locked while fighting
+    if (HEAL_ACTS.includes(b0.dataset.act)) stopFight(); else finishAnim();   // healing stops the fight, anything else lets it finish
+  }
+  if (!b0 || b0.disabled) return;
+  // the skip re-rendered the page, so act on the fresh copy of the tapped button
+  const sel = ['act', 'i', 'k', 't', 's'].filter(x => b0.dataset[x] != null).map(x => `[data-${x}="${b0.dataset[x]}"]`).join('');
+  const b = b0.isConnected ? b0 : document.querySelector(sel) || b0;
+  if (b.disabled) return;
+  const h = handlers[b.dataset.act]; if (h) h(b);
+});
+document.addEventListener('input', e => { if (e.target.id === 'nameInput' && draft) draft.name = e.target.value; });
+
+/* ---------- talking to the server ----------
+   The server (Supabase Edge Function "gfd") owns every dad. The phone sends a cloud code plus an action
+   like {action: 'fight'} and gets back the new state, plus toasts and fight hits to show. Nothing the phone
+   says about coins, xp or levels is ever trusted. The highscore board is read straight from the database. */
+const cloud = {reason: 'checking', err: '', lastSync: 0, scores: [], scoresAt: 0, playerId: null, online: true, feed: [], feedMax: 0, inFlight: false};
+let hsSort = 'total', cloudMsg = '', reqQ = Promise.resolve(), clockSkew = 0;
+const MOVE_DEADLINE = Date.parse('2026-10-20T23:59:59Z');   // until then, old phone saves can still move to the server
+async function rpc(fn, args) {
+  const r = await fetch(`${CONFIG.supabaseUrl}/rest/v1/rpc/${fn}`, {method: 'POST',
+    headers: {'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey, 'Content-Type': 'application/json'},
+    body: JSON.stringify(args || {})});
+  if (!r.ok) { let t = ''; try { t = (await r.text()).slice(0, 140); } catch (e) {} throw {code: 'http_' + r.status, message: t}; }
+  return r.json();
+}
+// a cloud code: GFD + 16 characters from an alphabet without look-alikes (no 0/O, 1/I)
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newCloudCode() {
+  const b = new Uint8Array(16); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.random() * 256; });
+  const c = Array.from(b, x => CODE_ABC[x % 32]).join('');
+  return `GFD-${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8, 12)}-${c.slice(12)}`;
+}
+const cleanCode = s => { const c = String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return /^GFD[A-Z0-9]{16}$/.test(c) ? `GFD-${c.slice(3, 7)}-${c.slice(7, 11)}-${c.slice(11, 15)}-${c.slice(15)}` : null; };
+async function callServer(action, args, extra, code) {
+  const r = await fetch(`${CONFIG.supabaseUrl}/functions/v1/gfd`, {method: 'POST',
+    headers: {'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey, 'Content-Type': 'application/json'},
+    body: JSON.stringify(Object.assign({code: code || myCode(), action, args: args || {}, feedSince: cloud.feedMax}, extra || {}))});
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!j) throw {code: 'http_' + r.status};
+  return j;
+}
+// one request at a time, in the order you tapped
+function act(action, args, btn, extra, code) {
+  if (!(code || myCode())) return Promise.resolve(null);
+  if (action === 'sync' && anim) return Promise.resolve(null);   // mid-replay: the fight's own end will sync
+  const p = reqQ.then(() => callServer(action, args, extra, code)).then(res => { try { return applyServer(res, btn); } catch (e) { showCrash(e); return null; } }, e => {
+    cloud.online = false; cloud.reason = 'offline'; cloud.err = (e && (e.code || e.message)) || 'offline';
+    if (action !== 'sync') toast("Can't reach the server. Check your internet.");
+    if (!S) renderMain(); else { renderTop(); renderCloudBits(); } return null;
+  });
+  reqQ = p.catch(() => {}); return p;
+}
+function applyServer(res, btn) {
+  cloud.online = true; cloud.lastSync = now();
+  if (!res || !res.ok) {
+    cloud.reason = res && res.reason === 'no_dad' ? 'nodad' : 'error'; cloud.err = (res && res.reason) || 'error';
+    renderCloudBits(); return res;
+  }
+  cloud.reason = 'on'; cloud.err = ''; cloud.playerId = res.player_id;
+  takeFeed(res.feed);
+  if (res.serverNow) clockSkew = res.serverNow - Date.now();       // timers follow the server's clock, not the phone's
+  const tab = (S && S.tab) || lsGet(LS.tab) || 'fish';
+  S = migrate(res.state) || res.state; S.tab = tab;   // fill in anything missing, so the screen never trips over a gap
+  if (res.arena !== undefined) arenaMsg = res.arena;
+  (res.toasts || []).forEach(toast);
+  if (editing === 'setup') editing = false;
+  save();
+  if (res.fight) { startAnim({g: res.fight.g, ev: res.fight.ev, hp0: S.hp, mh: maxHP(), coins0: S.coins}); return res; }
+  if (anim) { renderTop(); renderNav(); return res; }               // don't redraw the fight that's playing
+  const a = document.activeElement, typing = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA');
+  if (typing && S.tab !== 'fight') { renderTop(); renderNav(); renderCloudBits(); } else render();
+  if (res.pop && btn && btn.isConnected) pop(res.pop[0], btn, res.pop[1] || '');
+  else if (res.pop) { const b = document.querySelector(`[data-act="${btn && btn.dataset ? btn.dataset.act : ''}"]`); if (b) pop(res.pop[0], b, res.pop[1] || ''); }
+  if (S.tab === 'ranks' || now() - cloud.scoresAt > 120000) loadScores();
+  return res;
+}
+// typed a cloud code: play that dad on this phone
+async function loadByCode(raw) {
+  const code = cleanCode(raw); cloudMsg = '';
+  if (!code) { cloudMsg = "That doesn't look like a cloud code. It starts with GFD and has 16 letters and numbers after it."; renderCloudBits(); return; }
+  cloudMsg = 'Looking for your dad...'; renderCloudBits();
+  if (anim) finishAnim();
+  const res = await act('sync', {}, null, null, code);
+  if (res && res.ok) { lsSet(LS.code, code); lsSet(LS.copied, now()); cloudMsg = ''; toast(`Welcome back, ${S.name}!`); render(); }
+  else if (res) { cloudMsg = 'No dad is saved under that code. Check for typos (dashes and capitals don\'t matter).'; renderCloudBits(); }
+  else { cloudMsg = "Couldn't reach the server. Check your internet and try again."; renderCloudBits(); }
+}
+// a save code from the old version: the server takes it over once (until MOVE_DEADLINE)
+async function importOldCode(raw) {
+  let legacy = null;
+  try { legacy = JSON.parse(decodeURIComponent(escape(atob(String(raw).trim().replace(/^GFD1\./, ''))))); } catch (e) {}
+  if (!legacy || !legacy.xp) { ioMsg = "That save code didn't work. Copy the whole code, including GFD1 at the start."; renderMain(); return; }
+  const code = cleanCode(legacy.cloudCode) || newCloudCode();
+  const res = await act('sync', {}, null, {legacy}, code);
+  if (res && res.ok) { lsSet(LS.code, code); ioMsg = ''; toast(`Welcome back, ${S.name}!`); render(); }
+  else { ioMsg = res && res.reason === 'no_dad' ? 'The server could not take that save over. The move window may have closed.' : "Couldn't reach the server. Try again."; renderMain(); }
+}
+async function loadScores() {
+  try { const r = await rpc('gfd_leaderboard', {}); if (r && r.ok) { cloud.scores = (r.rows || []).map(x => cleanScore(x.player_id, x)).filter(Boolean); cloud.scoresAt = now(); renderCloudBits(); } }
+  catch (e) { /* board just stays as it was */ }
+}
+// other dads' rows are their input: clean every field before showing it
+function cleanScore(id, d) {
+  if (!d || typeof d !== 'object') return null;
+  const n = (v, max) => clamp(Math.floor(+v || 0), 0, max), lv = {};
+  for (const k in SKILLS) lv[k] = n((d.lv || {})[k], 100) || 1;
+  const L = d.look || {}, look = {skin: n(L.skin, LOOKS.skin.length - 1), hair: LOOKS.hair.includes(L.hair) ? L.hair : 'short', hairColor: n(L.hairColor, LOOKS.hairColor.length - 1),
+    beard: LOOKS.beard.includes(L.beard) ? L.beard : 'none', glasses: !!L.glasses, shirt: n(L.shirt, LOOKS.shirt.length - 1), bg: n(L.bg, LOOKS.bg.length - 1), badge: n(L.badge, 3),
+    head: Number.isInteger(L.head) && L.head >= 0 && L.head < 5 ? L.head : -1, body: Number.isInteger(L.body) && L.body >= 0 && L.body < 5 ? L.body : -1};
+  const w = Math.floor(+d.weapon);
+  return {id, name: String(d.name || 'Dad').slice(0, 16), look, lv, total: Object.values(lv).reduce((a, b) => a + b, 0),
+    combat: Math.floor((lv.attack + lv.strength + lv.defence + lv.hitpoints) / 4), kills: n(d.kills, 1e12), tasks: n(d.tasks, 1e6), weapon: w >= 0 && w < 10 ? w : -1, pet: CONFIG.pets[d.pet] ? d.pet : null, at: +d.at || 0};
+}
+const HS_SORTS = [['total', 'Total'], ['combat', 'Combat'], ...Object.keys(SKILLS).map(k => [k, SKILLS[k]]), ['kills', 'Kills']];   // skills in the same groups as the Dad card
+const hsValue = (r, k) => k === 'total' || k === 'combat' || k === 'kills' ? r[k] : r.lv[k];
+function highscoresHTML() {
+  if (!cloud.scoresAt && !cloud.checked) return '<p class="small">Loading the highscores...</p>';
+  if (!cloud.scoresAt) return '<div class="upgrade"><p class="small">Couldn\'t load the highscores right now. They\'ll show up when you\'re back online.</p></div>';
+  const rows = cloud.scores.slice().sort((a, b) => hsValue(b, hsSort) - hsValue(a, hsSort) || b.total - a.total);
+  const chips = HS_SORTS.map(([k, label]) => `<button class="hs-cat" data-act="hsSort" data-s="${k}" aria-pressed="${hsSort === k}">${label}</button>`).join('');
+  const list = rows.map((r, i) => `<div class="hs-row${r.id === cloud.playerId ? ' me' : ''}"><span class="hs-rank">${i + 1}</span>
+      <span class="hs-av">${avatarSVG(r.look)}${petBadge(r.pet, 'sm')}</span><div class="row-main"><div class="row-name">${esc(r.name)}${r.weapon >= 0 ? ` <span title="${esc(AREAS[r.weapon].weapon.name)}">${AREAS[r.weapon].weapon.icon}</span>` : ''}${r.id === cloud.playerId ? ' <span class="lvtag">you</span>' : ''}</div>
+</div>
+      <span class="hs-val">${fmt(hsValue(r, hsSort))}</span></div>`).join('');
+  return `<div class="hs-wrap"><nav class="hs-rail" aria-label="Rank by">${chips}</nav><div class="panel hs-list">${list || '<div class="empty">No dads on the board yet.</div>'}</div></div>`;
+}
+function installHTML() {
+  if (standalone()) return '';
+  if (installEvt) return '<button class="btn alt" style="width:100%;margin-top:12px" data-act="install">Install GFD as an app<small>Own icon, full screen, no browser bars</small></button>';
+  if (/iphone|ipad/i.test(navigator.userAgent)) return '<p class="small note" style="margin-top:12px">Want GFD as an app? In Safari tap the Share button, then "Add to Home Screen".</p>';
+  return '';
+}
+const syncedAgo = () => cloud.lastSync ? (now() - cloud.lastSync < 90000 ? 'just now' : now() - cloud.lastSync < 3600000 ? Math.round((now() - cloud.lastSync) / 60000) + ' min ago' : ago(cloud.lastSync)) : 'soon';
+// the box on the Dad tab: your cloud code, the server connection, and a nudge to keep the code safe
+function cloudLine() {
+  if (!S) return '';
+  const code = myCode(), copied = lsGet(LS.copied);
+  const box = code ? `<div class="codebox"><span class="code">${code}</span><button class="sbtn solid" data-act="copyCloud">Copy</button></div>` : '';
+  const status = cloud.reason === 'on' ? `Server: connected, synced ${syncedAgo()}.`
+    : cloud.reason === 'offline' ? 'Server: offline right now. Your dad keeps going on the server; you\'ll see it when you\'re back online. <button class="sbtn" data-act="cloudRetry">Try again</button>'
+    : cloud.reason === 'checking' ? 'Server: connecting...' : `Server: problem (${esc(cloud.err)}). <button class="sbtn" data-act="cloudRetry">Try again</button>`;
+  const nudge = copied ? 'Your dad lives on the server. Anyone with this code can play him, so keep it to yourself.'
+    : '<b>Copy your cloud code and keep it somewhere safe</b> (a Discord DM to yourself works). It\'s the only key to your dad: type it on any phone and he\'s back.';
+  return `<div class="upgrade${copied ? '' : ' warnbox'}"><h3 class="sect">Your cloud code</h3>${box}<p class="small" style="margin-top:8px">${nudge}</p><p class="small" style="margin-top:6px">${status}</p></div>`;
+}
+function renderCloudBits() {
+  const hs = document.getElementById('hsBox'); if (hs) hs.innerHTML = highscoresHTML();
+  const cl = document.getElementById('cloudLine'); if (cl) cl.innerHTML = cloudLine();
+  const cm = document.getElementById('cloudMsg'); if (cm) cm.textContent = cloudMsg;
+}
+var installEvt = null;   // var, not let: the Dad tab can render before this line runs
+function standalone() { return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+function installHTML() {
+  if (standalone()) return '';
+  if (installEvt) return '<button class="btn alt" style="width:100%;margin-top:12px" data-act="install">Install GFD as an app<small>Own icon, full screen, no browser bars</small></button>';
+  if (/iphone|ipad/i.test(navigator.userAgent)) return '<p class="small note" style="margin-top:12px">Want GFD as an app? In Safari tap the Share button, then "Add to Home Screen".</p>';
+  return '';
+}
+
+// news from the other dads: rare drops, pets, badges and level milestones. Shown in the log in purple.
+function takeFeed(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+  const first = !cloud.feedMax, fresh = rows.filter(r => r && r.id > cloud.feedMax);
+  cloud.feedMax = Math.max(cloud.feedMax, ...rows.map(r => +r.id || 0));
+  cloud.feed = fresh.concat(cloud.feed).slice(0, 40);
+  if (!first) fresh.filter(r => r.player_id !== cloud.playerId && r.kind !== 'lvl').forEach(r => toast(`${r.name} ${r.text}`));
+}
+// your own log plus the other dads' news, newest first
+function logLines() {
+  const mine = S.log.map(e => ({text: esc(e.text), kind: e.kind, t: e.t || 0}));
+  const theirs = cloud.feed.filter(r => r.player_id !== cloud.playerId).map(r => ({text: `<b>${esc(r.name)}</b> ${esc(r.text)}`, kind: 'news', t: +r.t || 0}));
+  const all = mine.concat(theirs).sort((a, b) => b.t - a.t);
+  return all.length ? all : [{text: 'Nothing happened yet.', kind: '', t: 0}];
+}
+
+/* ---------- staying up to date ----------
+   Browsers can keep running an old copy of the game after an update. version.json on GitHub says which
+   version is newest: on opening we reload straight away, mid-game we show a tap-to-update bar. */
+let updateReady = null;
+async function checkVersion(boot) {
+  if (!/^https?:/.test(location.protocol)) return;
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), {cache: 'no-store'}); if (!r.ok) return;
+    const v = (await r.json()).version;
+    if (!v || verNum(v) <= verNum(CONFIG.version)) return;
+    if (boot && !sessionStorage.getItem('gfd_reloaded_' + v)) { sessionStorage.setItem('gfd_reloaded_' + v, '1'); freshReload(v); return; }
+    updateReady = v; renderTop();
+  } catch (e) {}
+}
+
+/* ---------- boot ---------- */
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+(function boot() {
+  let cached = null; try { cached = JSON.parse(lsGet(LS.cache) || 'null'); } catch (e) {}
+  let legacy = null; try { legacy = JSON.parse(lsGet(LS.legacy) || 'null'); } catch (e) {}
+  let code = myCode();
+  // a save from the old version on this phone: it moves to the server once, under its cloud code
+  if (!code && legacy && legacy.xp && !lsGet(LS.moved)) { code = cleanCode(legacy.cloudCode) || newCloudCode(); lsSet(LS.code, code); }
+  if (!code) { draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); return; }
+  S = cached && cached.xp ? migrate(cached) : (legacy && legacy.xp ? migrate(legacy) : null);
+  if (S) S.tab = lsGet(LS.tab) || S.tab || 'fish';
+  render();
+  const extra = legacy && legacy.xp && !lsGet(LS.moved) && Date.now() < MOVE_DEADLINE ? {legacy} : null;
+  act('sync', {}, null, extra).then(res => {
+    if (res && res.ok && extra) { lsSet(LS.moved, now()); }
+    if (res && res.ok) { const seen = lsGet(LS.seen) || (legacy && legacy.seenVersion); if (seen !== CONFIG.version) setTimeout(() => showWhatsNew(seen), 400); }
+    if (res && !res.ok && res.reason === 'no_dad') { S = null; lsSet(LS.code, null); lsSet(LS.cache, null); draft = {name: 'Dad', look: Object.assign({}, DEFAULT_LOOK)}; editing = 'setup'; render(); }
+  });
+  loadScores();
+  checkVersion(true);
+})();
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (S && S.tab === 'dad' && !editing) renderMain(); });
+if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {});
+// every second: health ticks up (same maths as the server), timers move. Every 20 seconds, or when a try is due, ask the server.
+setInterval(() => {
+  if (!S || editing === 'setup') return;
+  const hp0 = S.hp; regenTo(now()); renderTop(); if (!editing) updateProgress();
+  if (S.hp !== hp0 && S.tab !== 'dad' && !anim) { const a = document.activeElement; if (!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'))) renderMain(); }
+  if (document.hidden || anim) return;
+  // ask the server: every 30s anyway, soon after a fishing/trading/fight round ends, every 15s while cooking (5s rounds)
+  const ms = actMs(S.activity), due = S.actAt + ms < now() - 800, gap = now() - cloud.lastSync;
+  if (!cloud.inFlight && (gap > 30000 || (due && gap > (ms >= 60000 ? 1500 : 15000)))) { cloud.lastSync = now(); cloud.inFlight = true; act('sync').finally(() => { cloud.inFlight = false; }); }
+  if (S.tab === 'ranks' && now() - cloud.scoresAt > 60000) loadScores();
+  if (Date.now() % 300000 < 1000) checkVersion(false);   // every 5 minutes
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; checkVersion(false); if (S && !editing && !anim) { cloud.lastSync = now(); act('sync'); } });
+</script>
+</body>
+</html>

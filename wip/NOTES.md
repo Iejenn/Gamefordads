@@ -11,11 +11,14 @@ Branch `wip-brewery`. GitHub Pages only publishes `main`, so nothing here is liv
 - New actions: activity 'wood' / 'brew', 'tree' {i}, 'brewPick' {i}, 'drink' {i}. migrate() fills logs/beers/tree/brewPick/buff.
 - Tests: wip/yard_test.mjs (2 "fails" are test-timing/rounding at level 1, not bugs).
 
-## Still to build (screen side)
-1. Yard tab: Woodcutting card + "Change tree" fold, Brewery card with beer picker, Cellar (beer chips, active beer highlighted, tap = drink).
-2. Slayer into the Fight tab (task visible, shop folded); nav becomes Dad | Food | Fight | Yard | Shed | Ranks.
-3. Header: small beer icon + fights left; Fight tab line "Beer: X, buff, N fights left".
-4. Activity menu: add Woodcutting and Brewing.
-5. "What's on this page" dropdown at the TOP of every tab explaining everything (incl. full beer list: what, buff, ingredients).
-6. Pets grid to 8 tiles; Dad card / share image / Ranks for 12 skills (share image: 6 rows).
-7. What's New 0.24, versions, server deploy (fn/engine.js rebuilt from wip/engine.js), browser tests, push.
+## Screen side: done (wip/index.html, tested in the browser against the wip rules)
+- Yard tab: "What's in the Yard" dropdown at the top (full beer list: buff, ingredients, level, joke), Woodcutting card, Brewery card with picker, Cellar (tap = drink), "Change tree" fold.
+- Slayer moved into the Fight tab as a folded "Slayer: level X, N points" section; nav = Dad | Food | Fight | Yard | Shed | Ranks (old 'slayer' tab opens Fight).
+- Beer indicator: header health line "· 🍺 14", Fight tab line under the buttons.
+- Activity menu: Woodcutting + Brewing added.
+- Pets grid shows 8 tiles automatically; share image = 2 columns of 6 skills.
+
+## Still to do before shipping
+1. "What's on this page" dropdown at the TOP of Dad, Food, Fight, Shed, Ranks (Food/Fight/Shed already have a "?" box at the bottom: move it to the top and complete it; write new ones for Dad and Ranks).
+2. What's New entry 0.24, set versions to 0.24 (engine CONFIG + UI_VERSION + script ?v=), version.json.
+3. Rebuild supabase/functions/gfd/engine.js from wip/engine.js, deploy, live check, then copy wip/index.html + wip/engine.js to the root and push main.
