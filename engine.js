@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.24',
+  version: '0.24.1',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -281,7 +281,7 @@ function freshState(name, look) {
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
     xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, woodcutting: 0, brewing: 0, trading: 0, diy: 0}, style: 'attack',
-    logs: Array(10).fill(0), beers: Array(10).fill(0), tree: 0, brewPick: -1, buff: null,   // buff = {b: beer index, left: fights left}
+    logs: Array(10).fill(0), beers: Array(10).fill(0), tree: 0, brewPick: -1, seedPick: -1, buff: null,   // buff = {b: beer index, left: fights left}
     mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, hideGear: {head: false, body: false}, sellMats: false,
     seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
     plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
@@ -338,6 +338,7 @@ function migrate(s) {
   const wr = s.wear || {}; m.wear = {}; for (const sl of ['head', 'body']) { const t = Math.floor(+wr[sl]); m.wear[sl] = t >= 0 && t < 5 && m.gearInv[sl][t] > 0 ? t : -1; }
   m.logs = intArr(s.logs, 10); m.beers = intArr(s.beers, 10); m.tree = clamp(Math.floor(+m.tree || 0), 0, 9);
   m.brewPick = Number.isInteger(m.brewPick) && m.brewPick >= -1 && m.brewPick < 10 ? m.brewPick : -1;
+  m.seedPick = Number.isInteger(m.seedPick) && m.seedPick >= -1 && m.seedPick < CONFIG.crops.length ? m.seedPick : -1;
   m.buff = m.buff && m.buff.b >= 0 && m.buff.b < 10 && m.buff.left > 0 ? {b: Math.floor(m.buff.b), left: Math.floor(m.buff.left)} : null;
   m.autoEat = !!m.autoEat; m.badge = clamp(Math.floor(+m.badge || 0), 0, CONFIG.badges.length);
   const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
@@ -412,8 +413,10 @@ const cropN = (c, n) => `${n} ${n === 1 ? CROPS[c].name : CROPS[c].many}`;
 const plotReady = p => p.c != null && now() >= p.at + growMs(p.c);
 // the best seed you have AND are allowed to plant
 const bestSeed = () => { for (let c = CROPS.length - 1; c >= 0; c--) if (S.seeds[c] > 0 && lvl('farming') >= CROPS[c].req) return c; return -1; };
+// the seed you picked if you have it, otherwise nothing gets planted; 'best' (-1) takes the best seed you can plant
+const plantPick = () => S.seedPick >= 0 ? (S.seeds[S.seedPick] > 0 && lvl('farming') >= CROPS[S.seedPick].req ? S.seedPick : -1) : bestSeed();
 function plant(i) {
-  const c = bestSeed(), p = S.plots[i]; if (c < 0 || !p || p.c != null) return false;
+  const c = plantPick(), p = S.plots[i]; if (c < 0 || !p || p.c != null) return false;
   S.seeds[c]--; S.plots[i] = {c, at: now()}; S.xp.farming += CROPS[c].xp;   // planting gives a little xp too
   return c;
 }
@@ -896,6 +899,7 @@ function doAction(action, a) {
     case 'activity': if (['fish', 'cook', 'trade', 'diy', 'wood', 'brew'].includes(a.a)) setActivity(a.a); break;
     case 'tree': { const i = intIn(a.i, 0, bestTree(lvl('woodcutting'))); if (i != null && i !== S.tree) { S.tree = i; addLog(`Now chopping the ${TREES[i].name}.`); } break; }
     case 'brewPick': { const i = intIn(a.i, -1, 9); if (i != null && (i < 0 || lvl('brewing') >= BEERS[i].req)) S.brewPick = i; break; }
+    case 'seedPick': { const i = intIn(a.i, -1, CROPS.length - 1); if (i != null && (i < 0 || lvl('farming') >= CROPS[i].req)) S.seedPick = i; break; }
     case 'drink': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = drinkBeer(i); break; }
     case 'fightIdle': setActivity(S.activity === 'fight' ? 'fish' : 'fight'); break;
     case 'area': { const i = intIn(a.i, 0, unlockedAreas() - 1); if (i != null) { S.area = i; arenaMsg = null; } break; }

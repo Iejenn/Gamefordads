@@ -411,11 +411,15 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.24"></script>
+<script src="engine.js?v=0.24.1"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.24.1', title: 'Pick your seeds', notes: [
+    'The farm has a <b>seed picker</b>, like the brewery: plant the best seed you have, or choose one (potatoes for your lager, garlic for your stout).',
+    'Chopping wood no longer says "fighting" at the top of the screen. Your dad was chopping all along, honest.',
+  ]},
   {v: '0.24', title: 'The Backyard Brewery', notes: [
     'New tab: the <b>Yard</b>, with two new skills. <b>Woodcutting</b>: from the Neighbour\'s Hedge ("He\'ll never notice") to the Old Tree House. <b>Brewing</b>: 1 log + 1 vegetable = 1 beer. A new tree and a new beer every 10 levels.',
     '<b>Beer = buffs</b> for your next 20 fights: hit chance, damage, defence, more coins or rarer drops. When one runs out your dad opens the next one himself. Tap a beer in the cellar to switch.',
@@ -521,7 +525,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.24';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24.1';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -662,7 +666,8 @@ function barHTML(kind, icon, v, max, sub, label) {
 }
 function idleLine() {
   const a = S.activity, c = cookPick(), tk = tradePick();
-  const what = a === 'diy' ? 'taking junk apart' : a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
+  const bp = typeof brewPickNow === 'function' ? brewPickNow() : -1;
+  const what = a === 'wood' ? `chopping the ${TREES[S.tree].name}` : a === 'brew' ? (bp >= 0 ? `brewing ${BEERS[bp].name}` : 'brewing') : a === 'diy' ? 'taking junk apart' : a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
   return `Idle: ${what}, next in <b id="actBarH"></b>`;
 }
 function actMenu() {
@@ -737,7 +742,7 @@ function petLine(k) {   // under each pet skill: only once you have him (the odd
 const ptime = ms => { const m = Math.ceil(Math.max(0, ms) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
 const icon = x => x.svg || x.icon;
 function plotTile(p, i) {
-  if (p.c == null) { const c = bestSeed();
+  if (p.c == null) { const c = plantPick();
     return `<button class="plot empty" data-act="plot" data-i="${i}" ${c < 0 ? 'disabled' : ''} aria-label="Plant ${c >= 0 ? CROPS[c].name : 'nothing (no seeds)'}"><span class="plot-ic">+</span><small>${c >= 0 ? CROPS[c].name : 'No seeds'}</small></button>`; }
   const C = CROPS[p.c], end = p.at + growMs(p.c), ready = now() >= end;
   return `<button class="plot${ready ? ' ready' : ''}" data-act="plot" data-i="${i}" aria-label="${C.name}${ready ? ', ready to harvest' : ', growing'}"><span class="plot-ic">${C.icon}</span>
@@ -746,6 +751,11 @@ function plotTile(p, i) {
 function farmCard() {
   const anyReady = S.plots.some(plotReady), seeds = CROPS.map((C, c) => S.seeds[c] ? `${S.seeds[c]} ${C.name} seed${S.seeds[c] > 1 ? 's' : ''}${lvl('farming') < C.req ? ` (needs Farming ${C.req})` : ''}` : '').filter(Boolean).join(', ');
   return `<section class="idlecard farm"><div class="farmhead"><p class="stage-title">Farm</p><span class="lvtag">Farming ${lvl('farming')}</span></div>
+    <details class="areapick" style="margin-top:8px"><summary><span class="ap-label">Planting</span><b>${S.seedPick < 0 ? 'Best seed I have' : CROPS[S.seedPick].name}</b><span class="ap-caret">&#9662;</span></summary>
+      <div class="panel"><button class="pick" data-act="seedPick" data-i="-1" aria-pressed="${S.seedPick < 0}"><span class="pn">Best seed I have</span><span class="pm">Plants the best seed you can</span></button>
+      ${CROPS.map((C, c) => { const locked = lvl('farming') < C.req; return `<button class="pick" data-act="seedPick" data-i="${c}" aria-pressed="${S.seedPick === c}" ${locked ? 'disabled' : ''}><span class="pn">${C.icon} ${C.name}</span>
+        <span class="pm">${locked ? `Opens at Farming ${C.req}` : `${S.seeds[c]} seed${S.seeds[c] === 1 ? '' : 's'} in the bag, ready in ${dur(growMs(c))}`}</span></button>`; }).join('')}</div></details>
+    ${S.seedPick >= 0 && !S.seeds[S.seedPick] ? `<p class="small hint">No ${CROPS[S.seedPick].name} seeds left, so empty plots stay empty. Pick another seed.</p>` : ''}
     <div class="plots">${S.plots.map(plotTile).join('')}</div>
     ${anyReady && S.plots.length > 1 ? '<button class="btn" style="width:100%;margin-top:10px" data-act="tendAll">Harvest and replant all</button>' : ''}
     <p class="small" style="margin-top:8px">${seeds ? `In the seed bag: ${seeds}.` : `No seeds yet. Every monster can drop one (${rate(CONFIG.seedChance)}), better areas drop better seeds.`}</p>
@@ -1272,7 +1282,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
+  buyBadge: A('buyBadge'), seedPick: A('seedPick', b => ({i: +b.dataset.i})), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
   actMenu: () => { if (!anim) actMenu(); },
   pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
     if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
