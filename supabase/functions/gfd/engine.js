@@ -12,7 +12,7 @@ const addNews = (kind, text) => { news.push({kind, text}); };
    ============================================================ */
 
 const CONFIG = {
-  version: '0.22.2',
+  version: '0.24',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
@@ -135,14 +135,14 @@ const CONFIG = {
   // farming: monsters drop seeds, plots grow them in real time (alongside whatever your dad is doing),
   // and a vegetable plus the matching fish cooks into a meal. Crop c pairs with fish 2c and 2c+1, and drops in areas 2c and 2c+1.
   crops: [
-    {name: 'Potato', many: 'Potatoes',  icon: '🥔', req: 1,  growMin: 10,  xp: 15,   desc: 'Reliable. Like you.'},
-    {name: 'Carrot', many: 'Carrots',  icon: '🥕', req: 21, growMin: 15,  xp: 40,  desc: 'Good for your eyes. Allegedly.'},
-    {name: 'Garlic', many: 'Garlic',  icon: '🧄', req: 41, growMin: 20,  xp: 100,  desc: 'Keeps vampires and coworkers away.'},
-    {name: 'Pumpkin', many: 'Pumpkins', icon: '🎃', req: 61, growMin: 30,  xp: 230,  desc: 'Too big for the wheelbarrow.'},
-    {name: 'Truffle', many: 'Truffles', icon: '🍄', req: 81, growMin: 45,  xp: 500, desc: 'Dug up at 3am. Worth it.'},
+    {name: 'Potato', many: 'Potatoes',  icon: '🥔', req: 1,  growMin: 10,  xp: 10,   desc: 'Reliable. Like you.'},
+    {name: 'Carrot', many: 'Carrots',  icon: '🥕', req: 21, growMin: 15,  xp: 27,  desc: 'Good for your eyes. Allegedly.'},
+    {name: 'Garlic', many: 'Garlic',  icon: '🧄', req: 41, growMin: 20,  xp: 67,  desc: 'Keeps vampires and coworkers away.'},
+    {name: 'Pumpkin', many: 'Pumpkins', icon: '🎃', req: 61, growMin: 30,  xp: 150,  desc: 'Too big for the wheelbarrow.'},
+    {name: 'Truffle', many: 'Truffles', icon: '🍄', req: 81, growMin: 45,  xp: 330, desc: 'Dug up at 3am. Worth it.'},
   ],
   seedChance: 0.15,           // every kill: chance to drop that area's seed (faster crops need more seeds)
-  harvestBase: 3, harvestRand: 3, harvestPerLvl: 1 / 25,   // vegetables per harvest = 3 + (0 to 2) + 1 per 25 Farming levels
+  harvestBase: 5, harvestRand: 4, harvestPerLvl: 1 / 20,   // vegetables per harvest = 5 + (0 to 3) + 1 per 20 Farming levels
   plotCosts: [2000, 10000, 50000, 250000],                  // farm plots 2 to 5 (you start with 1)
   // meals: fish i + its vegetable. Heal and cooking xp are multiplied, everything else works like cooking a fish.
   meals: ['Shrimp & Chips', 'Sardine Hash', 'Herring Hotpot', 'Trout & Carrot Pie', 'Garlic Salmon', 'Garlic Tuna Steak',
@@ -157,6 +157,8 @@ const CONFIG = {
     slayer:   {name: 'Honkers',              icon: '🪿', odds: 200,   per: 'Slayer task', hint: 'A familiar honk echoes after every task...',  desc: 'An Angry Goose who switched sides. Still angry.'},
     diy:      {name: 'Dusty the Robot Vacuum', icon: '🤖', odds: 3500, per: 'item taken apart', hint: 'Something keeps bumping into your workbench...', desc: 'Bumps into everything. Somehow still cleaner than your garage.',
       svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="16" ry="8" fill="#5E676E"/><ellipse cx="20" cy="23" rx="16" ry="9" fill="#C9D0D6"/><path d="M4.2 24.5 C6 29 12 31.5 20 31.5 C28 31.5 34 29 35.8 24.5" stroke="#3E4449" stroke-width="2" fill="none"/><circle cx="20" cy="15.8" r="1.6" fill="#3BD16F"/><circle cx="14.5" cy="22.5" r="3.6" fill="#fff" stroke="#3E4449" stroke-width=".8"/><circle cx="25.5" cy="22.5" r="3.6" fill="#fff" stroke="#3E4449" stroke-width=".8"/><circle cx="15.6" cy="23.4" r="1.6" fill="#1d1d1d"/><circle cx="24.2" cy="21.6" r="1.6" fill="#1d1d1d"/><path d="M6 33 l-2 3 M8.5 34 l-1 3.2 M11 34.6 l0 3.2" stroke="#8A949C" stroke-width="1.2" stroke-linecap="round"/></svg>'},
+    woodcutting: {name: 'Kevin the Squirrel', icon: '\u{1F43F}\uFE0F', odds: 20000, per: 'log', hint: 'Something keeps stealing your acorns...', desc: 'Steals your nuts. Emotionally.'},
+    brewing:  {name: 'Barry the Fruit Fly',  icon: '\u{1FAB0}', odds: 5000, per: 'brew', hint: 'Something keeps hovering over your beer...', desc: 'Showed up for the beer. Never left.'},
     farming:  {name: 'Mortimer the Mole',    icon: '🕳️', odds: 600,   per: 'harvest',     hint: 'Someone keeps leaving molehills in your plots...', desc: 'Digs up your garden. Takes the credit for the harvest.',
       svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="25" rx="14" ry="12" fill="#5B4636"/><ellipse cx="20" cy="28" rx="8" ry="6" fill="#8A6F5A"/><ellipse cx="20" cy="25.5" rx="3.2" ry="2.4" fill="#F29AAE"/><path d="M13.5 20.5q2-2 4 0M22.5 20.5q2-2 4 0" stroke="#1d1d1d" stroke-width="1.6" fill="none" stroke-linecap="round"/><ellipse cx="10.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><ellipse cx="29.5" cy="34" rx="4" ry="2.8" fill="#F29AAE"/><path d="M9.5 15a10.5 8.5 0 0 1 21 0z" fill="#F2B533"/><rect x="8" y="14" width="24" height="2.6" rx="1.2" fill="#D99A1E"/><circle cx="20" cy="10.5" r="2" fill="#FFF4C2"/></svg>'},
   },
@@ -200,6 +202,34 @@ const CONFIG = {
   // enemies hit harder now that armour exists, so a dad in matching gear takes about what he took before
   enemyHitMult: 1.1, enemyAccBonus: 0.03,   // longer fights already cost more health, so the hit boost is modest
   enemyHpPerArea: 0.25,          // enemy health x (1 + this x area number): Backyard stays as is, later areas get much tougher
+  // YARD: woodcutting gives logs (idle, like fishing). Brewing turns 1 log + 1 vegetable into a beer (idle, like cooking).
+  // Beer i needs log i and vegetable floor(i/2). One beer is active at a time and buffs the next beerFights fights.
+  woodSeconds: 60, brewSeconds: 30, beerFights: 20,
+  trees: [
+    {name: "Neighbour's Hedge",      req: 1,  xp: 10,  desc: "He'll never notice."},
+    {name: 'Leftover Christmas Tree', req: 11, xp: 15,  desc: "It's March."},
+    {name: 'Garden Birch',           req: 21, xp: 22,  desc: 'Pretty bark. Shame, really.'},
+    {name: 'Apple Tree',             req: 31, xp: 30,  desc: 'The one the kids climb.'},
+    {name: 'Old Oak',                req: 41, xp: 40,  desc: 'Older than your jokes.'},
+    {name: 'Weeping Willow',         req: 51, xp: 52,  desc: 'It cries when you chop it. So do you.'},
+    {name: 'Maple',                  req: 61, xp: 66,  desc: 'Sticky.'},
+    {name: 'Monkey Puzzle',          req: 71, xp: 82,  desc: 'Nobody knows how to cut it. Neither do you.'},
+    {name: 'Ancient Yew',            req: 81, xp: 100, desc: "Planted by your grandad's grandad."},
+    {name: 'The Old Tree House',     req: 91, xp: 120, desc: "The kids moved out. It's time."},
+  ],
+  // buff: hit = extra hit chance, dmg = extra damage, def = less damage taken, coins = extra coins, rare = rare drop chance multiplier
+  beers: [
+    {name: 'Hedge Shandy',           req: 1,  xp: 20,  buff: 'hit',   val: 0.05, desc: "Mostly lemonade. Don't tell anyone."},
+    {name: 'Potato Lager',           req: 11, xp: 30,  buff: 'dmg',   val: 0.05, desc: 'Tastes like crisps.'},
+    {name: 'Carrot Cake Ale',        req: 21, xp: 44,  buff: 'def',   val: 0.05, desc: 'Counts as one of your five a day.'},
+    {name: 'Scrumpy Cider',          req: 31, xp: 60,  buff: 'coins', val: 0.25, desc: 'Grandad\'s recipe. Grandad is unwell.'},
+    {name: 'Garlic Stout',           req: 41, xp: 80,  buff: 'hit',   val: 0.10, desc: 'Keeps vampires and enemies away.'},
+    {name: 'Weeping IPA',            req: 51, xp: 104, buff: 'dmg',   val: 0.10, desc: 'Hoppy. Then sad. Then hoppy again.'},
+    {name: 'Pumpkin Spice Ale',      req: 61, xp: 132, buff: 'def',   val: 0.10, desc: 'Autumn in a glass. Also in your beard.'},
+    {name: 'Monkey Business Porter', req: 71, xp: 164, buff: 'coins', val: 0.50, desc: 'No monkeys were harmed. Several were confused.'},
+    {name: 'Truffle Imperial Stout', req: 81, xp: 200, buff: 'both',  val: 0.15, desc: 'Fancy. You drink it with your pinky out.'},
+    {name: "Dad's Reserve",          req: 91, xp: 240, buff: 'rare',  val: 2,    desc: 'For special occasions. Like Tuesday.'},
+  ],
   newsEvery: 5,               // other dads see your level-ups every 5 levels (plus 99), and every rare drop, pet and badge
 };
 
@@ -209,8 +239,9 @@ const FISH = CONFIG.fish, AREAS = CONFIG.areas;
 // flat list of all 50 enemies; enemy id g = area * 5 + slot
 const ENEMIES = AREAS.flatMap((a, ri) => a.enemies.map((e, k) => Object.assign({id: ri * 5 + k, area: ri}, e, {hp: Math.round(e.hp * (1 + CONFIG.enemyHpPerArea * ri))})));
 // grouped like the tabs: combat, food, shed
-const SKILLS = {attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', fishing:'Fishing', farming:'Farming', cooking:'Cooking', trading:'Trading', diy:'DIY'};
-const SKILL_GROUPS = [['Combat', ['attack', 'strength', 'defence', 'hitpoints', 'slayer']], ['Food', ['fishing', 'farming', 'cooking']], ['Shed', ['trading', 'diy']]];
+const SKILLS = {attack:'Attack', strength:'Strength', defence:'Defence', hitpoints:'Hitpoints', slayer:'Slayer', fishing:'Fishing', farming:'Farming', cooking:'Cooking', woodcutting:'Woodcutting', brewing:'Brewing', trading:'Trading', diy:'DIY'};
+const SKILL_GROUPS = [['Combat', ['attack', 'strength', 'defence', 'hitpoints', 'slayer']], ['Food', ['fishing', 'farming', 'cooking']], ['Yard', ['woodcutting', 'brewing']], ['Shed', ['trading', 'diy']]];
+const TREES = CONFIG.trees, BEERS = CONFIG.beers;
 const MATS = CONFIG.materials, SLOTS = ['head', 'body'];
 const CROPS = CONFIG.crops;
 const vegOf = i => Math.floor(i / 2);             // fish i's vegetable (and area ri's seed)
@@ -256,7 +287,8 @@ function freshState(name, look) {
     v: 2, name: name || 'Dad', look: Object.assign({}, DEFAULT_LOOK, look || {}),
     coins: 0, capLevel: 0,
     hp: CONFIG.hpBase + CONFIG.hpPerLvl, hpAt: t,
-    xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, trading: 0, diy: 0}, style: 'attack',
+    xp: {attack: 0, strength: 0, defence: 0, hitpoints: 0, slayer: 0, fishing: 0, cooking: 0, farming: 0, woodcutting: 0, brewing: 0, trading: 0, diy: 0}, style: 'attack',
+    logs: Array(10).fill(0), beers: Array(10).fill(0), tree: 0, brewPick: -1, buff: null,   // buff = {b: beer index, left: fights left}
     mats: Array(CONFIG.materials.length).fill(0), gearInv: {head: Array(5).fill(0), body: Array(5).fill(0)}, wear: {head: -1, body: -1}, hideGear: {head: false, body: false}, sellMats: false,
     seeds: Array(CONFIG.crops.length).fill(0), veg: Array(CONFIG.crops.length).fill(0), meals: Array(10).fill(0),
     plots: [{c: null, at: 0}],   // farm plots: c = crop growing (null = empty), at = when it was planted
@@ -311,6 +343,9 @@ function migrate(s) {
   const gi = s.gearInv || {}; m.gearInv = {head: intArr(gi.head, 5), body: intArr(gi.body, 5)};
   const hg = s.hideGear || {}; m.hideGear = {head: !!hg.head, body: !!hg.body};
   const wr = s.wear || {}; m.wear = {}; for (const sl of ['head', 'body']) { const t = Math.floor(+wr[sl]); m.wear[sl] = t >= 0 && t < 5 && m.gearInv[sl][t] > 0 ? t : -1; }
+  m.logs = intArr(s.logs, 10); m.beers = intArr(s.beers, 10); m.tree = clamp(Math.floor(+m.tree || 0), 0, 9);
+  m.brewPick = Number.isInteger(m.brewPick) && m.brewPick >= -1 && m.brewPick < 10 ? m.brewPick : -1;
+  m.buff = m.buff && m.buff.b >= 0 && m.buff.b < 10 && m.buff.left > 0 ? {b: Math.floor(m.buff.b), left: Math.floor(m.buff.left)} : null;
   m.autoEat = !!m.autoEat; m.badge = clamp(Math.floor(+m.badge || 0), 0, CONFIG.badges.length);
   const pets = {}; for (const k in CONFIG.pets) { const n = Math.floor(+((m.pets || {})[k]) || 0); if (n > 0) pets[k] = n; } m.pets = pets;
   if (!pets[m.petOut]) m.petOut = null;
@@ -321,7 +356,7 @@ function migrate(s) {
   if (found) { const best = m.weapons.reduce((b, n, i) => n ? i : b, -1); if (m.equipped < 0) m.equipped = best;
     m.log.unshift({text: `Rare drops are weapons now! Your old rare finds turned into ${found} weapon${found > 1 ? 's' : ''}. Check the Dad tab.`, kind: 'lvl'}); }
   // v0.12: one idle activity at a time instead of everything at once
-  if (!['fish', 'cook', 'trade', 'fight', 'diy'].includes(s.activity)) { m.activity = m.fightIdle ? 'fight' : 'fish'; m.actAt = now(); }
+  if (!['fish', 'cook', 'trade', 'fight', 'diy', 'wood', 'brew'].includes(s.activity)) { m.activity = m.fightIdle ? 'fight' : 'fish'; m.actAt = now(); }
   if (!Number.isFinite(m.actAt)) m.actAt = now();
   delete m.fishAt; delete m.cookAt; delete m.tradeAt; delete m.fightAt; delete m.fightIdle;
   return m;
@@ -336,7 +371,7 @@ const idleWindowMs = () => (CONFIG.idleBaseMinutes + CONFIG.idleStepMinutes * S.
 const unlockedAreas = () => AREAS.filter(a => a.req <= combatLevel()).length;
 function dadTitle() { return titleFor(totalLevel()); }
 function titleFor(t) {
-  return t >= 1000 ? 'Ultimate Dad' : t >= 850 ? 'Legendary Dad' : t >= 650 ? 'Veteran Dad' : t >= 450 ? 'Seasoned Dad' : t >= 250 ? 'Grill Master' : t >= 100 ? 'Weekend Warrior' : 'Rookie Dad'; }
+  return t >= 1200 ? 'Ultimate Dad' : t >= 1020 ? 'Legendary Dad' : t >= 780 ? 'Veteran Dad' : t >= 540 ? 'Seasoned Dad' : t >= 300 ? 'Grill Master' : t >= 120 ? 'Weekend Warrior' : 'Rookie Dad'; }
 const weapon = () => S.equipped >= 0 ? AREAS[S.equipped].weapon : null;
 const weaponBonus = () => weapon() ? weapon().dmg : 0;
 const tradeMult = () => CONFIG.tradeBase + CONFIG.tradePerLvl * lvl('trading');
@@ -455,6 +490,38 @@ function wear(sl, t) {
   S.wear[sl] = t; addLog(`Put on the ${gearName(sl, t)}. -${pct(CONFIG.armour[sl][t])} damage taken.`);
 }
 
+/* ---------- the yard: woodcutting and brewing ---------- */
+const bestTree = L => TREES.filter(t => t.req <= L).length - 1;
+function woodTry(r) {
+  const i = S.tree, T = TREES[i]; r.woodTries++; rollPet('woodcutting');
+  S.logs[i]++; S.xp.woodcutting += T.xp; r.logs[T.name] = (r.logs[T.name] || 0) + 1; r.woodXp += T.xp;   // a swing always lands, it's a hedge
+}
+const canBrew = i => lvl('brewing') >= BEERS[i].req && S.logs[i] > 0 && S.veg[vegOf(i)] > 0;
+// the beer you picked if you can make it, otherwise the best one you can
+const brewPickNow = () => { if (S.brewPick >= 0) return canBrew(S.brewPick) ? S.brewPick : -1; for (let i = 9; i >= 0; i--) if (canBrew(i)) return i; return -1; };
+function brewTry(r) {
+  const i = brewPickNow(); if (i < 0) return;
+  const B = BEERS[i]; S.logs[i]--; S.veg[vegOf(i)]--; S.beers[i]++; S.xp.brewing += B.xp; rollPet('brewing');
+  r.brewTries++; r.brewed[B.name] = (r.brewed[B.name] || 0) + 1; r.brewXp += B.xp;
+}
+// what the active beer does right now (0 when nothing is active)
+const beerBuff = kind => { if (!S.buff) return 0; const B = BEERS[S.buff.b]; return B.buff === kind || (B.buff === 'both' && (kind === 'hit' || kind === 'dmg')) ? B.val : 0; };
+function drinkBeer(i) {
+  if (!(S.beers[i] > 0)) return;
+  S.beers[i]--; S.buff = {b: i, left: CONFIG.beerFights};
+  addLog(`Cracked open a ${BEERS[i].name}. ${buffText(i)} for the next ${CONFIG.beerFights} fights.`);
+  return [`${BEERS[i].name}!`, 'gold'];
+}
+const buffText = i => { const B = BEERS[i]; return B.buff === 'hit' ? `+${pct(B.val)} hit chance` : B.buff === 'dmg' ? `+${pct(B.val)} damage` : B.buff === 'def' ? `-${pct(B.val)} damage taken`
+  : B.buff === 'coins' ? `+${pct(B.val)} coins` : B.buff === 'both' ? `+${pct(B.val)} damage and hit chance` : `${B.val}x rare drop chance`; };
+// one fight used up; when the beer runs out, auto-drink the same kind, otherwise the best you have
+function beerAfterFight() {
+  if (!S.buff) return; if (--S.buff.left > 0) return;
+  const was = S.buff.b; S.buff = null;
+  let next = S.beers[was] > 0 ? was : -1; if (next < 0) for (let i = 9; i >= 0; i--) if (S.beers[i] > 0) { next = i; break; }
+  if (next >= 0) drinkBeer(next); else addLog(`Your ${BEERS[was].name} is finished and the cellar is empty. Brew some more in the Yard.`, 'warn');
+}
+
 /* ---------- idle: fishing, cooking and (optional) fighting, processed in time order ---------- */
 function fishTry(r) {
   const i = S.spot, f = FISH[i]; r.fishTries++; rollPet('fishing');
@@ -479,22 +546,26 @@ function tradeTry(r) {
   rollPet('trading');
   r.tradeTries++; r.sold[it.name] = (r.sold[it.name] || 0) + 1; r.tradeCoins += coins; r.tradeXp += xp;
 }
-const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting', diy: 'taking junk apart'};
-const actMs = a => a === 'fish' ? CONFIG.fishSeconds * 1000 : a === 'cook' ? CONFIG.cookSeconds * 1000 : a === 'trade' ? CONFIG.tradeSeconds * 1000 : a === 'diy' ? CONFIG.diySeconds * 1000 : CONFIG.fightIdleMinutes * 60000;
-const canDo = a => a === 'cook' ? cookPick() >= 0 : a === 'trade' ? !!tradePick() : a === 'diy' ? !!dismantlePick() : true;
+const ACT = {fish: 'fishing', cook: 'cooking', trade: 'trading', fight: 'fighting', diy: 'taking junk apart', wood: 'chopping wood', brew: 'brewing'};
+const actMs = a => a === 'fish' ? CONFIG.fishSeconds * 1000 : a === 'cook' ? CONFIG.cookSeconds * 1000 : a === 'trade' ? CONFIG.tradeSeconds * 1000 : a === 'diy' ? CONFIG.diySeconds * 1000
+  : a === 'wood' ? CONFIG.woodSeconds * 1000 : a === 'brew' ? CONFIG.brewSeconds * 1000 : CONFIG.fightIdleMinutes * 60000;
+const canDo = a => a === 'cook' ? cookPick() >= 0 : a === 'trade' ? !!tradePick() : a === 'diy' ? !!dismantlePick() : a === 'brew' ? brewPickNow() >= 0 : true;
 function runIdle(t) {
   const end = Math.min(t, (S.activeAt || t) + idleWindowMs());
   const before = snapLevels(), fr = newFightTally();
-  const r = {fishTries: 0, caught: {}, fishXp: 0, cookTries: 0, cooked: {}, cookXp: 0, burnt: 0, tradeTries: 0, sold: {}, tradeCoins: 0, tradeXp: 0, diyTries: 0, mats: {}, diyXp: 0, events: 0};
+  const r = {fishTries: 0, caught: {}, fishXp: 0, cookTries: 0, cooked: {}, cookXp: 0, burnt: 0, tradeTries: 0, sold: {}, tradeCoins: 0, tradeXp: 0, diyTries: 0, mats: {}, diyXp: 0, woodTries: 0, logs: {}, woodXp: 0, brewTries: 0, brewed: {}, brewXp: 0, events: 0};
   for (let guard = 0; guard < 50000; guard++) {
     const T = S.actAt + actMs(S.activity); if (T > end) break;
     S.actAt = T; r.events++;
     // ran out of raw fish or things to sell: your dad goes back to fishing instead of standing around
-    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : S.activity === 'diy' ? 'No junk left to take apart, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
+    if (!canDo(S.activity)) { addLog(S.activity === 'cook' ? 'Out of raw fish to cook, so your dad went back to fishing.' : S.activity === 'diy' ? 'No junk left to take apart, so your dad went back to fishing.'
+      : S.activity === 'brew' ? 'Out of logs or vegetables for that beer, so your dad went back to fishing.' : 'Nothing left to sell, so your dad went back to fishing.', 'warn'); S.activity = 'fish'; continue; }
     if (S.activity === 'fish') fishTry(r);
     else if (S.activity === 'cook') cookTry(r);
     else if (S.activity === 'trade') tradeTry(r);
     else if (S.activity === 'diy') diyTry(r);
+    else if (S.activity === 'wood') woodTry(r);
+    else if (S.activity === 'brew') brewTry(r);
     else { regenTo(T); idleFight(fr); }
   }
   if (t > end) {   // past the idle window: pause, and pick up again when the game is opened
@@ -504,6 +575,8 @@ function runIdle(t) {
   // one quiet catch every 30 seconds isn't news, a pile of them after being away is
   if (r.fishTries > 2) addLog(`Fishing: ${r.fishTries} casts, caught ${itemsText(r.caught) || 'nothing'}. +${fmt(r.fishXp)} xp`);
   if (r.tradeTries > 2) addLog(`Trading: sold ${itemsText(r.sold)} for ${fmt(r.tradeCoins)} coins. +${fmt(r.tradeXp)} xp`);
+  if (r.woodTries > 2) addLog(`Woodcutting: chopped ${itemsText(r.logs)} logs. +${fmt(r.woodXp)} xp`);
+  if (r.brewTries > 2) addLog(`Brewing: brewed ${itemsText(r.brewed)}. +${fmt(r.brewXp)} xp`);
   if (r.diyTries > 2) addLog(`DIY: took apart ${r.diyTries} pieces of junk, got ${itemsText(r.mats)}. +${fmt(r.diyXp)} xp`);
   if (r.cookTries > 2) addLog(`Cooking: cooked ${itemsText(r.cooked) || 'nothing'}${r.burnt ? `, burnt ${r.burnt}` : ''}. +${fmt(r.cookXp)} xp`);
   if (fr.n) addLog(fightTallyText(fr, 'Fight idle'), fr.ko ? 'warn' : '');
@@ -553,9 +626,9 @@ function rareAlert(ri) {
 // ev = every step as ['p', damage] (you hit), ['e', damage] (it hits), ['h', health, fish] (you ate)
 function simFight(g) {
   const E = ENEMIES[g], A = lvl('attack'), St = lvl('strength'), red = defRed(lvl('defence')), mh = maxHP();
-  const task = onTask(g), hitP = Math.min(CONFIG.hitMax, pHit(A, E.lvl) + (task ? badgeBonus() : 0));   // the badge helps you hit your task enemy
-  const mult = (1 + weaponBonus()) * (1 + (task ? slayerBonus() : 0)) * (1 + (task ? badgeBonus() : 0));   // weapon, Slayer level and badge stack
-  const food = S.autoEat ? foodList() : null, heals = foodHeals(), arm = armourRed();
+  const task = onTask(g), hitP = Math.min(CONFIG.hitMax, pHit(A, E.lvl) + (task ? badgeBonus() : 0) + beerBuff('hit'));   // badge (task only) and beer help you hit
+  const mult = (1 + weaponBonus()) * (1 + (task ? slayerBonus() : 0)) * (1 + (task ? badgeBonus() : 0)) * (1 + beerBuff('dmg'));   // weapon, Slayer level, badge and beer stack
+  const food = S.autoEat ? foodList() : null, heals = foodHeals(), arm = Math.min(0.9, armourRed() + beerBuff('def'));
   let ehp = E.hp, hp = S.hp, taken = 0, healed = 0, ateLast = false; const ev = [], eaten = {};
   for (let round = 0; round < 200; round++) {
     // auto-eat: below the line with food in the bag, your dad eats instead of attacking this round.
@@ -583,17 +656,19 @@ const fightOnce = g => applyFight(simFight(g));
 function applyFight(sim) {
   const g = sim.g, E = ENEMIES[g], taken = sim.taken;
   const ate = useFood(sim.eaten);                     // food eaten during the fight leaves the bag
+  const coinMult = 1 + beerBuff('coins'), rareMult = beerBuff('rare') || 1;   // read the beer before this fight uses it up
+  beerAfterFight();
   // health = how the fight ended, plus whatever regenerated while it played (exactly what the replay showed)
   S.hp = sim.ko ? 0 : clamp((sim.hpEnd ?? S.hp - taken) + (S.hp - (sim.hpStart ?? S.hp)), 0, maxHP());
   if (!sim.win) { if (sim.ko) S.stats.knockouts++; return {g, win: false, taken, items: [], ate}; }
-  const coins = Math.max(1, Math.round(E.coins * (0.6 + Math.random() * 0.8)));
+  const coins = Math.max(1, Math.round(E.coins * (0.6 + Math.random() * 0.8) * coinMult));
   const hx = Math.round(E.xp * CONFIG.hpXpRatio);
   S.coins += coins; S.xp[S.style] += E.xp; S.xp.hitpoints += hx;   // xp goes to the chosen combat style
   const items = []; let rare = null, potion = false;
   if (Math.random() < E.potion) { S.pots[E.area]++; potion = true; items.push(AREAS[E.area].potion[0]); }
   if (Math.random() < CONFIG.junkChance) { addLoot('e' + g); items.push(E.junk[0]); }
   if (Math.random() < CONFIG.seedChance) { S.seeds[vegOf(E.area)]++; items.push(CROPS[vegOf(E.area)].name + ' Seed'); }
-  if (Math.random() < CONFIG.rareChance) { S.weapons[E.area]++; items.push(AREAS[E.area].weapon.name); rare = E.area; }
+  if (Math.random() < CONFIG.rareChance * rareMult) { S.weapons[E.area]++; items.push(AREAS[E.area].weapon.name); rare = E.area; }
   S.stats.kills++; S.kc[g]++;
   let taskDone = null;
   if (onTask(g)) { S.task.done++; if (S.task.done >= S.task.n) taskDone = completeTask(); }
@@ -768,6 +843,9 @@ function checkLevelUps(before) {
       // if you were at your best spot, move up to the new best one automatically
       if (S.spot === bestSpot(before[k]) && bestSpot(l) > S.spot) { S.spot = bestSpot(l); extra += ` Moved to the ${FISH[S.spot].name} spot.`; }
     }
+    if (k === 'woodcutting') { TREES.filter(opened).forEach(t => unlocks.push(`New tree: ${t.name}`));
+      if (S.tree === bestTree(before[k]) && bestTree(l) > S.tree) { S.tree = bestTree(l); extra += ` Moved to the ${TREES[S.tree].name}.`; } }
+    if (k === 'brewing') BEERS.filter(opened).forEach(b => { extra += ` You can now brew ${b.name}.`; unlocks.push(`New beer: ${b.name}`); });
     if (k === 'cooking') FISH.filter(opened).forEach(f => { extra += ` You can now cook ${f.name}.`; unlocks.push(`Can cook ${f.name}`); });
     if (k === 'hitpoints') extra = ` Max health is now ${maxHP()}.`;
     if (k === 'slayer') extra = ` +${pct1(slayerBonus())} damage against your task enemy.`;
@@ -822,7 +900,10 @@ function doAction(action, a) {
   switch (action) {
     case 'sync': break;
     case 'spot': { const i = intIn(a.i, 0, bestSpot(lvl('fishing'))); if (i != null && i !== S.spot) { S.spot = i; addLog(`Now fishing at the ${FISH[i].name} spot.`); } break; }
-    case 'activity': if (['fish', 'cook', 'trade', 'diy'].includes(a.a)) setActivity(a.a); break;
+    case 'activity': if (['fish', 'cook', 'trade', 'diy', 'wood', 'brew'].includes(a.a)) setActivity(a.a); break;
+    case 'tree': { const i = intIn(a.i, 0, bestTree(lvl('woodcutting'))); if (i != null && i !== S.tree) { S.tree = i; addLog(`Now chopping the ${TREES[i].name}.`); } break; }
+    case 'brewPick': { const i = intIn(a.i, -1, 9); if (i != null && (i < 0 || lvl('brewing') >= BEERS[i].req)) S.brewPick = i; break; }
+    case 'drink': { const i = intIn(a.i, 0, 9); if (i != null) out.pop = drinkBeer(i); break; }
     case 'fightIdle': setActivity(S.activity === 'fight' ? 'fish' : 'fight'); break;
     case 'area': { const i = intIn(a.i, 0, unlockedAreas() - 1); if (i != null) { S.area = i; arenaMsg = null; } break; }
     case 'style': if (STYLES.some(x => x[0] === a.s) && S.style !== a.s) { S.style = a.s; addLog(`Combat style: ${STYLES.find(x => x[0] === S.style)[1]}. Fight xp now trains ${SKILLS[S.style]}.`); } break;

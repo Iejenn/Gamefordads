@@ -321,10 +321,10 @@ nav button span{white-space:nowrap}
 .trio{grid-template-columns:1fr 1fr 1fr;gap:10px 12px}
 .trio .skill.compact h2{font-size:14px}.trio .skill.compact .lvl{font-size:26px}.trio .xpline{font-size:11px}
 .farmhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.plots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.plot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);min-height:96px}
-.plot b{font-size:14px}.plot small{font-size:12px;color:var(--muted)}
-.plot-ic{font-size:30px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.plots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.plot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface-2);min-height:66px;min-width:0}
+.plot b{font-size:12px}.plot small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.plot-ic{font-size:24px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
 .plot.empty{border-style:dashed;background:transparent}.plot.empty .plot-ic{font-family:var(--font-num);color:var(--primary)}
 .plot.ready{border-color:var(--energy);background:color-mix(in srgb,var(--energy) 14%,var(--surface))}
 .plot.ready b{color:var(--energy)}
@@ -390,6 +390,11 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 .switch span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
 .switch.on{background:var(--primary)}.switch.on span{left:23px}
 .act-pick[aria-pressed="true"]{border-color:var(--primary)}
+.pchip.beer{border:1.5px solid transparent;cursor:pointer}.pchip.beer.on{border-color:var(--gold)}
+.beerline{flex-basis:100%;margin:6px 0 4px}
+.beer-table div{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
+.skip-btn{display:block;margin:10px auto 0}
+#arena{cursor:pointer}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -406,11 +411,18 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.23"></script>
+<script src="engine.js?v=0.24"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.24', title: 'The Backyard Brewery', notes: [
+    'New tab: the <b>Yard</b>, with two new skills. <b>Woodcutting</b>: from the Neighbour\'s Hedge ("He\'ll never notice") to the Old Tree House. <b>Brewing</b>: 1 log + 1 vegetable = 1 beer. A new tree and a new beer every 10 levels.',
+    '<b>Beer = buffs</b> for your next 20 fights: hit chance, damage, defence, more coins or rarer drops. When one runs out your dad opens the next one himself. Tap a beer in the cellar to switch.',
+    'Bigger harvests, so there\'s enough for meals <i>and</i> beer. The farm plots now fit 5 in a row.',
+    'Slayer moved into the Fight tab. Every tab starts with a "?" that explains what\'s on it. And a <b>Skip</b> button for fights.',
+    'Two new pets to hunt. One of them steals your nuts. Emotionally.',
+  ]},
   {v: '0.23', title: 'A tidier game', notes: [
     '<b>Fight tab:</b> pick your area at the top, and the Fight button sits right under the arena. Enemy list and the fine print fold away.',
     'Tap the <b>Idle line</b> at the top of the screen to switch what your dad is doing, from any tab.',
@@ -509,7 +521,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.23';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -590,6 +602,7 @@ ${glasses}${cap}${badgePin(L.badge)}
 
 /* ---------- icons ---------- */
 const ICON = {
+  yard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M12 3l6 8h-3l4 5H5l4-5H6z"/></svg>`,
   coin: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/></svg>`,
   bolt: `<svg viewBox="0 0 24 24"><path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="currentColor"/></svg>`,
   heart: `<svg viewBox="0 0 24 24"><path d="M12 21s-8.5-5.2-8.5-11.2A4.6 4.6 0 0 1 12 7.2a4.6 4.6 0 0 1 8.5 2.6C20.5 15.8 12 21 12 21z" fill="currentColor"/></svg>`,
@@ -662,6 +675,8 @@ function actMenu() {
       ${pick('fish', 'Fishing', '', `${FISH[S.spot].name} spot, one cast a minute`)}
       ${pick('cook', 'Cooking', c < 0 ? 'No raw fish you can cook' : '', c >= 0 ? `Next: ${makesMeal(c) ? CONFIG.meals[c] : FISH[c].name}` : '')}
       ${pick('trade', 'Trading', k ? '' : 'Nothing to sell', k ? `Next: ${lootInfo(k).name}` : '')}
+      ${pick('wood', 'Woodcutting', '', `${TREES[S.tree].name}, one log a minute`)}
+      ${pick('brew', 'Brewing', brewPickNow() < 0 ? 'Need a log and a vegetable' : '', brewPickNow() >= 0 ? `Next: ${BEERS[brewPickNow()].name}` : '')}
       ${pick('diy', 'DIY', d ? '' : 'No junk to take apart', d ? `Next: ${lootInfo(d).name}` : '')}
       ${pick('fight', 'Fight idle', S.hp <= 0 ? 'Knocked out, heal first' : '', `${AREAS[S.area].place}, one fight a minute`)}
     </div>`);
@@ -672,7 +687,7 @@ function renderTop() {
   $('#top').innerHTML = `<div class="who"><div class="av">${avatarSVG(myLook())}${petBadge(S.petOut, 'sm')}</div>
     <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
     <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
-    <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
+    <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, (anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt)) + (S.buff ? ` · 🍺 ${S.buff.left}` : ''), 'Health')}</div>
     <button class="idleline" data-act="actMenu" aria-label="Change what your dad is doing">${idleLine()} <span class="il-caret">&#9662;</span></button>
     ${updateReady ? `<button class="updatebar" data-act="reloadApp">New version ${esc(updateReady)} is ready. Tap to update</button>` : ''}`;
   updateProgress();
@@ -723,10 +738,10 @@ const ptime = ms => { const m = Math.ceil(Math.max(0, ms) / 60000); return m >= 
 const icon = x => x.svg || x.icon;
 function plotTile(p, i) {
   if (p.c == null) { const c = bestSeed();
-    return `<button class="plot empty" data-act="plot" data-i="${i}" ${c < 0 ? 'disabled' : ''}><span class="plot-ic">+</span><b>Plant</b><small>${c >= 0 ? CROPS[c].name : 'No seeds'}</small></button>`; }
+    return `<button class="plot empty" data-act="plot" data-i="${i}" ${c < 0 ? 'disabled' : ''} aria-label="Plant ${c >= 0 ? CROPS[c].name : 'nothing (no seeds)'}"><span class="plot-ic">+</span><small>${c >= 0 ? CROPS[c].name : 'No seeds'}</small></button>`; }
   const C = CROPS[p.c], end = p.at + growMs(p.c), ready = now() >= end;
-  return `<button class="plot${ready ? ' ready' : ''}" data-act="plot" data-i="${i}"><span class="plot-ic">${C.icon}</span><b>${ready ? 'Harvest!' : C.name}</b>
-    <small>${ready ? C.name + ' is ready' : `<span class="plotT" data-end="${end}">${ptime(end - now())}</span>`}</small></button>`;
+  return `<button class="plot${ready ? ' ready' : ''}" data-act="plot" data-i="${i}" aria-label="${C.name}${ready ? ', ready to harvest' : ', growing'}"><span class="plot-ic">${C.icon}</span>
+    <small>${ready ? '<b>Ready!</b>' : `<span class="plotT" data-end="${end}">${ptime(end - now())}</span>`}</small></button>`;
 }
 function farmCard() {
   const anyReady = S.plots.some(plotReady), seeds = CROPS.map((C, c) => S.seeds[c] ? `${S.seeds[c]} ${C.name} seed${S.seeds[c] > 1 ? 's' : ''}${lvl('farming') < C.req ? ` (needs Farming ${C.req})` : ''}` : '').filter(Boolean).join(', ');
@@ -782,7 +797,7 @@ function arenaHTML() {
   const tb = E && onTask(g) ? badgeBonus() : 0;   // the badge only counts against your task enemy
   const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0)) * (1 + tb)) : 0, eMax = E ? enemyMax(E) : 0;
   const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
-  const msg = anim ? {text: 'Tap here to skip', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
+  const msg = anim ? {text: '', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
   return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
     <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(myLook())}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
       <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
@@ -791,7 +806,7 @@ function arenaHTML() {
     <div class="fighter"><div class="portrait foe${E && ehp <= 0 ? ' down' : ''}" id="foeBox" style="background:${A.tint}"><span class="emo" aria-hidden="true">${E ? E.icon : '❔'}</span></div>
       <div class="hpbar${E ? '' : ' empty'}"><div id="foeHp" style="width:${E ? ehp / E.hp * 100 : 100}%"></div></div>
       <div class="fname"><span>${E ? E.name : 'Who knows?'}</span><b id="foeHpNum">${E ? `${ehp}/${E.hp}` : '?'}</b></div>${E ? fst(Math.min(0.95, E.acc + CONFIG.enemyAccBonus), eMax) : ''}</div>
-    <p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p></section>`;
+    ${anim ? '<button class="sbtn skip-btn" data-act="skipFight">Skip to the end</button>' : `<p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p>`}</section>`;
 }
 function healBtnsHTML(hp) {
   if (anim) return `<button class="btn alt" disabled>Eat<small>${S.autoEat ? 'Auto-eat is on' : 'Not during a fight'}</small></button>
@@ -830,12 +845,14 @@ function fightTab() {
     <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
     <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat ? `${foodList().reduce((a, b) => a + b, 0)} food in the bag` : `Eat below ${pct(CONFIG.autoEatBelow)} health`}</small></button>
     <button class="btn idle${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Back to fishing' : `1 fight a minute`}</small></button></div>
+    ${beerLine()}
     ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
     ${hint ? `<p class="hint">${hint}</p>` : ''}</section>
   ${taskBanner()}
   <h3 class="sect">Your fighting</h3>
   <div class="duo quad">${skillHTML('attack', true)}${skillHTML('strength', true)}${skillHTML('defence', true)}${skillHTML('hitpoints', true)}</div>
   <div class="styles" role="group" aria-label="Combat style">${styles}</div>
+  <details class="fold"><summary>Slayer: level ${lvl('slayer')}, ${S.slayerPts} point${S.slayerPts === 1 ? '' : 's'}</summary>${slayerTab()}</details>
   <details class="fold"><summary>Enemies in ${A0.place}</summary>
     <p class="small note">Each fight is a random one of these five${S.task && ENEMIES[S.task.e].area === S.area ? `. Your task enemy shows up ${pct(CONFIG.slayerEncounter)} of the time while on task` : ''}. Any of them can drop the ${A0.weapon.icon} ${A0.weapon.name} (${rate(CONFIG.rareChance)}).</p>
     <p class="small note legend"><span class="st hp">${ICON.heart}</span> health <span class="st">${ICON.sword}</span> max hit, after your Defence <span class="st gold">${ICON.coin}</span> coins</p>
@@ -852,6 +869,37 @@ function fightTab() {
     <p class="why">In the fight screen, <span class="st">${ICON.target}</span> is the chance to hit and <span class="st">${ICON.sword}</span> the max hit. A blue 0 is a miss, or a hit fully blocked by your Defence.</p>`)}`;
 }
 
+// the YARD: chop wood, brew beer, drink beer (the buff lasts a number of fights)
+const beerLine = () => S.buff ? `<p class="small beerline">🍺 <b>${BEERS[S.buff.b].name}</b>: ${buffText(S.buff.b)}, ${S.buff.left} fight${S.buff.left === 1 ? '' : 's'} left</p>` : '';
+function yardTab() {
+  const L = lvl('woodcutting'), BL = lvl('brewing'), T = TREES[S.tree], bi = brewPickNow(), shown = S.brewPick >= 0 ? S.brewPick : bi;
+  const trees = TREES.slice(0, visibleCount(TREES, L)).map((x, j) => { const locked = L < x.req;
+    return `<button class="pick" data-act="tree" data-i="${j}" aria-pressed="${j === S.tree}" ${locked ? 'disabled' : ''}><span class="pn">${x.name}</span>
+      <span class="pm">${locked ? `Opens at Woodcutting ${x.req}` : `${x.xp} xp a log. ${x.desc}`}</span></button>`; }).join('');
+  const picks = `<button class="pick" data-act="brewPick" data-i="-1" aria-pressed="${S.brewPick < 0}"><span class="pn">Best I can make</span><span class="pm">Picks the best beer you have ingredients for</span></button>`
+    + BEERS.slice(0, visibleCount(BEERS, BL)).map((b, i) => { const locked = BL < b.req;
+      return `<button class="pick" data-act="brewPick" data-i="${i}" aria-pressed="${S.brewPick === i}" ${locked ? 'disabled' : ''}><span class="pn">${b.name}</span>
+        <span class="pm">${locked ? `Opens at Brewing ${b.req}` : `${buffText(i)}. Needs ${TREES[i].name} log + ${CROPS[vegOf(i)].name}`}</span></button>`; }).join('');
+  const logs = TREES.map((x, i) => S.logs[i] ? `${S.logs[i]} ${x.name}` : '').filter(Boolean).join(', ');
+  const cellar = BEERS.map((b, i) => S.beers[i] ? `<button class="pchip beer${S.buff && S.buff.b === i ? ' on' : ''}" data-act="drink" data-i="${i}">${b.name} <b>${S.beers[i]}</b></button>` : '').join('');
+  const B = shown >= 0 ? BEERS[shown] : null;
+  return `${helpBox("What's in the Yard", `<p><b>Woodcutting</b> gives logs, one a minute from the best tree you can chop. <b>Brewing</b> turns 1 log + 1 vegetable into a beer, one every ${CONFIG.brewSeconds} seconds.</p>
+      <p><b>Beer</b> buffs your next ${CONFIG.beerFights} fights (also fight idle). One at a time. When it runs out your dad opens the same kind again, or else his best one. Tap a beer in the cellar to switch.</p>
+      <div class="beer-table">${BEERS.map((b, i) => `<div><b>${b.name}</b> <span class="lvtag">Brewing ${b.req}</span><br>${buffText(i)}. ${TREES[i].name} log + ${CROPS[vegOf(i)].name}. <i>${b.desc}</i></div>`).join('')}</div>`)}
+  <div class="duo">${skillHTML('woodcutting', true)}${skillHTML('brewing', true)}</div>
+  ${doingNow()}
+  <section class="idlecard${S.activity === 'wood' ? ' active' : ''}"><p class="stage-title">${S.activity === 'wood' ? 'Chopping' : 'Chop'} the ${T.name}</p>
+    <p class="stage-meta">One log every ${CONFIG.woodSeconds} seconds. <i>${T.desc}</i></p>${petLine('woodcutting')}
+    ${S.activity === 'wood' ? progHTML('actBar', 'Next log in') : actBtn('wood', 'Start chopping', '')}
+    <p class="small" style="margin-top:8px">${logs ? `Log pile: ${logs}.` : 'No logs yet.'}</p></section>
+  <section class="idlecard${S.activity === 'brew' ? ' active' : ''}">
+    <details class="areapick"><summary><span class="ap-label">Brewing</span><b>${S.brewPick < 0 ? 'Best I can make' : BEERS[S.brewPick].name}</b><span class="ap-caret">&#9662;</span></summary><div class="panel">${picks}</div></details>
+    <p class="stage-meta">${B ? `Next: <b>${B.name}</b> (${buffText(shown)}). Needs 1 ${TREES[shown].name} log + 1 ${CROPS[vegOf(shown)].name}, you have ${S.logs[shown]} and ${S.veg[vegOf(shown)]}.` : 'Nothing to brew: you need a log and the matching vegetable.'}</p>${petLine('brewing')}
+    ${S.activity === 'brew' ? progHTML('actBar', 'Next beer in') : actBtn('brew', 'Start brewing', bi < 0 ? 'Need a log and a vegetable' : '')}</section>
+  <h3 class="sect">Cellar</h3>
+  <div class="pantry">${S.buff ? beerLine() : '<p class="small" style="flex-basis:100%;margin:0 0 4px">No beer open. Tap one to crack it open.</p>'}${cellar || '<p class="small">The cellar is empty. Brew something.</p>'}</div>
+  <details class="fold"><summary>Change tree</summary><div class="panel">${trees}</div></details>`;
+}
 function slayerTab() {
   const T = S.task, E = T ? ENEMIES[T.e] : null;
   const task = T
@@ -955,7 +1003,9 @@ function ranksTab() {
   const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
   return `<h2 class="pagetitle">Ranks</h2>
   <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dad${cloud.scores.length === 1 ? '' : 's'} on total level. ` : ''}Updates about once a minute while dads play.</p>
-  <div id="hsBox">${highscoresHTML()}</div>`;
+  <div id="hsBox">${highscoresHTML()}</div>
+  ${helpBox("What's on the Ranks", `<p>Every dad, ranked. Tap a category on the left: total level, combat, a skill or kills. Your own row is marked.</p>
+    <p>Only dads checked by the server show up, so no cheating. The board updates about once a minute while dads play.</p>`)}`;
 }
 // what your dad has on: weapon, head and body
 function petSheet(k) {
@@ -1011,6 +1061,10 @@ function dadTab() {
     return `<button class="tile${n ? '' : ' unknown'}${S.equipped === i ? ' on' : ''}" data-act="weaponInfo" data-i="${i}" ${n ? `style="background:${a.tint}"` : ''}>
       <span class="t-ic">${n ? a.weapon.icon : '?'}</span>${n > 1 ? `<span class="t-n">x${n}</span>` : ''}</button>`; }).join('')}</div>
   <p class="small note" style="margin-top:6px">Tap a tile for details. Pets and weapons are super rare.</p>
+  ${helpBox("What's on the Dad tab", `<p>Your <b>Dad card</b>: levels, title, weapon and armour. <b>Share card</b> makes an image to brag with.</p>
+    <p><b>Gear</b>: the weapon and armour you wear. The eye hides a piece on your dad, it still protects you.</p>
+    <p><b>Cloud code</b>: the only key to your dad. Keep it safe, type it on any phone to get him back.</p>
+    <p><b>Pets</b> and <b>weapons</b>: super rare collections. Tap a tile for details and odds.</p>`)}
   <details class="tools"><summary>Switch dad or start over</summary><div class="inner">
     <p class="small"><b>Got a cloud code from another phone?</b> Type it here to play that dad on this phone.</p>
     <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -1095,7 +1149,7 @@ async function makeShareCard() {
   // skills
   // skills in two columns, four rows
   const GAP = 60, cellW = (CW - PAD * 2 - GAP) / 2, rowH = Math.floor(585 / Math.ceil(Object.keys(SKILLS).length / 2));
-  const cols = [SKILL_GROUPS[0][1], SKILL_GROUPS.slice(1).flatMap(g => g[1])];
+  const cols = [['attack', 'strength', 'defence', 'hitpoints', 'slayer', 'diy'], ['fishing', 'farming', 'cooking', 'woodcutting', 'brewing', 'trading']];
   cols.forEach((list, col) => list.forEach((k, row) => {
     const i = row * 2 + col, x0 = X + PAD + col * (cellW + GAP), top = 440 + row * rowH;
     const l = lvl(k), lo = XP_FOR[l], hi = l < 100 ? XP_FOR[l + 1] : lo, w = l < 100 ? (S.xp[k] - lo) / (hi - lo) : 1;
@@ -1188,13 +1242,14 @@ function renderMain() {
   if (!S) { m.innerHTML = cloud.reason === 'offline'
     ? '<div class="upgrade" style="margin-top:40px;text-align:center"><p class="small"><b>Can\'t reach the server.</b> GFD needs internet: your dad lives on the server now.</p><button class="btn" style="width:100%;margin-top:12px" data-act="cloudRetry">Try again</button></div>'
     : '<p class="small" style="margin-top:40px;text-align:center">Loading your dad...</p>'; return; }
-  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: slayerTab, trade: tradeTab, ranks: ranksTab, dad: dadTab}[S.tab] || fishTab)();
+  m.innerHTML = ({fish: fishTab, fight: fightTab, slayer: fightTab, yard: yardTab, trade: tradeTab, ranks: ranksTab, dad: dadTab}[S.tab] || fishTab)();
+  const hb = m.querySelector(':scope > details.help'); if (hb) m.prepend(hb);   // "what's on this page" always sits at the top
   updateProgress();
 }
 function renderNav() {
   const nav = $('#nav'), tk = $('#ticker');
   if (!S || editing === 'setup') { nav.innerHTML = ''; tk.hidden = true; return; }
-  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['slayer', 'Slayer', ICON.target], ['trade', 'Shed', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
+  nav.innerHTML = [['dad', 'Dad', ICON.dad], ['fish', 'Food', ICON.fish], ['fight', 'Fight', ICON.sword], ['yard', 'Yard', ICON.yard], ['trade', 'Shed', ICON.shop], ['ranks', 'Ranks', ICON.trophy]]
     .map(([t, label, ic]) => `<button data-act="tab" data-t="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic}<span>${label}</span></button>`).join('');
   tk.hidden = false; tk.setAttribute('aria-expanded', tickerOpen);
   const L = logLines();
@@ -1217,7 +1272,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'),
+  buyBadge: A('buyBadge'), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
   actMenu: () => { if (!anim) actMenu(); },
   pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
     if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
