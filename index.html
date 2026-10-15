@@ -395,6 +395,9 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 .beer-table div{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
 .skip-btn{display:block;margin:10px auto 0}
 #arena{cursor:pointer}
+.actions.three{grid-template-columns:repeat(3,1fr);gap:8px}
+.actions.three .btn{padding:10px 4px;font-size:15px;min-width:0}.actions.three .btn small{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
+.btn.beer{background:var(--surface);border:1.5px solid var(--gold);color:var(--ink)}.btn.beer.on{background:color-mix(in srgb,var(--gold) 18%,var(--surface))}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -411,11 +414,15 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.24.1"></script>
+<script src="engine.js?v=0.24.2"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.24.2', title: 'Beer on the Fight tab', notes: [
+    'Beers are opened on the <b>Fight tab</b> now, next to Eat and Potion. Tap <b>Beer</b> to pick one from your cellar.',
+    'New switch: <b>Auto-drink</b>. When your beer runs out your dad opens the next one himself. On by default.',
+  ]},
   {v: '0.24.1', title: 'Pick your seeds', notes: [
     'The farm has a <b>seed picker</b>, like the brewery: plant the best seed you have, or choose one (potatoes for your lager, garlic for your stout).',
     'Chopping wood no longer says "fighting" at the top of the screen. Your dad was chopping all along, honest.',
@@ -525,7 +532,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.24.1';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24.2';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -819,12 +826,15 @@ function arenaHTML() {
     ${anim ? '<button class="sbtn skip-btn" data-act="skipFight">Skip to the end</button>' : `<p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p>`}</section>`;
 }
 function healBtnsHTML(hp) {
+  const nb = S.beers.reduce((a, b) => a + b, 0);
+  const beer = anim ? `<button class="btn beer" disabled>Beer<small>${S.buff ? `${S.buff.left} fights left` : 'Not during a fight'}</small></button>`
+    : `<button class="btn beer${S.buff ? ' on' : ''}" data-act="beerMenu" ${nb || S.buff ? '' : 'disabled'}>Beer (${nb})<small>${S.buff ? `${BEERS[S.buff.b].name}, ${S.buff.left} left` : nb ? 'Tap to open one' : 'Brew some in the Yard'}</small></button>`;
   if (anim) return `<button class="btn alt" disabled>Eat<small>${S.autoEat ? 'Auto-eat is on' : 'Not during a fight'}</small></button>
-    <button class="btn red" disabled>Potion<small>Not during a fight</small></button>`;
+    ${beer}<button class="btn red" disabled>Potion<small>Not during a fight</small></button>`;
   const mh = maxHP(), food = foodList().reduce((a, b) => a + b, 0), pots = S.pots.reduce((a, b) => a + b, 0);
   const fi = smartPick(foodList(), foodHeals(), hp), pi = smartPick(S.pots, AREAS.map(a => a.potion[1]), hp);
   return `<button class="btn alt" data-act="eatBest" ${fi < 0 || hp >= mh ? 'disabled' : ''}>Eat (${food})<small>${fi >= 0 ? `${foodName(fi)}, heals ${foodHeals()[fi]}` : 'No food'}</small></button>
-    <button class="btn red" data-act="drinkBest" ${pi < 0 || hp >= mh ? 'disabled' : ''}>Potion (${pots})<small>${pi >= 0 ? `${AREAS[pi].potion[0]}, heals ${AREAS[pi].potion[1]}` : 'None yet'}</small></button>`;
+    ${beer}<button class="btn red" data-act="drinkBest" ${pi < 0 || hp >= mh ? 'disabled' : ''}>Potion (${pots})<small>${pi >= 0 ? `${AREAS[pi].potion[0]}, heals ${AREAS[pi].potion[1]}` : 'None yet'}</small></button>`;
 }
 function taskBanner() {
   if (!S.task) return '';
@@ -850,12 +860,12 @@ function fightTab() {
   return `<details class="areapick"><summary><span class="ap-label">Area</span><b>${A0.place}</b><span class="ap-meta">combat ${A0.req} to ${A0.req + 9}</span><span class="ap-caret">&#9662;</span></summary>
     <p class="small note" style="margin:8px 2px">A new area opens every 10 combat levels (combat level ${C}).</p><div class="panel">${areas}</div></details>
   ${arenaHTML()}
-  <section class="stage tight"><div class="actions">
+  <section class="stage tight"><div class="actions three">
     <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim || fightAsked ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
     <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
-    <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat ? `${foodList().reduce((a, b) => a + b, 0)} food in the bag` : `Eat below ${pct(CONFIG.autoEatBelow)} health`}</small></button>
-    <button class="btn idle${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Back to fishing' : `1 fight a minute`}</small></button></div>
-    ${beerLine()}
+    <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat<small>${S.autoEat ? `On, ${foodList().reduce((a, b) => a + b, 0)} food` : `Off`}</small></button>
+    <button class="btn idle${S.autoDrink ? ' on' : ''}" data-act="autoDrink">Auto-drink<small>${S.autoDrink ? 'On, next beer when empty' : 'Off'}</small></button>
+    <button class="btn idle${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Back to fishing' : `1 fight a minute`}</small></button></div>
     ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
     ${hint ? `<p class="hint">${hint}</p>` : ''}</section>
   ${taskBanner()}
@@ -891,10 +901,10 @@ function yardTab() {
       return `<button class="pick" data-act="brewPick" data-i="${i}" aria-pressed="${S.brewPick === i}" ${locked ? 'disabled' : ''}><span class="pn">${b.name}</span>
         <span class="pm">${locked ? `Opens at Brewing ${b.req}` : `${buffText(i)}. Needs ${TREES[i].name} log + ${CROPS[vegOf(i)].name}`}</span></button>`; }).join('');
   const logs = TREES.map((x, i) => S.logs[i] ? `${S.logs[i]} ${x.name}` : '').filter(Boolean).join(', ');
-  const cellar = BEERS.map((b, i) => S.beers[i] ? `<button class="pchip beer${S.buff && S.buff.b === i ? ' on' : ''}" data-act="drink" data-i="${i}">${b.name} <b>${S.beers[i]}</b></button>` : '').join('');
+  const cellar = BEERS.map((b, i) => S.beers[i] ? `<span class="pchip beer${S.buff && S.buff.b === i ? ' on' : ''}">${b.name} <b>${S.beers[i]}</b></span>` : '').join('');
   const B = shown >= 0 ? BEERS[shown] : null;
   return `${helpBox("What's in the Yard", `<p><b>Woodcutting</b> gives logs, one a minute from the best tree you can chop. <b>Brewing</b> turns 1 log + 1 vegetable into a beer, one every ${CONFIG.brewSeconds} seconds.</p>
-      <p><b>Beer</b> buffs your next ${CONFIG.beerFights} fights (also fight idle). One at a time. When it runs out your dad opens the same kind again, or else his best one. Tap a beer in the cellar to switch.</p>
+      <p><b>Beer</b> buffs your next ${CONFIG.beerFights} fights (also fight idle). One at a time. Open one with the <b>Beer</b> button on the Fight tab. With <b>Auto-drink</b> on, your dad opens the same kind again when it runs out, or else his best one.</p>
       <div class="beer-table">${BEERS.map((b, i) => `<div><b>${b.name}</b> <span class="lvtag">Brewing ${b.req}</span><br>${buffText(i)}. ${TREES[i].name} log + ${CROPS[vegOf(i)].name}. <i>${b.desc}</i></div>`).join('')}</div>`)}
   <div class="duo">${skillHTML('woodcutting', true)}${skillHTML('brewing', true)}</div>
   ${doingNow()}
@@ -907,7 +917,7 @@ function yardTab() {
     <p class="stage-meta">${B ? `Next: <b>${B.name}</b> (${buffText(shown)}). Needs 1 ${TREES[shown].name} log + 1 ${CROPS[vegOf(shown)].name}, you have ${S.logs[shown]} and ${S.veg[vegOf(shown)]}.` : 'Nothing to brew: you need a log and the matching vegetable.'}</p>${petLine('brewing')}
     ${S.activity === 'brew' ? progHTML('actBar', 'Next beer in') : actBtn('brew', 'Start brewing', bi < 0 ? 'Need a log and a vegetable' : '')}</section>
   <h3 class="sect">Cellar</h3>
-  <div class="pantry">${S.buff ? beerLine() : '<p class="small" style="flex-basis:100%;margin:0 0 4px">No beer open. Tap one to crack it open.</p>'}${cellar || '<p class="small">The cellar is empty. Brew something.</p>'}</div>
+  <div class="pantry">${S.buff ? beerLine() : '<p class="small" style="flex-basis:100%;margin:0 0 4px">No beer open. Open one with the Beer button on the Fight tab.</p>'}${cellar || '<p class="small">The cellar is empty. Brew something.</p>'}</div>
   <details class="fold"><summary>Change tree</summary><div class="panel">${trees}</div></details>`;
 }
 function slayerTab() {
@@ -1018,6 +1028,11 @@ function ranksTab() {
     <p>Only dads checked by the server show up, so no cheating. The board updates about once a minute while dads play.</p>`)}`;
 }
 // what your dad has on: weapon, head and body
+function beerSheet() {
+  const rows = BEERS.map((b, i) => S.beers[i] ? `<button class="pick" data-act="drinkS" data-i="${i}" aria-pressed="${!!(S.buff && S.buff.b === i)}"><span class="pn">${b.name} <span class="lvtag">x${S.beers[i]}</span></span><span class="pm">${buffText(i)} for ${CONFIG.beerFights} fights. <i>${b.desc}</i></span></button>` : '').join('');
+  openSheet(`<p class="news-kicker">Crack one open</p>${S.buff ? `<p class="small">Open now: <b>${BEERS[S.buff.b].name}</b>, ${buffText(S.buff.b)}, ${S.buff.left} fights left. A new beer replaces it.</p>` : '<p class="small">One beer at a time. It counts down per fight.</p>'}
+    <div class="panel" style="margin-top:10px">${rows || '<div class="empty">The cellar is empty. Brew some in the Yard.</div>'}</div>`);
+}
 function petSheet(k) {
   const P = CONFIG.pets[k], got = S.pets[k];
   openSheet(got ? `<div class="sheet-ic">${P.svg || P.icon}</div><h2>${P.name}</h2><p>${P.desc}</p>
@@ -1282,7 +1297,7 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'), seedPick: A('seedPick', b => ({i: +b.dataset.i})), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
+  buyBadge: A('buyBadge'), autoDrink: A('autoDrink'), beerMenu: () => { if (!anim) beerSheet(); }, drinkS: b => { closeShare(); act('drink', {i: +b.dataset.i}); }, seedPick: A('seedPick', b => ({i: +b.dataset.i})), skipFight: () => finishAnim(), tree: A('tree', b => ({i: +b.dataset.i})), brewPick: A('brewPick', b => ({i: +b.dataset.i})), drink: A('drink', b => ({i: +b.dataset.i})),
   actMenu: () => { if (!anim) actMenu(); },
   pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
     if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
