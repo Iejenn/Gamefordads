@@ -356,6 +356,40 @@ nav button span{white-space:nowrap}
 .eye-btn{float:right;width:32px;height:32px;margin:-4px -4px 0 8px;padding:5px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted)}
 .eye-btn[aria-pressed="true"]{color:var(--hp);border-color:var(--hp)}
 .eye-btn svg{width:100%;height:100%}
+details.help{margin:14px 0 4px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+details.help summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+details.help summary::-webkit-details-marker,details.fold summary::-webkit-details-marker,details.areapick summary::-webkit-details-marker{display:none}
+.q{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.help-body{padding:0 12px 10px;font-size:14px;line-height:1.45}.help-body p{margin:6px 0}
+details.fold{margin:12px 0}details.fold>summary{list-style:none;cursor:pointer;font-weight:700;padding:8px 2px;color:var(--ink)}
+details.fold>summary::after{content:' \25BE';color:var(--muted)}details.fold[open]>summary::after{content:' \25B4'}
+details.fold.inrow{margin:0;padding:0 14px 8px}
+details.areapick{margin-bottom:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface)}
+details.areapick summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:10px 12px}
+.ap-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.ap-meta{font-size:13px;color:var(--muted)}.ap-caret{margin-left:auto;color:var(--muted)}
+details.areapick[open]{padding-bottom:8px}details.areapick .panel{margin:0 8px}
+.actions .btn.idle{grid-column:span 1}
+button.idleline{display:block;width:100%;text-align:left;border:0;background:transparent;padding:0;cursor:pointer}
+.il-caret{color:var(--muted);font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tiles.five{grid-template-columns:repeat(5,1fr)}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:74px;padding:8px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer}
+.tiles.five .tile{min-height:58px}
+.tile.on{border-color:var(--gold);box-shadow:inset 0 0 0 1.5px var(--gold)}
+.tile.unknown{background:var(--surface-2)}.tile.unknown .t-ic{color:var(--muted);font-family:var(--font-num);font-size:22px}
+.t-ic{font-size:28px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}.t-ic svg{width:34px;height:34px}
+.t-name{font-size:12px;font-weight:700;color:var(--ink)}.tile.unknown .t-name{color:var(--muted);font-weight:400}
+.t-n{position:absolute;top:3px;right:5px;font-size:11px;font-weight:700;color:var(--muted)}
+.sheet-ic{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:36px;background:var(--surface-2);margin-bottom:6px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.sheet-ic svg{width:48px;height:48px}.sheet-ic.unknown{color:var(--muted);font-family:var(--font-num)}
+.newscard h2{margin:4px 0}.newscard p{color:var(--ink);text-align:left}
+.pantry{display:flex;flex-wrap:wrap;gap:6px;padding:12px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line)}
+.pantry .sbtn{flex-basis:100%}
+.pchip{padding:5px 9px;border-radius:999px;background:var(--surface-2);font-size:13px}.pchip b{margin-left:2px}
+.pchip.meal{background:color-mix(in srgb,var(--energy) 16%,var(--surface));}
+.switch{width:46px;height:26px;border-radius:13px;border:0;background:var(--line);position:relative;cursor:pointer;flex:none}
+.switch span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.switch.on{background:var(--primary)}.switch.on span{left:23px}
+.act-pick[aria-pressed="true"]{border-color:var(--primary)}
 #rotate{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:24px}
 #rotate b{display:block;font-family:var(--font-num);font-size:40px;color:var(--primary)}
 @media (orientation:landscape) and (max-height:500px){#rotate{display:flex}}
@@ -372,11 +406,17 @@ nav button span{white-space:nowrap}
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.22.2"></script>
+<script src="engine.js?v=0.23"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.23', title: 'A tidier game', notes: [
+    '<b>Fight tab:</b> pick your area at the top, and the Fight button sits right under the arena. Enemy list and the fine print fold away.',
+    'Tap the <b>Idle line</b> at the top of the screen to switch what your dad is doing, from any tab.',
+    'Pets and weapons are now a tile collection on the Dad tab. Tap a tile for details (and pet odds).',
+    'The pantry is a compact list with one Eat button. Fishing spots and explanations fold away behind a tap.',
+  ]},
   {v: '0.22.2', title: 'Faster farming, fair fights', notes: [
     '<b>Farming</b> is a lot faster: Potato 10 minutes up to Truffle 45 minutes. Each vegetable gives a bit less xp, and monsters drop seeds more often (15%).',
     '<b>Trading</b> now sells your cheapest stuff first.',
@@ -469,7 +509,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.22.2';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.23';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -612,6 +652,20 @@ function idleLine() {
   const what = a === 'diy' ? 'taking junk apart' : a === 'fish' ? `fishing ${FISH[S.spot].name}` : a === 'cook' ? (c >= 0 ? `cooking ${FISH[c].name}` : 'cooking') : a === 'trade' ? (tk ? `selling ${lootInfo(tk).name}` : 'trading') : `fighting in ${AREAS[S.area].place}`;
   return `Idle: ${what}, next in <b id="actBarH"></b>`;
 }
+function actMenu() {
+  const pick = (a, label, why, detail) => { const on = S.activity === a;
+    return `<button class="pick act-pick" data-act="pickAct" data-a="${a}" aria-pressed="${on}" ${!on && why ? 'disabled' : ''}>
+      <span class="pn">${label}${on ? ' <span class="lvtag">doing now</span>' : ''}</span><span class="pm">${!on && why ? why : detail}</span></button>`; };
+  const c = cookPick(), k = tradePick(), d = dismantlePick();
+  openSheet(`<p class="news-kicker">What should your dad do?</p><p class="small">One thing at a time. The farm grows next to it either way.</p>
+    <div class="panel" style="margin-top:10px">
+      ${pick('fish', 'Fishing', '', `${FISH[S.spot].name} spot, one cast a minute`)}
+      ${pick('cook', 'Cooking', c < 0 ? 'No raw fish you can cook' : '', c >= 0 ? `Next: ${makesMeal(c) ? CONFIG.meals[c] : FISH[c].name}` : '')}
+      ${pick('trade', 'Trading', k ? '' : 'Nothing to sell', k ? `Next: ${lootInfo(k).name}` : '')}
+      ${pick('diy', 'DIY', d ? '' : 'No junk to take apart', d ? `Next: ${lootInfo(d).name}` : '')}
+      ${pick('fight', 'Fight idle', S.hp <= 0 ? 'Knocked out, heal first' : '', `${AREAS[S.area].place}, one fight a minute`)}
+    </div>`);
+}
 function renderTop() {
   if (!S || editing === 'setup') { $('#top').innerHTML = ''; return; }
   const mh = anim ? anim.mh : maxHP(), hpNow = anim ? animHp() : S.hp, coinsNow = anim ? anim.coins0 : S.coins;
@@ -619,7 +673,7 @@ function renderTop() {
     <div><div class="name">${esc(S.name)}</div><div class="title">${dadTitle()}</div></div>
     <div class="coins" aria-label="${fmt(coinsNow)} coins">${ICON.coin}<span>${fmt(coinsNow)}</span></div></div>
     <div class="bars">${barHTML('hp', ICON.heart, hpNow, mh, anim ? 'Fighting' : regenText(S.hp, mh, S.hpAt), 'Health')}</div>
-    <div class="idleline">${idleLine()}</div>
+    <button class="idleline" data-act="actMenu" aria-label="Change what your dad is doing">${idleLine()} <span class="il-caret">&#9662;</span></button>
     ${updateReady ? `<button class="updatebar" data-act="reloadApp">New version ${esc(updateReady)} is ready. Tap to update</button>` : ''}`;
   updateProgress();
 }
@@ -652,9 +706,18 @@ const actBtn = (a, label, why) => `<button class="btn alt" style="width:100%;mar
 const doingNow = () => `<p class="small note doing">Right now your dad is <b>${ACT[S.activity]}</b>.</p>`;
 // a little pet badge in the corner of an avatar
 const petBadge = (k, cls = '') => k && CONFIG.pets[k] ? `<span class="pbadge ${cls}" title="${esc(CONFIG.pets[k].name)}">${CONFIG.pets[k].svg || CONFIG.pets[k].icon}</span>` : '';
-function petLine(k) {   // under each pet skill: what you've got, or your odds right now
+// a small folding explanation, so the screen stays calm but the "why" is one tap away
+const helpBox = (title, html) => `<details class="help"><summary><span class="q">?</span> ${title}</summary><div class="help-body">${html}</div></details>`;
+// a popup card on top of the game (same look as What's New); tapping outside or a button closes it
+function openSheet(html) {
+  closeShare(); const el = document.createElement('div'); el.className = 'sheet'; el.setAttribute('role', 'dialog');
+  el.innerHTML = `<div class="newscard">${html}<button class="sbtn" style="width:100%;margin-top:10px" data-act="closeShare">Close</button></div>`;
+  $('#app').appendChild(el);
+}
+function petLine(k) {   // under each pet skill: only once you have him (the odds live in the pet collection)
   const P = CONFIG.pets[k];
-  return `<p class="small petline">${S.pets[k] ? `${P.svg ? `<span class="inl-pet">${P.svg}</span>` : P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.` : `Pet chance: 1 in ${fmt(petOdds(k))} per ${P.per}. Better odds as you level.`}</p>`;
+  if (!S.pets[k]) return '';
+  return `<p class="small petline">${`${P.svg ? `<span class="inl-pet">${P.svg}</span>` : P.icon} ${P.name} found${S.petOut === k ? ', following you' : ''}.`}</p>`;
 }
 const ptime = ms => { const m = Math.ceil(Math.max(0, ms) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
 const icon = x => x.svg || x.icon;
@@ -672,7 +735,7 @@ function farmCard() {
     ${anyReady && S.plots.length > 1 ? '<button class="btn" style="width:100%;margin-top:10px" data-act="tendAll">Harvest and replant all</button>' : ''}
     <p class="small" style="margin-top:8px">${seeds ? `In the seed bag: ${seeds}.` : `No seeds yet. Every monster can drop one (${rate(CONFIG.seedChance)}), better areas drop better seeds.`}</p>
     ${petLine('farming')}
-    <p class="small note" style="margin-top:6px">Crops grow on their own, even while your dad fishes or fights, and wait for you when ready. More plots in the Trade tab.</p></section>`;
+</section>`;
 }
 function cookCard() {
   const c = cookPick(), on = S.activity === 'cook';
@@ -692,11 +755,10 @@ function fishTab() {
   const spots = FISH.slice(0, visibleCount(FISH, L)).map((x, j) => { const locked = L < x.req;
     return `<button class="pick" data-act="spot" data-i="${j}" aria-pressed="${j === i}" ${locked ? 'disabled' : ''}>
       <span class="pn">${x.name}</span><span class="pm">${locked ? `Opens at Fishing ${x.req}` : `${pct(catchChance(j))} catch, ${x.xp} xp, heals ${x.heal} when cooked`}</span></button>`; }).join('');
-  // pantry: things to eat, best first (meals above plain fish)
-  const eatRow = (name, n, heal, act, j, meal) => `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${name}${meal ? ' <span class="lvtag meal">meal</span>' : ''}</div><div class="row-meta">Heals ${heal} each</div></div>
-      <div class="row-btns"><button class="sbtn" data-act="${act}" data-i="${j}" ${full ? 'disabled' : ''}>Eat</button><button class="sbtn solid" data-act="${act}All" data-i="${j}" ${full ? 'disabled' : ''}>All</button></div></div>`;
-  const food = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(j => (S.meals[j] ? eatRow(CONFIG.meals[j], S.meals[j], mealHeal(j), 'eatMeal', j, true) : '')
-    + (S.cooked[j] ? eatRow(FISH[j].name, S.cooked[j], FISH[j].heal, 'eat', j, false) : '')).join('');
+  // pantry: a compact list, best first (meals above plain fish). Eating happens with one button or auto-eat.
+  const food = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0].flatMap(j => [S.meals[j] ? `<span class="pchip meal">${CONFIG.meals[j]} <b>${S.meals[j]}</b></span>` : '',
+    S.cooked[j] ? `<span class="pchip">${FISH[j].name} <b>${S.cooked[j]}</b></span>` : '']).join('');
+  const bi = smartPick(foodList(), foodHeals());
   return `<div class="duo trio">${skillHTML('fishing', true)}${skillHTML('farming', true)}${skillHTML('cooking', true)}</div>
   ${doingNow()}
   <section class="idlecard${S.activity === 'fish' ? ' active' : ''}"><p class="stage-title">${S.activity === 'fish' ? 'Fishing' : 'Fish'} at the ${f.name} spot</p>
@@ -704,9 +766,13 @@ function fishTab() {
     ${S.activity === 'fish' ? progHTML('actBar', 'Next cast in') : actBtn('fish', 'Go fishing', '')}</section>
   ${farmCard()}
   ${cookCard()}
-  <p class="small note">Your dad fishes or cooks one at a time; the farm grows next to it. Idle keeps going for up to ${dur(idleWindowMs())} after you close the game.</p>
-  <h3 class="sect">Pantry</h3><div class="panel">${food || '<div class="empty">Nothing to eat yet. Cooked fish heals you, meals heal double.</div>'}</div>
-  <h3 class="sect">Fishing spots</h3><p class="small note">A better fish every 10 Fishing levels. Better fish give more xp and heal more.</p><div class="panel">${spots}</div>`;
+  <h3 class="sect">Pantry</h3>
+  <div class="pantry">${food || '<p class="small">Nothing to eat yet. Cooked fish heals you, meals heal double.</p>'}
+    ${food ? `<button class="sbtn solid" style="margin-top:8px" data-act="eatBest" ${bi < 0 || full ? 'disabled' : ''}>${full ? 'Health is full' : `Eat ${foodName(bi)} (+${foodHeals()[bi]})`}</button>` : ''}</div>
+  <details class="fold"><summary>Change fishing spot</summary><p class="small note">A better fish every 10 Fishing levels. Better fish give more xp and heal more.</p><div class="panel">${spots}</div></details>
+  ${helpBox('How food works', `<p>Your dad does <b>one thing at a time</b>: fishing, cooking, trading, DIY or fight idle. The farm grows next to it. Idle keeps going for up to ${dur(idleWindowMs())} after you close the game.</p>
+    <p><b>Cooking</b> always takes your best raw fish. With the matching vegetable it becomes a <b>meal</b>: heals double, 50% more xp.</p>
+    <p><b>Farming:</b> monsters drop seeds (${rate(CONFIG.seedChance)} per kill), better areas drop better seeds. Crops grow on their own and wait for you when ready. More plots in the Shed.</p>`)}`;
 }
 
 function arenaHTML() {
@@ -756,34 +822,34 @@ function fightTab() {
   let hint = '';
   if (S.hp <= 0) hint = 'Knocked out. Eat, drink a potion or rest. Health comes back 1 per minute.';
   else if (S.hp < Math.ceil(mh * CONFIG.restBelow)) hint = 'Health is low. One bad fight could knock you out.';
-  return `<div class="duo quad">${skillHTML('attack', true)}${skillHTML('strength', true)}${skillHTML('defence', true)}${skillHTML('hitpoints', true)}</div>
-  <div class="styles" role="group" aria-label="Combat style">${styles}</div>
-  <p class="small note">Combat level ${C}. Fight xp goes to the skill your style trains, Hitpoints gets a third as much on top.</p>
-  ${taskBanner()}
+  return `<details class="areapick"><summary><span class="ap-label">Area</span><b>${A0.place}</b><span class="ap-meta">combat ${A0.req} to ${A0.req + 9}</span><span class="ap-caret">&#9662;</span></summary>
+    <p class="small note" style="margin:8px 2px">A new area opens every 10 combat levels (combat level ${C}).</p><div class="panel">${areas}</div></details>
   ${arenaHTML()}
   <section class="stage tight"><div class="actions">
     <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim || fightAsked ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
     <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
-    <button class="btn idle wide${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat
-      ? `Below ${pct(CONFIG.autoEatBelow)} health your dad eats his best fish instead of attacking. Also in fight idle. ${foodList().reduce((a, b) => a + b, 0)} food in the bag.`
-      : `Turn on to eat during fights and fight idle when health drops below ${pct(CONFIG.autoEatBelow)}. Eating takes your turn.`}</small></button>
-    <button class="btn idle wide${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Goes back to fishing' : `1 fight every ${CONFIG.fightIdleMinutes} min, hands free. Stops ${ACT[S.activity]}.`}</small></button></div>
+    <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat: ${S.autoEat ? 'on' : 'off'}<small>${S.autoEat ? `${foodList().reduce((a, b) => a + b, 0)} food in the bag` : `Eat below ${pct(CONFIG.autoEatBelow)} health`}</small></button>
+    <button class="btn idle${S.activity === 'fight' ? ' on' : ''}" data-act="fightIdle">${S.activity === 'fight' ? 'Stop fight idle' : 'Fight idle'}<small>${S.activity === 'fight' ? 'Back to fishing' : `1 fight a minute`}</small></button></div>
     ${S.activity === 'fight' ? progHTML('actBar', 'Next idle fight in') : ''}
-    ${hint ? `<p class="hint">${hint}</p>` : ''}
-    <p class="small" style="margin-top:8px">Eat and Potion pick the biggest heal that won't go over your max health. During a fight only auto-eat can eat.</p></section>
-  <h3 class="sect">Enemies in ${A0.place}</h3><p class="small note">Each fight is a random one of these five${S.task && ENEMIES[S.task.e].area === S.area ? `. Your task enemy shows up ${pct(CONFIG.slayerEncounter)} of the time while on task` : ''}. Any of them can drop the ${A0.weapon.icon} ${A0.weapon.name}, a weapon with +${pct(A0.weapon.dmg)} damage (${rate(CONFIG.rareChance)}).</p>
-  <p class="small note legend"><span class="st hp">${ICON.heart}</span> health <span class="st">${ICON.sword}</span> max hit, after your Defence <span class="st gold">${ICON.coin}</span> coins</p>
-  <div class="panel">${foes}</div>
-  <h3 class="sect">How fights work</h3><div class="odds sep">
+    ${hint ? `<p class="hint">${hint}</p>` : ''}</section>
+  ${taskBanner()}
+  <h3 class="sect">Your fighting</h3>
+  <div class="duo quad">${skillHTML('attack', true)}${skillHTML('strength', true)}${skillHTML('defence', true)}${skillHTML('hitpoints', true)}</div>
+  <div class="styles" role="group" aria-label="Combat style">${styles}</div>
+  <details class="fold"><summary>Enemies in ${A0.place}</summary>
+    <p class="small note">Each fight is a random one of these five${S.task && ENEMIES[S.task.e].area === S.area ? `. Your task enemy shows up ${pct(CONFIG.slayerEncounter)} of the time while on task` : ''}. Any of them can drop the ${A0.weapon.icon} ${A0.weapon.name} (${rate(CONFIG.rareChance)}).</p>
+    <p class="small note legend"><span class="st hp">${ICON.heart}</span> health <span class="st">${ICON.sword}</span> max hit, after your Defence <span class="st gold">${ICON.coin}</span> coins</p>
+    <div class="panel">${foes}</div></details>
+  ${helpBox('How fights work', `
+    <p><b>Style:</b> fight xp goes to the skill your style trains. Hitpoints gets a third as much on top.</p>
     <p><b>Attack ${A}:</b> 60% hit chance against an enemy your level, plus 2% per level above it, minus 2% per level below.</p>
     <p><b>Strength ${St}:</b> +${Math.round(CONFIG.dmgPerLvl * St * 100)}% damage, you hit 1 to ${pMaxHit(St)} with bare hands.</p>
     <p><b>Weapon:</b> ${weapon() ? `${weapon().icon} ${weapon().name}, +${pct(weapon().dmg)} damage, so you hit up to ${Math.round(pMaxHit(St) * (1 + weaponBonus()))}.` : 'none yet. Every area has a rare weapon drop.'}</p>
-    <p><b>Defence ${D}:</b> you take ${pct1(defRed(D))} less damage.</p>
+    <p><b>Defence ${D}:</b> you take ${pct1(defRed(D))} less damage${armourRed() ? `, plus ${pct(armourRed())} from your gear` : ''}.</p>
     <p><b>Hitpoints ${lvl('hitpoints')}:</b> ${mh} max health, +1 every minute.</p>
     <p><b>Slayer ${lvl('slayer')}:</b> +${pct1(slayerBonus())} damage against your task enemy.</p>
-    <p><b>Auto-eat:</b> ${S.autoEat ? 'on' : 'off'}. Below ${pct(CONFIG.autoEatBelow)} health your dad eats instead of attacking that round (the enemy still swings). Green splats show what he ate.</p>
-    <p class="why">In the fight screen, <span class="st">${ICON.target}</span> is the chance to hit and <span class="st">${ICON.sword}</span> is the max hit, for you and the enemy. A blue 0 is a miss or a hit fully blocked by your Defence.</p></div>
-  <h3 class="sect">Areas</h3><p class="small note">A new area opens every 10 combat levels. Combat level is the average of Attack, Strength, Defence and Hitpoints.</p><div class="panel">${areas}</div>`;
+    <p><b>Eating:</b> Eat and Potion pick the biggest heal that won't go over your max health. During a fight only auto-eat can eat: below ${pct(CONFIG.autoEatBelow)} health your dad eats instead of attacking that round, never twice in a row. Green splats show what he ate.</p>
+    <p class="why">In the fight screen, <span class="st">${ICON.target}</span> is the chance to hit and <span class="st">${ICON.sword}</span> the max hit. A blue 0 is a miss, or a hit fully blocked by your Defence.</p>`)}`;
 }
 
 function slayerTab() {
@@ -804,11 +870,11 @@ function slayerTab() {
   const store = item('Cancel task', `${CONFIG.slayerCancelCost} point. Drop your current task and get a new one.`, CONFIG.slayerCancelCost, 'cancelTask', 'Cancel', T && p >= CONFIG.slayerCancelCost)
     + (S.extendOwned
       ? `<div class="row"><div class="row-main"><div class="row-name">Task extension</div><div class="row-meta">Owned. New tasks are 50% bigger, give 50% more xp and 2 points.</div></div>
-         <button class="sbtn${S.extendOn ? ' solid' : ''}" data-act="toggleExtend">${S.extendOn ? 'On' : 'Off'}</button></div>`
+         <button class="switch${S.extendOn ? ' on' : ''}" data-act="toggleExtend" role="switch" aria-checked="${S.extendOn}" aria-label="Task extension"><span></span></button></div>`
       : item('Task extension', `${CONFIG.slayerExtendCost} points, unlock once. New tasks get 50% more kills, 50% more xp and 2 points.`, CONFIG.slayerExtendCost, 'buyExtend', 'Buy', p >= CONFIG.slayerExtendCost))
     + item(`${CONFIG.slayerPotionPack} ${AREAS[best].potion[0]}`, `${CONFIG.slayerPotionCost} point. Potions from your best area, heal ${AREAS[best].potion[1]} each.`, CONFIG.slayerPotionCost, 'buyPotions', 'Buy', p >= CONFIG.slayerPotionCost);
   return `${skillHTML('slayer')}
-  <p class="small note" style="margin-top:10px">Slayer level gives +0.5% damage per level against your task enemy.</p>${petLine('slayer')}
+${petLine('slayer')}
   ${task}
   <h3 class="sect">Slayer store</h3><p class="small note">You have <b class="pts">${p}</b> Slayer point${p === 1 ? '' : 's'}. Tasks done: ${S.stats.tasks}.</p>
   ${badgeCard(p)}
@@ -837,7 +903,7 @@ function tradeTab() {
       <div class="track"><div class="fill" style="width:${Math.min(100, S.coins / next * 100)}%"></div></div>
       <button class="btn" data-act="buyIdle" ${S.coins < next ? 'disabled' : ''}>${S.coins < next ? `Need ${fmt(next - S.coins)} more coins` : 'Buy upgrade'}</button></div>`;
   const k = tradePick(), m = tradeMult(), d = dismantlePick();
-  const stock = sellables().sort((x, y) => lootInfo(y[0]).price - lootInfo(x[0]).price).map(([x, n]) => {
+  const stock = sellables().sort((x, y) => lootInfo(x[0]).price - lootInfo(y[0]).price).map(([x, n]) => {   // same order Trading sells in: cheapest first
     const it = lootInfo(x), get = Math.max(1, Math.round(it.price * m));
     return `<div class="row"><span class="count">${n}</span><div class="row-main"><div class="row-name">${it.name}</div>
       <div class="row-meta">You get ${fmt(get)} each, ${fmt(get * n)} for all</div></div></div>`; }).join('');
@@ -845,29 +911,35 @@ function tradeTab() {
   return `<div class="duo">${skillHTML('trading', true)}${skillHTML('diy', true)}</div>
   ${doingNow()}
   <section class="idlecard${S.activity === 'trade' ? ' active' : ''}"><p class="stage-title">${k ? `${S.activity === 'trade' ? 'Selling' : 'Sell'} ${lootInfo(k).name}` : 'Nothing to sell'}</p>
-    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, most valuable first.` : 'Monster junk and spare gear land here. Weapons are never sold for you.'} You get ${pct(m)} of the value.</p>${petLine('trading')}
+    <p class="stage-meta">${k ? `For ${fmt(Math.max(1, Math.round(lootInfo(k).price * m)))} coins. One sale every ${CONFIG.tradeSeconds} seconds, cheapest first.` : 'Monster junk and spare gear land here. Weapons are never sold for you.'} You get ${pct(m)} of the value.</p>${petLine('trading')}
     ${S.activity === 'trade' ? progHTML('actBar', 'Next sale in') : actBtn('trade', 'Start trading', k ? '' : 'Nothing to sell')}</section>
   <section class="idlecard${S.activity === 'diy' ? ' active' : ''}"><p class="stage-title">${d ? `${S.activity === 'diy' ? 'Taking apart' : 'Take apart'} ${lootInfo(d).name}` : 'No junk to take apart'}</p>
     <p class="stage-meta">${d ? `Gives 1 ${MATS[matOf(ENEMIES[+d.slice(1)].area)].name}. One item every ${CONFIG.diySeconds} seconds, cheapest junk first.` : 'Beat monsters for junk, then take it apart here for materials.'}</p>${petLine('diy')}
     ${S.activity === 'diy' ? progHTML('actBar', 'Next item in') : actBtn('diy', 'Start DIY', d ? '' : 'No junk')}
     <p class="small" style="margin-top:8px">${mats ? `Materials: ${mats}.` : 'No materials yet.'}</p>
     <button class="sbtn" style="margin-top:6px" data-act="sellMats">${S.sellMats ? 'Trading may sell materials: on' : 'Trading may sell materials: off'}</button></section>
-  <h3 class="sect">Build gear</h3><p class="small note">Building needs DIY level, wearing needs Defence level. Gear makes enemies hit you less. You can build each piece once.</p>
+  <h3 class="sect">Build gear</h3>
   <div class="panel">${buildRows()}</div>
   <h3 class="sect">For sale</h3><div class="panel">${stock || '<div class="empty">Your stall is empty. Go beat something up.</div>'}</div>
-  ${up}${plotUpgrade()}`;
+  ${up}${plotUpgrade()}
+  ${helpBox('How the shed works', `<p><b>Trading</b> sells monster junk for coins, cheapest first. Weapons and the gear you wear are never sold.</p>
+    <p><b>DIY</b> takes junk apart into materials (cheapest junk first). Better areas give better materials.</p>
+    <p><b>Gear:</b> building needs DIY level, wearing needs Defence level. Each piece can be built once. Gear makes enemies hit you less.</p>`)}`;
 }
 function buildRows() {
-  const L = lvl('diy');
-  return MATS.slice(0, visibleCount(MATS, L)).map((M, t) => {
-    if (L < M.req) return `<div class="row"><span class="count dim">${M.icon}</span><div class="row-main"><div class="row-name muted">${M.name} gear</div><div class="row-meta">Opens at DIY ${M.req}</div></div></div>`;
+  const L = lvl('diy'), open = MATS.filter(M => L >= M.req).length;   // tiers you can build
+  const tier = (M, t) => {
     const btn = sl => { const cost = CONFIG.gearCost[sl], n = S.gearInv[sl][t], worn = S.wear[sl] === t;
       return `<div class="build"><div class="row-name">${gearName(sl, t)}${n ? ' <span class="lvtag">built</span>' : ''}</div>
-        <div class="row-meta">-${pct(CONFIG.armour[sl][t])} damage. ${cost} ${M.name}${canWear(t) ? '' : `, wear at Defence ${M.req}`}</div>
+        <div class="row-meta">-${pct(CONFIG.armour[sl][t])} damage. ${n ? '' : `Costs ${cost} ${M.name}. `}${canWear(t) ? '' : `Wear at Defence ${M.req}.`}</div>
         <div class="row-btns">${n ? '' : `<button class="sbtn solid" data-act="build" data-s="${sl}" data-t="${t}" ${S.mats[t] < cost ? 'disabled' : ''}>Build</button>`}
         ${n ? `<button class="sbtn" data-act="wear" data-s="${sl}" data-t="${t}" ${!worn && !canWear(t) ? 'disabled' : ''}>${worn ? 'Take off' : 'Wear'}</button>` : ''}</div></div>`; };
-    return `<div class="row build-tier"><span class="count">${S.mats[t]}</span><div class="row-main"><div class="row-name">${M.icon} ${M.name}</div>${btn('head')}${btn('body')}</div></div>`;
-  }).join('');
+    return `<div class="row build-tier"><div class="row-main"><div class="row-name">${M.icon} ${M.name} gear <span class="lvtag">you have ${S.mats[t]} ${M.name}</span></div>${btn('head')}${btn('body')}</div></div>`;
+  };
+  const cur = Math.max(0, open - 1), next = MATS[open];
+  return tier(MATS[cur], cur)
+    + (next ? `<div class="row"><span class="count dim">${next.icon}</span><div class="row-main"><div class="row-name muted">${next.name} gear</div><div class="row-meta">Opens at DIY ${next.req}</div></div></div>` : '')
+    + (cur > 0 ? `<details class="fold inrow"><summary>Earlier gear</summary>${MATS.slice(0, cur).map(tier).join('')}</details>` : '');
 }
 function plotUpgrade() {
   const next = CONFIG.plotCosts[S.plots.length - 1], total = CONFIG.plotCosts.length + 1;
@@ -882,10 +954,26 @@ function plotUpgrade() {
 function ranksTab() {
   const me = cloud.scores.slice().sort((a, b) => b.total - a.total).findIndex(r => r.id === cloud.playerId);
   return `<h2 class="pagetitle">Ranks</h2>
-  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dads on total level. ` : ''}Updates about once a minute while dads play.</p>
+  <p class="small note">${me >= 0 ? `You're <b>#${me + 1}</b> of ${cloud.scores.length} dad${cloud.scores.length === 1 ? '' : 's'} on total level. ` : ''}Updates about once a minute while dads play.</p>
   <div id="hsBox">${highscoresHTML()}</div>`;
 }
 // what your dad has on: weapon, head and body
+function petSheet(k) {
+  const P = CONFIG.pets[k], got = S.pets[k];
+  openSheet(got ? `<div class="sheet-ic">${P.svg || P.icon}</div><h2>${P.name}</h2><p>${P.desc}</p>
+      <p class="small">${got > 1 ? `Found ${got} times. ` : ''}From ${SKILLS[k]}.</p>
+      <button class="btn" style="width:100%;margin-top:10px" data-act="petOutS" data-k="${k}">${S.petOut === k ? 'Send home' : 'Take along'}</button>`
+    : `<div class="sheet-ic unknown">?</div><h2>Unknown pet</h2><p>${P.hint}</p>
+      <p class="small">Found while doing ${SKILLS[k]}: right now 1 in ${fmt(petOdds(k))} per ${P.per}. Every ${SKILLS[k]} level makes it a bit likelier.</p>`);
+}
+function weaponSheet(i) {
+  const a = AREAS[i], w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
+  openSheet(n ? `<div class="sheet-ic" style="background:${a.tint}">${w.icon}</div><h2>${w.name}</h2><p>${w.desc}</p>
+      <p class="small">+${pct(w.dmg)} damage.${n > 1 ? ` You have ${n}.` : ''} Drops in ${a.place}.</p>
+      <div class="row-btns" style="margin-top:10px"><button class="btn" data-act="equipW" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
+      <button class="btn alt" data-act="sellW" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell spare<small>${fmt(w.price)} coins</small></button></div>`
+    : `<div class="sheet-ic unknown">?</div><h2>Unknown weapon</h2><p class="small">Drops in ${a.place}, ${rate(CONFIG.rareChance)} per kill. Any enemy there can drop it.</p>`);
+}
 function gearBlock() {
   const w = weapon(), row = (ic, name, eff, empty) => `<div class="gear-row"><span class="gear-ic">${ic}</span><div class="row-main"><div class="row-name${name ? '' : ' muted'}">${name || empty}</div>${eff ? `<div class="row-meta">${eff}</div>` : ''}</div></div>`;
   const eye = sl => { const hid = S.hideGear && S.hideGear[sl];   // eye = shown on your dad, crossed eye = hidden (armour still counts)
@@ -916,21 +1004,13 @@ function dadTab() {
   ${installHTML()}
   ${gearBlock()}
   <h3 class="sect" style="margin-top:22px">Pets ${Object.keys(S.pets).length}/${Object.keys(CONFIG.pets).length}</h3>
-  <p class="small note">Super rare companions, one for each non-combat skill. Purely for bragging rights.</p>
-  <div class="panel">${Object.entries(CONFIG.pets).map(([k, P]) => S.pets[k]
-    ? `<div class="foe-row${S.petOut === k ? ' task' : ''}"><span class="foe-ic pet">${P.svg || P.icon}</span><div class="row-main">
-        <div class="row-name">${P.name}${S.pets[k] > 1 ? ` <span class="lvtag">found ${S.pets[k]}x</span>` : ''}</div><div class="row-meta">${P.desc}</div>
-        <div class="row-btns" style="margin-top:8px"><button class="sbtn${S.petOut === k ? '' : ' solid'}" data-act="petOut" data-k="${k}">${S.petOut === k ? 'Send home' : 'Take along'}</button></div></div></div>`
-    : `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown pet</div>
-        <div class="row-meta">${P.hint} (${SKILLS[k]}, 1 in ${fmt(petOdds(k))} per ${P.per})</div></div></div>`).join('')}</div>
-  <h3 class="sect" style="margin-top:22px">Weapons</h3><p class="small note">Every area hides one rare weapon (${rate(CONFIG.rareChance)} per kill). Equip one for bonus damage, sell spares.</p>
-  <div class="panel">${AREAS.map((a, i) => { const w = a.weapon, n = S.weapons[i], on = S.equipped === i, spare = n - (on ? 1 : 0);
-    if (!n) return `<div class="foe-row"><span class="foe-ic dim">❔</span><div class="row-main"><div class="row-name muted">Unknown weapon</div><div class="row-meta">Drops in ${a.place}.</div></div></div>`;
-    return `<div class="foe-row${on ? ' task' : ''}"><span class="foe-ic" style="background:${a.tint}">${w.icon}</span><div class="row-main">
-      <div class="row-name">${w.name} <span class="lvtag">+${pct(w.dmg)} damage</span>${n > 1 ? ` <span class="lvtag">x${n}</span>` : ''}</div>
-      <div class="row-meta">${w.desc}</div>
-      <div class="row-btns" style="margin-top:8px"><button class="sbtn${on ? '' : ' solid'}" data-act="equip" data-i="${i}">${on ? 'Unequip' : 'Equip'}</button>
-      <button class="sbtn" data-act="sellWeapon" data-i="${i}" ${spare < 1 ? 'disabled' : ''}>Sell ${fmt(w.price)}</button></div></div></div>`; }).join('')}</div>
+  <div class="tiles">${Object.entries(CONFIG.pets).map(([k, P]) => `<button class="tile${S.pets[k] ? '' : ' unknown'}${S.petOut === k ? ' on' : ''}" data-act="petInfo" data-k="${k}">
+    <span class="t-ic">${S.pets[k] ? (P.svg || P.icon) : '?'}</span><span class="t-name">${S.pets[k] ? P.name.split(' ')[0] : SKILLS[k]}</span></button>`).join('')}</div>
+  <h3 class="sect" style="margin-top:18px">Weapons ${S.weapons.filter(n => n > 0).length}/${AREAS.length}</h3>
+  <div class="tiles five">${AREAS.map((a, i) => { const n = S.weapons[i];
+    return `<button class="tile${n ? '' : ' unknown'}${S.equipped === i ? ' on' : ''}" data-act="weaponInfo" data-i="${i}" ${n ? `style="background:${a.tint}"` : ''}>
+      <span class="t-ic">${n ? a.weapon.icon : '?'}</span>${n > 1 ? `<span class="t-n">x${n}</span>` : ''}</button>`; }).join('')}</div>
+  <p class="small note" style="margin-top:6px">Tap a tile for details. Pets and weapons are super rare.</p>
   <details class="tools"><summary>Switch dad or start over</summary><div class="inner">
     <p class="small"><b>Got a cloud code from another phone?</b> Type it here to play that dad on this phone.</p>
     <input type="text" id="cloudCodeBox" placeholder="GFD-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -1137,7 +1217,13 @@ const handlers = {
   eatAll: A('eatAll', b => ({i: +b.dataset.i})),
   eatBest: A('eatBest'), drinkBest: A('drinkBest'), autoEat: A('autoEat'),
   petOut: A('petOut', b => ({k: b.dataset.k})),
-  buyBadge: A('buyBadge'), hideGear: A('hideGear', b => ({s: b.dataset.s})),
+  buyBadge: A('buyBadge'),
+  actMenu: () => { if (!anim) actMenu(); },
+  pickAct: b => { const a = b.dataset.a; closeShare(); if (a === S.activity) return;
+    if (a === 'fight') act('fightIdle'); else act('activity', {a}); },
+  petInfo: b => petSheet(b.dataset.k), weaponInfo: b => weaponSheet(+b.dataset.i),
+  equipW: b => { closeShare(); act('equip', {i: +b.dataset.i}); }, sellW: b => { closeShare(); act('sellWeapon', {i: +b.dataset.i}); },
+  petOutS: b => { closeShare(); act('petOut', {k: b.dataset.k}); }, hideGear: A('hideGear', b => ({s: b.dataset.s})),
   plot: A('plot', b => ({i: +b.dataset.i})), tendAll: A('tendAll'), buyPlot: A('buyPlot'),
   eatMeal: A('eatMeal', b => ({i: +b.dataset.i})), eatMealAll: A('eatMealAll', b => ({i: +b.dataset.i})),
   fight: b => { if (anim || fightAsked) return; fightAsked = true; renderMain(); act('fight', {}, b).finally(() => { fightAsked = false; if (!anim) renderMain(); }); },

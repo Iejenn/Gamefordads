@@ -5,7 +5,7 @@
    ============================================================ */
 
 const CONFIG = {
-  version: '0.22.2',
+  version: '0.23',
   homeUrl: 'https://iejenn.github.io/Gamefordads/',   // where the game lives
   supabaseUrl: 'https://jhgzaroxhdzglfltinjp.supabase.co',   // cloud saves + highscores. Public on purpose: the
   supabaseKey: 'sb_publishable_I_SOgLUtvSqaGqfNAOgj6w_2ccpMRH2',  // database only lets the game call 3 locked functions
