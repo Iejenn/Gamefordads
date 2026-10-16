@@ -397,7 +397,7 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 .pchip.beer{border:1.5px solid transparent;cursor:pointer}.pchip.beer.on{border-color:var(--gold)}
 .beerline{flex-basis:100%;margin:6px 0 4px}
 .beer-table div{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
-.skip-btn{display:block;margin:10px auto 0}
+.btn.wide.skip{background:var(--surface);color:var(--ink);border:1.5px solid var(--primary)}
 #arena{cursor:pointer}
 .actions.three{grid-template-columns:repeat(3,1fr);gap:8px}
 .actions.three .btn{padding:10px 4px;font-size:15px;min-width:0}.actions.three .btn small{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
@@ -418,7 +418,7 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.24.4"></script>
+<script src="engine.js?v=0.24.5"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
@@ -540,7 +540,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.24.4';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24.5';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
@@ -829,7 +829,7 @@ function arenaHTML() {
   const tb = E && onTask(g) ? badgeBonus() : 0;   // the badge only counts against your task enemy
   const youMax = E ? Math.round(pMaxHit(lvl('strength')) * (1 + weaponBonus()) * (1 + (onTask(g) ? slayerBonus() : 0)) * (1 + tb)) : 0, eMax = E ? enemyMax(E) : 0;
   const fst = (hit, max) => `<div class="fstats"><span class="st" title="Hit chance">${ICON.target}${pct(hit)}</span><span class="st" title="Max hit">${ICON.sword}${max}</span></div>`;
-  const msg = anim ? {text: '', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
+  const msg = anim ? {text: 'Fighting...', kind: 'muted'} : (arenaMsg && arenaMsg.area === S.area ? arenaMsg : {text: 'Tap Fight to meet a random enemy.', kind: 'muted'});
   return `<section class="arena" id="arena" aria-label="Fight in ${A.place}">
     <div class="fighter"><div class="portrait${php <= 0 ? ' down' : ''}" id="youBox">${avatarSVG(myLook())}${petBadge(S.petOut, 'fight')}${weapon() ? `<span class="wbadge" title="${weapon().name}">${weapon().icon}</span>` : ''}</div>
       <div class="hpbar"><div id="youHp" style="width:${php / mh * 100}%"></div></div>
@@ -838,7 +838,7 @@ function arenaHTML() {
     <div class="fighter"><div class="portrait foe${E && ehp <= 0 ? ' down' : ''}" id="foeBox" style="background:${A.tint}"><span class="emo" aria-hidden="true">${E ? E.icon : '❔'}</span></div>
       <div class="hpbar${E ? '' : ' empty'}"><div id="foeHp" style="width:${E ? ehp / E.hp * 100 : 100}%"></div></div>
       <div class="fname"><span>${E ? E.name : 'Who knows?'}</span><b id="foeHpNum">${E ? `${ehp}/${E.hp}` : '?'}</b></div>${E ? fst(Math.min(0.95, E.acc + CONFIG.enemyAccBonus), eMax) : ''}</div>
-    ${anim ? '<button class="sbtn skip-btn" data-act="skipFight">Skip to the end</button>' : `<p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p>`}</section>`;
+    <p class="arena-msg k-${msg.kind}" id="arenaMsg">${esc(msg.text)}</p></section>`;
 }
 function healBtnsHTML(hp) {
   const nb = S.beers.reduce((a, b) => a + b, 0);
@@ -878,7 +878,8 @@ function fightTab() {
   ${taskBanner()}
   ${arenaHTML()}
   <section class="stage tight"><div class="actions three">
-    <button class="btn wide" data-act="fight" ${S.hp <= 0 || anim || fightAsked ? 'disabled' : ''}>${anim ? 'Fighting...' : 'Fight'}<small>${anim ? 'Tap the fight to skip to the end' : `Random enemy from ${A0.place}`}</small></button>
+    ${anim ? `<button class="btn wide skip" data-act="skipFight">Skip to the end<small>Show the result now</small></button>`
+      : `<button class="btn wide" data-act="fight" ${S.hp <= 0 || fightAsked ? 'disabled' : ''}>Fight<small>Random enemy from ${A0.place}</small></button>`}
     <div id="healBtns" style="display:contents">${healBtnsHTML(anim ? animHp() : S.hp)}</div>
     <button class="btn idle${S.autoEat ? ' on' : ''}" data-act="autoEat">Auto-eat<small>${S.autoEat ? `On, ${foodList().reduce((a, b) => a + b, 0)} food` : `Off`}</small></button>
     <button class="btn idle${S.autoDrink ? ' on' : ''}" data-act="autoDrink">Auto-drink<small>${S.autoDrink ? 'On, next beer when empty' : 'Off'}</small></button>
