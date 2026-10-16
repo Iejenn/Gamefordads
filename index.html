@@ -418,11 +418,18 @@ button.idleline{display:block;width:100%;text-align:left;border:0;background:tra
 <div id="fx" aria-hidden="true"></div>
 <div id="rotate"><div><b>GFD</b>Turn your phone upright. GFD is played in portrait.</div></div>
 
-<script src="engine.js?v=0.24.5"></script>
+<script src="engine.js?v=0.24.6"></script>
 <script>
 /* ---------- What's New ----------
    Shown once after an update. To announce an update: bump CONFIG.version and add an entry at the TOP. */
 const CHANGELOG = [
+  {v: '0.24.6', title: 'A tidier fight screen', notes: [
+    'The big <b>Fight</b> button turns into <b>Skip to the end</b> while a fight plays, and back again afterwards. No extra skip button taking up space.',
+  ]},
+  {v: '0.24.4', title: 'Your task, right where you fight', notes: [
+    'Your <b>Slayer task</b> is now a slim line right under the area on the Fight tab, so it never falls off the screen. Tap it to jump to the task\'s area.',
+    'No task? The same line has a small <b>Get a task</b> button.',
+  ]},
   {v: '0.24.3', title: 'Pick your fish', notes: [
     'Cooking has a <b>picker</b> too: cook your best fish, or choose one. Handy when you want a specific meal.',
     'The <b>Beer</b> button also works during a fight now. The new beer counts from the next fight.',
@@ -540,7 +547,7 @@ function showWhatsNew(sinceV, all) {
   lsSet(LS.seen, CONFIG.version);
 }
 
-const UI_VERSION = '0.24.5';   // must match CONFIG.version in engine.js (bump both with every update)
+const UI_VERSION = '0.24.6';   // must match CONFIG.version in engine.js (bump both with every update)
 const freshReload = v => location.replace(location.pathname + '?v=' + encodeURIComponent(v || UI_VERSION) + '&t=' + Date.now());
 if (typeof CONFIG === 'undefined' || CONFIG.version !== UI_VERSION) {
   if (!sessionStorage.getItem('gfd_fix_' + UI_VERSION)) { sessionStorage.setItem('gfd_fix_' + UI_VERSION, '1'); freshReload(); }
